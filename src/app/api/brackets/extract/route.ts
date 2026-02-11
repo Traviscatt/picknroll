@@ -11,7 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.GOOGLE_API_KEY) {
+    const apiKey = process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      console.error("GOOGLE_API_KEY is missing. Available env keys:", Object.keys(process.env).filter(k => k.includes("GOOGLE") || k.includes("API")));
       return NextResponse.json(
         { error: "Google API key not configured. Please add GOOGLE_API_KEY to your environment variables." },
         { status: 500 }
@@ -83,7 +85,7 @@ Return the data as JSON in this exact format:
 If you cannot read a pick clearly, use null for that value and note it in the notes field.
 Only return valid JSON, no other text.`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const result = await model.generateContent([

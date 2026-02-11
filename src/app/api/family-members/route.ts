@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(familyMember, { status: 201 });
+    return NextResponse.json({ ...familyMember, brackets: [] }, { status: 201 });
   } catch (error) {
     console.error("Error creating family member:", error);
     return NextResponse.json(

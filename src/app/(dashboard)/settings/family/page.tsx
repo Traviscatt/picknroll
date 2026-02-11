@@ -108,7 +108,7 @@ export default function FamilyMembersPage() {
       }
 
       const member = await response.json();
-      setFamilyMembers([...familyMembers, member]);
+      setFamilyMembers([...familyMembers, { ...member, brackets: member.brackets || [] }]);
       setNewName("");
       setNewEmail("");
       setIsAddDialogOpen(false);
@@ -143,7 +143,7 @@ export default function FamilyMembersPage() {
 
       const updated = await response.json();
       setFamilyMembers(
-        familyMembers.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+        familyMembers.map((m) => (m.id === updated.id ? { ...m, ...updated, brackets: updated.brackets || m.brackets } : m))
       );
       setIsEditDialogOpen(false);
       setEditingMember(null);

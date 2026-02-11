@@ -86,17 +86,28 @@ If you cannot read a pick clearly, use null for that value and note it in the no
 Only return valid JSON, no other text.`;
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType,
-          data: base64,
-        },
-      },
-    ]);
+    
+    // Try primary model, fall back to lite if quota exceeded
+    let result;
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      result = await model.generateContent([
+        prompt,
+        { inlineData: { mimeType, data: base64 } },
+      ]);
+    } catch (primaryError) {
+      const msg = primaryError instanceof Error ? primaryError.message : "";
+      if (msg.includes("429") || msg.includes("quota") || msg.includes("Resource exhausted")) {
+        console.log("Primary model quota exceeded, falling back to gemini-2.0-flash-lite");
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
+        result = await fallbackModel.generateContent([
+          prompt,
+          { inlineData: { mimeType, data: base64 } },
+        ]);
+      } else {
+        throw primaryError;
+      }
+    }
 
     const content = result.response.text();
 

@@ -480,15 +480,15 @@ function NewBracketContent() {
         .filter((t): t is Team => t !== undefined);
     };
     
-    // Semifinal 1: East vs West - show all E8 picks from both regions
-    const semi1Teams = [...getE8Picks("East"), ...getE8Picks("West")];
+    // Semifinal 1: South vs West - show all E8 picks from both regions
+    const semi1Teams = [...getE8Picks("South"), ...getE8Picks("West")];
     
-    // Semifinal 2: South vs Midwest - show all E8 picks from both regions
-    const semi2Teams = [...getE8Picks("South"), ...getE8Picks("Midwest")];
+    // Semifinal 2: East vs Midwest - show all E8 picks from both regions
+    const semi2Teams = [...getE8Picks("East"), ...getE8Picks("Midwest")];
     
     return [
-      { game: 1, eligibleTeams: semi1Teams, label: "East vs West" },
-      { game: 2, eligibleTeams: semi2Teams, label: "South vs Midwest" },
+      { game: 1, eligibleTeams: semi1Teams, label: "South vs West" },
+      { game: 2, eligibleTeams: semi2Teams, label: "East vs Midwest" },
     ];
   };
 

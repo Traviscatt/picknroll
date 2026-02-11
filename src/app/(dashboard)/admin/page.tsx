@@ -16,7 +16,10 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  RefreshCw,
+  Calculator,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DashboardStats {
   totalBrackets: number;
@@ -37,6 +40,7 @@ export default function AdminDashboardPage() {
     prizePool: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isScoring, setIsScoring] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -161,6 +165,47 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Score Actions */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-orange-500" />
+            Scoring
+          </CardTitle>
+          <CardDescription>
+            Recalculate all bracket scores based on game results in the database.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            className="bg-orange-500 hover:bg-orange-600"
+            disabled={isScoring}
+            onClick={async () => {
+              setIsScoring(true);
+              try {
+                const res = await fetch("/api/admin/score", { method: "POST" });
+                const data = await res.json();
+                if (res.ok) {
+                  toast.success(data.message || "Scores recalculated!");
+                } else {
+                  toast.error(data.error || "Failed to recalculate scores");
+                }
+              } catch {
+                toast.error("Failed to recalculate scores");
+              } finally {
+                setIsScoring(false);
+              }
+            }}
+          >
+            {isScoring ? (
+              <><RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Calculating...</>
+            ) : (
+              <><Calculator className="mr-2 h-4 w-4" /> Recalculate All Scores</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Quick Actions */}
       <div>

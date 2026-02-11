@@ -131,8 +131,15 @@ Only return valid JSON, no other text.`;
 
   } catch (error) {
     console.error("Error processing bracket:", error);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("429") || message.includes("quota")) {
+      return NextResponse.json(
+        { error: "AI service quota exceeded. Please try again later or enter picks manually." },
+        { status: 429 }
+      );
+    }
     return NextResponse.json(
-      { error: "Failed to process bracket" },
+      { error: "Failed to process bracket. Please try again or enter picks manually." },
       { status: 500 }
     );
   }

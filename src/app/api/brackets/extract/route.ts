@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import OpenAI from "openai";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// 2025 NCAA Tournament teams by region for validation
-const TEAMS_BY_REGION = {
-  South: ["Auburn", "Michigan State", "Iowa State", "Texas A&M", "Michigan", "Ole Miss", "Marquette", "Louisville", "Creighton", "New Mexico", "UC San Diego", "UC Irvine", "Yale", "Lipscomb", "Bryant", "Alabama State"],
-  West: ["Florida", "St. John's", "Texas Tech", "Arizona", "Clemson", "Illinois", "Kansas State", "UConn", "Baylor", "Arkansas", "Drake", "Colorado State", "Grand Canyon", "UNC Wilmington", "Omaha", "Norfolk State"],
-  East: ["Duke", "Alabama", "Wisconsin", "Tennessee", "Kentucky", "BYU", "Saint Mary's", "Mississippi State", "Georgia", "Vanderbilt", "VCU", "Liberty", "Akron", "Montana", "Robert Morris", "American"],
-  Midwest: ["Houston", "Purdue", "Kentucky", "Gonzaga", "Oregon", "Missouri", "UCLA", "Memphis", "Texas", "Utah State", "Xavier", "High Point", "Troy", "Wofford", "SIU Edwardsville", "SIUE"],
-};
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request: Request) {
   try {
@@ -23,9 +11,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GOOGLE_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured. Please add OPENAI_API_KEY to your environment variables." },
+        { error: "Google API key not configured. Please add GOOGLE_API_KEY to your environment variables." },
         { status: 500 }
       );
     }
@@ -41,28 +29,16 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64 = buffer.toString("base64");
-    
-    // Determine media type
-    let mediaType = "image/jpeg";
+
+    // Determine MIME type (Gemini supports images AND PDFs natively)
+    let mimeType = "image/jpeg";
     if (file.type === "application/pdf") {
-      mediaType = "application/pdf";
+      mimeType = "application/pdf";
     } else if (file.type) {
-      mediaType = file.type;
+      mimeType = file.type;
     }
 
-    // For PDFs, we need to handle differently - OpenAI Vision doesn't directly support PDFs
-    // For now, we'll return an error for PDFs and suggest using an image
-    if (file.type === "application/pdf") {
-      return NextResponse.json(
-        { 
-          error: "PDF processing is not yet supported. Please upload an image (PNG, JPG, HEIC) of your bracket instead.",
-          suggestion: "Take a screenshot or photo of your bracket and upload that."
-        },
-        { status: 400 }
-      );
-    }
-
-    const prompt = `You are analyzing an NCAA March Madness bracket image. Extract all the picks from this bracket.
+    const prompt = `You are analyzing an NCAA March Madness bracket. Extract all the picks from this bracket.
 
 The 2025 NCAA Tournament has 4 regions: South, West, East, and Midwest.
 
@@ -107,31 +83,24 @@ Return the data as JSON in this exact format:
 If you cannot read a pick clearly, use null for that value and note it in the notes field.
 Only return valid JSON, no other text.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${mediaType};base64,${base64}`,
-                detail: "high",
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 4096,
-    });
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const content = response.choices[0]?.message?.content;
-    
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType,
+          data: base64,
+        },
+      },
+    ]);
+
+    const content = result.response.text();
+
     if (!content) {
       return NextResponse.json(
-        { error: "Failed to extract picks from image" },
+        { error: "Failed to extract picks from bracket" },
         { status: 500 }
       );
     }
@@ -159,9 +128,9 @@ Only return valid JSON, no other text.`;
     });
 
   } catch (error) {
-    console.error("Error processing bracket image:", error);
+    console.error("Error processing bracket:", error);
     return NextResponse.json(
-      { error: "Failed to process bracket image" },
+      { error: "Failed to process bracket" },
       { status: 500 }
     );
   }

@@ -9,7 +9,7 @@ export async function PATCH(
 ) {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
     const { id } = await params;
 
     const body = await request.json();

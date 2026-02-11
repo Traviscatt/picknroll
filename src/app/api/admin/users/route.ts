@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
 
     const users = await db.user.findMany({
       select: {

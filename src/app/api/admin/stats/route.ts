@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
 
     const [totalBrackets, paidBrackets, totalUsers] = await Promise.all([
       db.bracket.count(),

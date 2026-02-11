@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
 
     // Get the current tournament
     const tournament = await db.tournament.findFirst({
@@ -53,7 +53,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
 
     const body = await req.json();
     const { results, actualTiebreaker } = body;

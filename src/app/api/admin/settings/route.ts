@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/admin";
 export async function GET() {
   try {
     const { authorized, response, session } = await requireAdmin();
-    if (!authorized || !session) return response;
+    if (!authorized || !session) return response!;
 
     // Find the pool where this user is an admin
     const membership = await db.poolMember.findFirst({
@@ -48,7 +48,7 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     const { authorized, response, session } = await requireAdmin();
-    if (!authorized || !session) return response;
+    if (!authorized || !session) return response!;
 
     const body = await req.json();
     const { name, description, entryFee, deadline, venmoHandle, paypalLink, status } = body;

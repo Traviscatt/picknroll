@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
     const { id } = await params;
 
     const bracket = await db.bracket.findUnique({
@@ -53,7 +53,7 @@ export async function PATCH(
 ) {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
     const { id } = await params;
 
     const body = await request.json();
@@ -96,7 +96,7 @@ export async function DELETE(
 ) {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
     const { id } = await params;
 
     await db.bracket.delete({

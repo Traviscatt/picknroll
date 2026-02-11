@@ -7,7 +7,7 @@ import { SCORING_RULES } from "@/lib/scoring";
 export async function POST() {
   try {
     const { authorized, response } = await requireAdmin();
-    if (!authorized) return response;
+    if (!authorized) return response!;
 
     // Get all completed games with winners
     const games = await db.game.findMany({

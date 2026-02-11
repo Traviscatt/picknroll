@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, Trophy, User, LogOut, Settings } from "lucide-react";
+import { Menu, Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Navbar() {
@@ -65,6 +65,14 @@ export function Navbar() {
                 >
                   Leaderboard
                 </Link>
+                {session.user?.role === "ADMIN" && (
+                  <Link
+                    href="/admin"
+                    className={`text-sm font-medium transition-colors ${isActive("/admin") ? "text-orange-500" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    Admin
+                  </Link>
+                )}
               </>
             )}
           </div>
@@ -107,6 +115,14 @@ export function Navbar() {
                       Settings
                     </Link>
                   </DropdownMenuItem>
+                  {session.user?.role === "ADMIN" && (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="cursor-pointer text-red-600"
@@ -145,6 +161,14 @@ export function Navbar() {
                     >
                       Leaderboard
                     </Link>
+                    {session.user?.role === "ADMIN" && (
+                      <Link
+                        href="/admin"
+                        className={`text-lg font-medium transition-colors ${isActive("/admin") ? "text-orange-500" : "hover:text-orange-500"}`}
+                      >
+                        Admin
+                      </Link>
+                    )}
                   </div>
                 </SheetContent>
               </Sheet>

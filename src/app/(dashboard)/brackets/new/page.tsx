@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -165,7 +165,7 @@ interface FamilyMember {
   name: string;
 }
 
-export default function NewBracketPage() {
+function NewBracketContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1336,5 +1336,13 @@ export default function NewBracketPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function NewBracketPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>}>
+      <NewBracketContent />
+    </Suspense>
   );
 }

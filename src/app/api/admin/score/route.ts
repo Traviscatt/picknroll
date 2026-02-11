@@ -41,6 +41,38 @@ export async function POST() {
       }
     }
 
+    // Build a map of TournamentTeam DB ID -> UI team ID (e.g. "south-1")
+    // The bracket UI uses "{region.toLowerCase()}-{seed}" as team IDs
+    const tournamentTeams = await db.tournamentTeam.findMany({
+      select: { id: true, seed: true, region: true },
+    });
+    const uiTeamIdMap = new Map<string, string>();
+    for (const tt of tournamentTeams) {
+      uiTeamIdMap.set(tt.id, `${tt.region.toLowerCase()}-${tt.seed}`);
+    }
+
+    // Build a map of DB game ID -> UI game key (e.g. "South-r1-g1")
+    // DB uses global game numbers (East R1 starts at 9) but UI uses per-region (starts at 1)
+    const gameKeyMap = new Map<string, string>();
+    const regionOrder = ["South", "East", "West", "Midwest"];
+    const gamesPerRegionPerRound: Record<number, number> = { 1: 8, 2: 4, 3: 2, 4: 1 };
+    for (const game of games) {
+      let gameKey: string;
+      if (game.round === 5) {
+        gameKey = `final-four-r5-g${game.gameNumber}`;
+      } else if (game.round === 6) {
+        gameKey = `championship-r6-g${game.gameNumber}`;
+      } else {
+        // Compute per-region game number from global game number
+        const gamesPerRegion = gamesPerRegionPerRound[game.round] || 1;
+        const regionIndex = regionOrder.indexOf(game.region || "");
+        const offset = regionIndex * gamesPerRegion;
+        const localGameNum = game.gameNumber - offset;
+        gameKey = `${game.region}-r${game.round}-g${localGameNum}`;
+      }
+      gameKeyMap.set(game.id, gameKey);
+    }
+
     // Get all submitted brackets with their picks
     const brackets = await db.bracket.findMany({
       where: {
@@ -92,17 +124,14 @@ export async function POST() {
         try {
           const picksArray = JSON.parse(bracket.picksData);
           // picksData format: [{gameId, choices: [teamId1, teamId2, ...]}]
+          // choices use UI IDs like "south-1" (region-seed), need to map to TournamentTeam IDs
           for (const pickData of picksArray) {
             if (!pickData.gameId || !pickData.choices) continue;
 
-            // Find the matching game
+            // Find the matching game by composite key
+            // DB games use global numbering (East R1 starts at 9) but UI uses per-region (starts at 1)
             const game = games.find((g) => {
-              // Match by composite key: region-round-game pattern
-              const gameKey = g.region
-                ? `${g.region}-r${g.round}-g${g.gameNumber}`
-                : g.round === 5
-                ? `final-four-r5-g${g.gameNumber}`
-                : `championship-r6-g${g.gameNumber}`;
+              const gameKey = gameKeyMap.get(g.id);
               return gameKey === pickData.gameId;
             });
 
@@ -111,10 +140,15 @@ export async function POST() {
             const rule = SCORING_RULES.find((r) => r.round === game.round);
             if (!rule) continue;
 
+            // Map the winner's TournamentTeam ID to UI format for comparison
+            const winnerUIId = uiTeamIdMap.get(game.winnerId);
+
             // Check each ranked choice
             for (let rank = 0; rank < pickData.choices.length; rank++) {
               if (rank >= rule.pointsPerChoice.length) break;
-              if (pickData.choices[rank] === game.winnerId) {
+              const pickUIId = pickData.choices[rank];
+              // Compare: either direct match (if somehow using DB IDs) or via UI mapping
+              if (pickUIId === game.winnerId || pickUIId === winnerUIId) {
                 totalScore += rule.pointsPerChoice[rank];
               }
             }

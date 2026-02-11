@@ -15,7 +15,17 @@ import {
   Clock, 
   Users,
   DollarSign,
+  Trash2,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface PickData {
   gameId: string;
@@ -50,6 +60,27 @@ export default function BracketDetailPage() {
   
   const [bracket, setBracket] = useState<Bracket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/brackets/${bracketId}`, { method: "DELETE" });
+      if (response.ok) {
+        toast.success("Bracket deleted");
+        router.push("/brackets");
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete bracket");
+      }
+    } catch {
+      toast.error("Failed to delete bracket");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -155,6 +186,14 @@ export default function BracketDetailPage() {
               </Link>
             </Button>
           )}
+          <Button
+            variant="outline"
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+            onClick={() => setShowDeleteDialog(true)}
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -279,6 +318,26 @@ export default function BracketDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Bracket</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this bracket? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,7 +7,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Plus, Upload, Clock, CheckCircle, Edit, Users } from "lucide-react";
+import { Trophy, Plus, Upload, Clock, CheckCircle, Edit, Users, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface Bracket {
   id: string;
@@ -31,6 +40,9 @@ export default function BracketsPage() {
   const router = useRouter();
   const [brackets, setBrackets] = useState<Bracket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -67,6 +79,27 @@ export default function BracketsPage() {
   }
 
   if (!session) return null;
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/brackets/${deletingId}`, { method: "DELETE" });
+      if (response.ok) {
+        setBrackets(brackets.filter((b) => b.id !== deletingId));
+        toast.success("Bracket deleted");
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete bracket");
+      }
+    } catch {
+      toast.error("Failed to delete bracket");
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+      setDeletingId(null);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -201,6 +234,17 @@ export default function BracketsPage() {
                         </Link>
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        setDeletingId(bracket.id);
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -208,6 +252,25 @@ export default function BracketsPage() {
           ))}
         </div>
       )}
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Bracket</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this bracket? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

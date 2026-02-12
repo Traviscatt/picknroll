@@ -34,7 +34,7 @@ export default async function Home() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700">
               <Trophy className="h-4 w-4" />
-              NCAA Tournament 2026
+              NCAA Tournament 2025
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
               From Bracket to{" "}

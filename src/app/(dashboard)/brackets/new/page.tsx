@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import confetti from "canvas-confetti";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,8 @@ import {
   LayoutGrid,
   GitBranch,
   Download,
+  Lock,
+  Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { GameCard, DesktopBracketView } from "@/components/bracket";
@@ -590,9 +593,40 @@ function NewBracketContent() {
   };
 
   const getProgress = () => {
-    // Simple progress calculation
+    // Count fully completed games (all required choices made)
+    let completed = 0;
     const totalGames = 63;
-    return (picks.size / totalGames) * 100;
+
+    // R1: 32 games, 1 pick each
+    for (const region of REGIONS) {
+      for (let g = 1; g <= 8; g++) {
+        const p = picks.get(`${region}-r1-g${g}`);
+        if (p?.choices?.[0]) completed++;
+      }
+      // R2: 4 games per region, 1 pick
+      for (let g = 1; g <= 4; g++) {
+        const p = picks.get(`${region}-r2-g${g}`);
+        if (p?.choices?.[0]) completed++;
+      }
+      // R3: 2 games per region, 2 picks each
+      for (let g = 1; g <= 2; g++) {
+        const p = picks.get(`${region}-r3-g${g}`);
+        if (p?.choices && p.choices.length >= 2) completed++;
+      }
+      // R4: 1 game per region, 3 picks
+      const e8 = picks.get(`${region}-r4-g1`);
+      if (e8?.choices && e8.choices.length >= 3) completed++;
+    }
+    // R5: 2 Final Four games, 4 picks each
+    for (let g = 1; g <= 2; g++) {
+      const p = picks.get(`final-four-r5-g${g}`);
+      if (p?.choices && p.choices.length >= 4) completed++;
+    }
+    // R6: Championship, 5 picks
+    const champ = picks.get("championship-r6-g1");
+    if (champ?.choices && champ.choices.length >= 5) completed++;
+
+    return { completed, totalGames, percent: (completed / totalGames) * 100 };
   };
 
   const getEntryName = () => {
@@ -665,7 +699,35 @@ function NewBracketContent() {
 
       const bracket = await response.json();
       setSubmittedBracketId(bracket.id);
-      toast.success("Bracket submitted!");
+      
+      // 🎉 Confetti celebration!
+      const fireConfetti = () => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#f97316", "#fb923c", "#fbbf24", "#22c55e", "#3b82f6"],
+        });
+        setTimeout(() => {
+          confetti({
+            particleCount: 50,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: ["#f97316", "#fb923c", "#fbbf24"],
+          });
+          confetti({
+            particleCount: 50,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: ["#f97316", "#fb923c", "#fbbf24"],
+          });
+        }, 250);
+      };
+      fireConfetti();
+      
+      toast.success("🏆 Bracket submitted! Good luck!");
       setShowPaymentModal(true);
     } catch {
       toast.error("Failed to submit bracket");
@@ -780,13 +842,60 @@ function NewBracketContent() {
       {/* Progress */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progress</span>
-            <span className="text-sm text-slate-500">
-              {picks.size} / 63 games
-            </span>
-          </div>
-          <Progress value={getProgress()} className="h-2" />
+          {(() => {
+            const progress = getProgress();
+            return (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">
+                    Bracket Progress
+                  </span>
+                  <span className="text-sm font-semibold">
+                    {progress.completed === progress.totalGames ? (
+                      <span className="text-green-600 flex items-center gap-1">
+                        <CheckCircle className="h-4 w-4" />
+                        Complete!
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">
+                        {progress.completed} / {progress.totalGames} games
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <Progress value={progress.percent} className="h-2.5" />
+                <div className="flex justify-between mt-2 text-[10px] text-slate-400">
+                  {SCORING_RULES.map((rule) => {
+                    let done = 0;
+                    const total = rule.gamesInRound;
+                    if (rule.round <= 4) {
+                      for (const region of REGIONS) {
+                        const gamesPerRegion = rule.round === 1 ? 8 : rule.round === 2 ? 4 : rule.round === 3 ? 2 : 1;
+                        for (let g = 1; g <= gamesPerRegion; g++) {
+                          const p = picks.get(`${region}-r${rule.round}-g${g}`);
+                          if (p?.choices && p.choices.length >= rule.choices) done++;
+                        }
+                      }
+                    } else if (rule.round === 5) {
+                      for (let g = 1; g <= 2; g++) {
+                        const p = picks.get(`final-four-r5-g${g}`);
+                        if (p?.choices && p.choices.length >= rule.choices) done++;
+                      }
+                    } else {
+                      const p = picks.get("championship-r6-g1");
+                      if (p?.choices && p.choices.length >= rule.choices) done++;
+                    }
+                    const isDone = done === total;
+                    return (
+                      <span key={rule.round} className={isDone ? "text-green-500 font-medium" : ""}>
+                        R{rule.round}: {done}/{total}
+                      </span>
+                    );
+                  })}
+                </div>
+              </>
+            );
+          })()}
         </CardContent>
       </Card>
 
@@ -1014,6 +1123,9 @@ function NewBracketContent() {
                   <div className="grid gap-4 md:grid-cols-2">
                     {!isPreviousRoundComplete(currentRound, region) ? (
                       <div className="col-span-full p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+                          <Lock className="h-6 w-6 text-orange-400" />
+                        </div>
                         <p className="text-slate-600 font-medium">Complete Round {currentRound - 1} first</p>
                         <p className="text-sm text-slate-500 mt-1">
                           You need to make picks in the previous round before selecting teams here.
@@ -1062,6 +1174,9 @@ function NewBracketContent() {
             if (!hasTeams) {
               return (
                 <div className="p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+                    <Lock className="h-6 w-6 text-orange-400" />
+                  </div>
                   <p className="text-slate-600 font-medium">Complete Elite 8 first</p>
                   <p className="text-sm text-slate-500 mt-1">
                     Make your Elite 8 picks in all regions to see Final Four teams.
@@ -1113,6 +1228,9 @@ function NewBracketContent() {
             if (matchup.eligibleTeams.length === 0) {
               return (
                 <div className="max-w-md mx-auto p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+                    <Trophy className="h-7 w-7 text-orange-400" />
+                  </div>
                   <p className="text-slate-600 font-medium">Complete Final Four first</p>
                   <p className="text-sm text-slate-500 mt-1">
                     Make your Final Four picks to see Championship teams.

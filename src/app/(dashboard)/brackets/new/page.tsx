@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import confetti from "canvas-confetti";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed - using custom region buttons with AnimatePresence
 import {
   ChevronLeft,
   ChevronRight,
@@ -193,6 +194,7 @@ function NewBracketContent() {
   const [userPoolId, setUserPoolId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "bracket">("card");
   const [showSummary, setShowSummary] = useState(false);
+  const slideDirection = useRef(0); // -1 = left, 1 = right
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -740,6 +742,27 @@ function NewBracketContent() {
 
   const scoringRule = SCORING_RULES.find((r) => r.round === currentRound);
 
+  // Navigation helpers that track direction for animations
+  const goToRound = (round: number, scrollTop = false) => {
+    slideDirection.current = round > currentRound ? 1 : -1;
+    setCurrentRound(round);
+    if (scrollTop) setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
+  };
+  const goToRegion = (region: Region, scrollTop = false) => {
+    const oldIdx = REGIONS.indexOf(currentRegion);
+    const newIdx = REGIONS.indexOf(region);
+    slideDirection.current = newIdx > oldIdx ? 1 : -1;
+    setCurrentRegion(region);
+    if (scrollTop) setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
+  };
+
+  // Animation variants for slide transitions
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
+  };
+
   // Validate bracket completion
   const getBracketValidation = () => {
     const errors: string[] = [];
@@ -1203,7 +1226,7 @@ function NewBracketContent() {
                 {SCORING_RULES.map((rule) => (
                   <button
                     key={rule.round}
-                    onClick={() => setCurrentRound(rule.round)}
+                    onClick={() => goToRound(rule.round)}
                     className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
                       currentRound === rule.round
                         ? "bg-orange-500 text-white shadow-md"
@@ -1225,7 +1248,7 @@ function NewBracketContent() {
                   key={rule.round}
                   variant={currentRound === rule.round ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setCurrentRound(rule.round)}
+                  onClick={() => goToRound(rule.round)}
                   className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
                       ? "bg-orange-500 hover:bg-orange-600"
@@ -1243,7 +1266,7 @@ function NewBracketContent() {
                 variant="outline"
                 size="sm"
                 disabled={currentRound === 1}
-                onClick={() => setCurrentRound((r) => r - 1)}
+                onClick={() => goToRound(currentRound - 1)}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
                 <span className="hidden sm:inline">Previous</span>
@@ -1265,7 +1288,7 @@ function NewBracketContent() {
                 variant="outline"
                 size="sm"
                 disabled={currentRound === 6}
-                onClick={() => setCurrentRound((r) => r + 1)}
+                onClick={() => goToRound(currentRound + 1)}
               >
                 <span className="hidden sm:inline">Next Round</span>
                 <span className="sm:hidden">Next</span>
@@ -1276,45 +1299,58 @@ function NewBracketContent() {
 
           {/* Region Tabs (for rounds 1-4) */}
           {currentRound <= 4 && (
-            <Tabs
-              value={currentRegion}
-              onValueChange={(v) => setCurrentRegion(v as Region)}
-            >
+            <>
               <div className="mb-4">
-                <p className="text-xs text-center text-slate-500 mb-1.5 font-medium uppercase tracking-wide">Region</p>
-                <TabsList className="grid w-full grid-cols-4">
+                <p className="text-xs text-center text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Region</p>
+                <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-muted p-1">
                   {REGIONS.map((region) => (
-                    <TabsTrigger key={region} value={region}>
+                    <button
+                      key={region}
+                      onClick={() => goToRegion(region)}
+                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                        currentRegion === region
+                          ? "bg-background shadow text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
                       {region}
-                    </TabsTrigger>
+                    </button>
                   ))}
-                </TabsList>
+                </div>
               </div>
 
-              {REGIONS.map((region) => (
-                <TabsContent key={region} value={region}>
+              <AnimatePresence mode="wait" custom={slideDirection.current}>
+                <motion.div
+                  key={`${currentRound}-${currentRegion}`}
+                  custom={slideDirection.current}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                >
                   <div className="grid gap-4 md:grid-cols-2">
-                    {!isPreviousRoundComplete(currentRound, region) ? (
-                      <div className="col-span-full p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                        <div className="mx-auto w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mb-3">
+                    {!isPreviousRoundComplete(currentRound, currentRegion) ? (
+                      <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg border border-dashed">
+                        <div className="mx-auto w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-3">
                           <Lock className="h-6 w-6 text-orange-400" />
                         </div>
-                        <p className="text-slate-600 font-medium">Complete Round {currentRound - 1} first</p>
-                        <p className="text-sm text-slate-500 mt-1">
+                        <p className="font-medium">Complete Round {currentRound - 1} first</p>
+                        <p className="text-sm text-muted-foreground mt-1">
                           You need to make picks in the previous round before selecting teams here.
                         </p>
                         <Button
                           variant="outline"
                           size="sm"
                           className="mt-3"
-                          onClick={() => setCurrentRound(currentRound - 1)}
+                          onClick={() => goToRound(currentRound - 1)}
                         >
                           Go to Round {currentRound - 1}
                         </Button>
                       </div>
                     ) : (
-                      getMatchupsForRound(currentRound, region).map((matchup) => {
-                        const gameId = `${region}-r${currentRound}-g${matchup.game}`;
+                      getMatchupsForRound(currentRound, currentRegion).map((matchup) => {
+                        const gameId = `${currentRegion}-r${currentRound}-g${matchup.game}`;
                         const pick = picks.get(gameId);
                         const maxChoices = scoringRule?.choices || 1;
                         
@@ -1323,7 +1359,7 @@ function NewBracketContent() {
                             key={matchup.game}
                             gameNumber={matchup.game}
                             round={currentRound}
-                            region={region}
+                            region={currentRegion}
                             eligibleTeams={matchup.eligibleTeams}
                             picks={pick?.choices || []}
                             maxChoices={maxChoices}
@@ -1334,9 +1370,9 @@ function NewBracketContent() {
                       })
                     )}
                   </div>
-                </TabsContent>
-              ))}
-            </Tabs>
+                </motion.div>
+              </AnimatePresence>
+            </>
           )}
 
           {/* Final Four */}
@@ -1461,23 +1497,20 @@ function NewBracketContent() {
         </CardContent>
       </Card>
 
-      {/* Bottom Round Navigation */}
-      <Card className={viewMode === "bracket" ? "lg:hidden" : ""}>
+      {/* Bottom Round Navigation — Desktop only (mobile uses sticky bar below) */}
+      <Card className={`hidden sm:block ${viewMode === "bracket" ? "lg:hidden" : ""}`}>
         <CardContent className="py-4 space-y-4">
-          {/* Region/Division Tabs (for rounds 1-4) */}
+          {/* Region Tabs (for rounds 1-4) */}
           {currentRound <= 4 && (
             <div className="flex flex-col items-center">
-              <p className="text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wide">Region</p>
+              <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Region</p>
               <div className="inline-flex rounded-lg border p-1 bg-muted">
                 {REGIONS.map((region) => (
                   <Button
                     key={region}
                     variant={currentRegion === region ? "default" : "ghost"}
                     size="sm"
-                    onClick={() => {
-                      setCurrentRegion(region);
-                      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-                    }}
+                    onClick={() => goToRegion(region, true)}
                     className={
                       currentRegion === region
                         ? "bg-orange-500 hover:bg-orange-600"
@@ -1493,41 +1526,13 @@ function NewBracketContent() {
           
           {/* Round Navigation */}
           <div className="flex flex-col gap-3">
-            {/* Mobile: compact pill row + round name label */}
-            <div className="sm:hidden flex flex-col items-center gap-1.5">
-              <div className="flex justify-center gap-2">
-                {SCORING_RULES.map((rule) => (
-                  <button
-                    key={rule.round}
-                    onClick={() => {
-                      setCurrentRound(rule.round);
-                      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-                    }}
-                    className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
-                      currentRound === rule.round
-                        ? "bg-orange-500 text-white shadow-md"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {rule.round}
-                  </button>
-                ))}
-              </div>
-              <span className="text-xs font-medium text-muted-foreground">
-                {scoringRule?.roundName}
-              </span>
-            </div>
-            {/* Desktop: full round buttons with labels */}
-            <div className="hidden sm:flex justify-center gap-1.5">
+            <div className="flex justify-center gap-1.5">
               {SCORING_RULES.map((rule) => (
                 <Button
                   key={rule.round}
                   variant={currentRound === rule.round ? "default" : "outline"}
                   size="sm"
-                  onClick={() => {
-                    setCurrentRound(rule.round);
-                    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-                  }}
+                  onClick={() => goToRound(rule.round, true)}
                   className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
                       ? "bg-orange-500 hover:bg-orange-600"
@@ -1539,38 +1544,88 @@ function NewBracketContent() {
                 </Button>
               ))}
             </div>
-            {/* Prev/Next Buttons */}
             <div className="flex justify-between">
               <Button
                 variant="outline"
                 size="sm"
                 disabled={currentRound === 1}
-                onClick={() => {
-                  setCurrentRound((r) => r - 1);
-                  setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-                }}
+                onClick={() => goToRound(currentRound - 1, true)}
               >
                 <ChevronLeft className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">Previous</span>
-                <span className="sm:hidden">Prev</span>
+                Previous
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={currentRound === 6}
-                onClick={() => {
-                  setCurrentRound((r) => r + 1);
-                  setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-                }}
+                onClick={() => goToRound(currentRound + 1, true)}
               >
-                <span className="hidden sm:inline">Next Round</span>
-                <span className="sm:hidden">Next</span>
+                Next Round
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Mobile bottom spacer (prevents sticky bar from covering content) */}
+      <div className="sm:hidden h-28" />
+
+      {/* Sticky Mobile Bottom Nav */}
+      <div className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 space-y-2 ${viewMode === "bracket" ? "lg:hidden" : ""}`}>
+        {/* Region tabs (rounds 1-4 only) */}
+        {currentRound <= 4 && (
+          <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-0.5">
+            {REGIONS.map((region) => (
+              <button
+                key={region}
+                onClick={() => goToRegion(region, true)}
+                className={`rounded-md py-1 text-xs font-medium transition-colors ${
+                  currentRegion === region
+                    ? "bg-background shadow text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {region}
+              </button>
+            ))}
+          </div>
+        )}
+        {/* Round pills + prev/next */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            aria-label="Previous round"
+            disabled={currentRound === 1}
+            onClick={() => goToRound(currentRound - 1, true)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div className="flex gap-1.5">
+            {SCORING_RULES.map((rule) => (
+              <button
+                key={rule.round}
+                onClick={() => goToRound(rule.round, true)}
+                className={`w-8 h-8 rounded-full text-xs font-bold transition-colors ${
+                  currentRound === rule.round
+                    ? "bg-orange-500 text-white shadow-md"
+                    : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {rule.round}
+              </button>
+            ))}
+          </div>
+          <button
+            aria-label="Next round"
+            disabled={currentRound === 6}
+            onClick={() => goToRound(currentRound + 1, true)}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
 
       {/* Payment Instructions Modal */}
       <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>

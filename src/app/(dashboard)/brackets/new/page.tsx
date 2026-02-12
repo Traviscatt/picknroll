@@ -28,6 +28,7 @@ import {
   Download,
   Lock,
   Trophy,
+  ClipboardList,
 } from "lucide-react";
 import Link from "next/link";
 import { GameCard, DesktopBracketView } from "@/components/bracket";
@@ -191,6 +192,7 @@ function NewBracketContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [userPoolId, setUserPoolId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "bracket">("card");
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -805,12 +807,21 @@ function NewBracketContent() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Create Bracket</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-bold">Create Bracket</h1>
+          <p className="text-muted-foreground mt-1">
             Fill out your picks for each round
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant={showSummary ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowSummary(!showSummary)}
+            className={showSummary ? "bg-orange-500 hover:bg-orange-600" : ""}
+          >
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Review Picks
+          </Button>
           <Link href="/brackets/upload">
             <Button variant="outline" size="sm">
               <Upload className="mr-2 h-4 w-4" />
@@ -898,6 +909,147 @@ function NewBracketContent() {
           })()}
         </CardContent>
       </Card>
+
+      {/* Review Picks Summary */}
+      {showSummary && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-orange-500" />
+              Your Picks Summary
+            </CardTitle>
+            <CardDescription>Review all your picks before submitting</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              {/* Rounds 1-4: Per region */}
+              {SCORING_RULES.filter((r) => r.round <= 4).map((rule) => {
+                const gamesPerRegion = rule.round === 1 ? 8 : rule.round === 2 ? 4 : rule.round === 3 ? 2 : 1;
+                return (
+                  <div key={rule.round}>
+                    <h3 className="text-sm font-bold mb-2 text-orange-500">
+                      Round {rule.round}: {rule.roundName}
+                      <span className="text-muted-foreground font-normal ml-2">
+                        ({rule.choices === 1 ? `${rule.pointsPerChoice[0]} pts` : `${rule.pointsPerChoice.join("/")} pts`})
+                      </span>
+                    </h3>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                      {REGIONS.map((region) => (
+                        <div key={region} className="rounded-lg border p-2.5">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">{region}</p>
+                          <div className="space-y-1">
+                            {Array.from({ length: gamesPerRegion }, (_, i) => i + 1).map((g) => {
+                              const gameId = `${region}-r${rule.round}-g${g}`;
+                              const pick = picks.get(gameId);
+                              const hasMinPicks = pick?.choices && pick.choices.length >= rule.choices;
+                              return (
+                                <div key={g} className="flex items-center gap-1.5 text-xs">
+                                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasMinPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
+                                    {hasMinPicks ? "✓" : "!"}
+                                  </span>
+                                  <span className="text-muted-foreground">G{g}:</span>
+                                  {pick?.choices?.length ? (
+                                    <span className="font-medium truncate">
+                                      {pick.choices.map((id, idx) => {
+                                        const team = SAMPLE_TEAMS.find((t) => t.id === id);
+                                        return team ? (idx > 0 ? `, ${team.name}` : team.name) : "";
+                                      }).join("")}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground italic">No pick</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Final Four */}
+              <div>
+                <h3 className="text-sm font-bold mb-2 text-orange-500">
+                  Round 5: Final Four
+                  <span className="text-muted-foreground font-normal ml-2">(25/15/10/5 pts)</span>
+                </h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {[1, 2].map((g) => {
+                    const gameId = `final-four-r5-g${g}`;
+                    const pick = picks.get(gameId);
+                    const hasPicks = pick?.choices && pick.choices.length >= 4;
+                    return (
+                      <div key={g} className="rounded-lg border p-2.5">
+                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Game {g}</p>
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
+                            {hasPicks ? "✓" : "!"}
+                          </span>
+                          {pick?.choices?.length ? (
+                            <span className="font-medium">
+                              {pick.choices.map((id, idx) => {
+                                const team = SAMPLE_TEAMS.find((t) => t.id === id);
+                                return team ? `${idx + 1}. ${team.name}` : "";
+                              }).join(", ")}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground italic">No picks yet</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Championship */}
+              <div>
+                <h3 className="text-sm font-bold mb-2 text-orange-500">
+                  Round 6: Championship
+                  <span className="text-muted-foreground font-normal ml-2">(35/25/15/10/5 pts)</span>
+                </h3>
+                <div className="rounded-lg border p-2.5 max-w-md">
+                  {(() => {
+                    const pick = picks.get("championship-r6-g1");
+                    const hasPicks = pick?.choices && pick.choices.length >= 5;
+                    return (
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
+                          {hasPicks ? "✓" : "!"}
+                        </span>
+                        {pick?.choices?.length ? (
+                          <span className="font-medium">
+                            {pick.choices.map((id, idx) => {
+                              const team = SAMPLE_TEAMS.find((t) => t.id === id);
+                              return team ? `${idx + 1}. ${team.name}` : "";
+                            }).join(", ")}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground italic">No picks yet</span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Tiebreaker */}
+              <div>
+                <h3 className="text-sm font-bold mb-1 text-orange-500">Tiebreaker</h3>
+                <p className="text-xs">
+                  {tiebreaker !== "" ? (
+                    <span className="font-medium">Total combined score: {tiebreaker}</span>
+                  ) : (
+                    <span className="text-muted-foreground italic">Not set</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bracket Name & Person Selection */}
       <Card>
@@ -1045,22 +1197,43 @@ function NewBracketContent() {
         <CardContent>
           {/* Round Navigation */}
           <div className="flex flex-col gap-3 mb-4">
-            {/* Round Buttons with Labels */}
-            <div className="flex justify-center gap-1 sm:gap-1.5">
+            {/* Mobile: compact pill row + round name label */}
+            <div className="sm:hidden flex flex-col items-center gap-1.5">
+              <div className="flex justify-center gap-2">
+                {SCORING_RULES.map((rule) => (
+                  <button
+                    key={rule.round}
+                    onClick={() => setCurrentRound(rule.round)}
+                    className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
+                      currentRound === rule.round
+                        ? "bg-orange-500 text-white shadow-md"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {rule.round}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">
+                {scoringRule?.roundName}
+              </span>
+            </div>
+            {/* Desktop: full round buttons with labels */}
+            <div className="hidden sm:flex justify-center gap-1.5">
               {SCORING_RULES.map((rule) => (
                 <Button
                   key={rule.round}
                   variant={currentRound === rule.round ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentRound(rule.round)}
-                  className={`flex flex-col items-center h-auto py-1.5 px-2 sm:px-3 ${
+                  className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
                       ? "bg-orange-500 hover:bg-orange-600"
                       : ""
                   }`}
                 >
                   <span className="text-xs font-bold">R{rule.round}</span>
-                  <span className="text-[9px] sm:text-[10px] font-normal leading-tight">{rule.roundName}</span>
+                  <span className="text-[10px] font-normal leading-tight">{rule.roundName}</span>
                 </Button>
               ))}
             </div>
@@ -1320,8 +1493,32 @@ function NewBracketContent() {
           
           {/* Round Navigation */}
           <div className="flex flex-col gap-3">
-            {/* Round Buttons with Labels */}
-            <div className="flex justify-center gap-1 sm:gap-1.5">
+            {/* Mobile: compact pill row + round name label */}
+            <div className="sm:hidden flex flex-col items-center gap-1.5">
+              <div className="flex justify-center gap-2">
+                {SCORING_RULES.map((rule) => (
+                  <button
+                    key={rule.round}
+                    onClick={() => {
+                      setCurrentRound(rule.round);
+                      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
+                    }}
+                    className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
+                      currentRound === rule.round
+                        ? "bg-orange-500 text-white shadow-md"
+                        : "bg-muted text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {rule.round}
+                  </button>
+                ))}
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">
+                {scoringRule?.roundName}
+              </span>
+            </div>
+            {/* Desktop: full round buttons with labels */}
+            <div className="hidden sm:flex justify-center gap-1.5">
               {SCORING_RULES.map((rule) => (
                 <Button
                   key={rule.round}
@@ -1331,14 +1528,14 @@ function NewBracketContent() {
                     setCurrentRound(rule.round);
                     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
                   }}
-                  className={`flex flex-col items-center h-auto py-1.5 px-2 sm:px-3 ${
+                  className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
                       ? "bg-orange-500 hover:bg-orange-600"
                       : ""
                   }`}
                 >
                   <span className="text-xs font-bold">R{rule.round}</span>
-                  <span className="text-[9px] sm:text-[10px] font-normal leading-tight">{rule.roundName}</span>
+                  <span className="text-[10px] font-normal leading-tight">{rule.roundName}</span>
                 </Button>
               ))}
             </div>
@@ -1400,7 +1597,7 @@ function NewBracketContent() {
             </div>
 
             <div className="space-y-3">
-              <h4 className="font-medium text-slate-900">Payment Options:</h4>
+              <h4 className="font-medium">Payment Options:</h4>
               
               {/* Venmo */}
               <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">

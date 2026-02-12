@@ -22,9 +22,13 @@ import {
   Copy,
   ExternalLink,
   Upload,
+  LayoutGrid,
+  GitBranch,
+  Download,
 } from "lucide-react";
 import Link from "next/link";
-import { GameCard } from "@/components/bracket";
+import { GameCard, DesktopBracketView } from "@/components/bracket";
+import { generateBracketPDF } from "@/lib/generateBracketPDF";
 import {
   Dialog,
   DialogContent,
@@ -59,7 +63,7 @@ interface Team {
 // 2025 NCAA Tournament Team Data with ESPN logo URLs
 // Regions: South, West, East, Midwest
 const TEAM_DATA: { name: string; logo: string; record: string }[] = [
-  // SOUTH REGION (seeds 1-16)
+  // SOUTH REGION (seeds 1-16) — Atlanta
   { name: "Auburn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2.png", record: "30-5" },
   { name: "Michigan State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png", record: "26-9" },
   { name: "Iowa State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png", record: "27-7" },
@@ -70,22 +74,22 @@ const TEAM_DATA: { name: string; logo: string; record: string }[] = [
   { name: "Louisville", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png", record: "21-12" },
   { name: "Creighton", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/156.png", record: "20-13" },
   { name: "New Mexico", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/167.png", record: "23-10" },
+  { name: "San Diego State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/21.png", record: "22-11" },
   { name: "UC San Diego", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/28.png", record: "22-10" },
-  { name: "UC Irvine", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/300.png", record: "24-11" },
   { name: "Yale", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/43.png", record: "23-8" },
   { name: "Lipscomb", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/288.png", record: "26-8" },
   { name: "Bryant", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2803.png", record: "22-12" },
   { name: "Alabama State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2011.png", record: "18-15" },
-  // WEST REGION (seeds 1-16)
+  // WEST REGION (seeds 1-16) — San Francisco
   { name: "Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png", record: "28-7" },
   { name: "St. John's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2599.png", record: "26-8" },
   { name: "Texas Tech", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png", record: "25-9" },
-  { name: "Arizona", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png", record: "24-10" },
-  { name: "Clemson", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/228.png", record: "23-11" },
-  { name: "Illinois", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png", record: "22-12" },
-  { name: "Kansas State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2306.png", record: "21-12" },
+  { name: "Maryland", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/120.png", record: "24-10" },
+  { name: "Memphis", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/235.png", record: "23-11" },
+  { name: "Missouri", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png", record: "22-12" },
+  { name: "Kansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png", record: "25-9" },
   { name: "UConn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/41.png", record: "20-13" },
-  { name: "Baylor", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/239.png", record: "19-14" },
+  { name: "Oklahoma", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png", record: "21-12" },
   { name: "Arkansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/8.png", record: "21-13" },
   { name: "Drake", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2181.png", record: "27-6" },
   { name: "Colorado State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/36.png", record: "24-10" },
@@ -93,16 +97,16 @@ const TEAM_DATA: { name: string; logo: string; record: string }[] = [
   { name: "UNC Wilmington", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/350.png", record: "24-9" },
   { name: "Omaha", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2437.png", record: "22-12" },
   { name: "Norfolk State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2450.png", record: "20-14" },
-  // EAST REGION (seeds 1-16)
+  // EAST REGION (seeds 1-16) — Newark
   { name: "Duke", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", record: "29-6" },
   { name: "Alabama", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png", record: "27-7" },
   { name: "Wisconsin", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/275.png", record: "26-8" },
-  { name: "Tennessee", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png", record: "25-9" },
-  { name: "Kentucky", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/96.png", record: "24-10" },
+  { name: "Arizona", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png", record: "24-10" },
+  { name: "Oregon", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png", record: "24-10" },
   { name: "BYU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png", record: "23-11" },
   { name: "Saint Mary's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2608.png", record: "26-7" },
   { name: "Mississippi State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/344.png", record: "21-12" },
-  { name: "Georgia", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png", record: "20-13" },
+  { name: "Baylor", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/239.png", record: "19-14" },
   { name: "Vanderbilt", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/238.png", record: "21-13" },
   { name: "VCU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2670.png", record: "23-10" },
   { name: "Liberty", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2335.png", record: "25-9" },
@@ -110,23 +114,23 @@ const TEAM_DATA: { name: string; logo: string; record: string }[] = [
   { name: "Montana", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/149.png", record: "22-11" },
   { name: "Robert Morris", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2523.png", record: "21-13" },
   { name: "American", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/44.png", record: "19-14" },
-  // MIDWEST REGION (seeds 1-16)
+  // MIDWEST REGION (seeds 1-16) — Indianapolis
   { name: "Houston", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/248.png", record: "31-4" },
+  { name: "Tennessee", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png", record: "25-9" },
+  { name: "Kentucky", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/96.png", record: "24-10" },
   { name: "Purdue", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2509.png", record: "28-6" },
-  { name: "Kansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png", record: "25-9" },
-  { name: "Gonzaga", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2250.png", record: "27-7" },
-  { name: "Oregon", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png", record: "24-10" },
-  { name: "Missouri", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png", record: "22-12" },
+  { name: "Clemson", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/228.png", record: "23-11" },
+  { name: "Illinois", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png", record: "22-12" },
   { name: "UCLA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/26.png", record: "23-11" },
-  { name: "Memphis", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/235.png", record: "21-12" },
-  { name: "Texas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png", record: "20-14" },
+  { name: "Gonzaga", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2250.png", record: "27-7" },
+  { name: "Georgia", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png", record: "20-13" },
   { name: "Utah State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/328.png", record: "26-8" },
-  { name: "Xavier", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2752.png", record: "22-12" },
+  { name: "Texas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png", record: "20-14" },
+  { name: "McNeese", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2377.png", record: "28-5" },
   { name: "High Point", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2272.png", record: "27-6" },
   { name: "Troy", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2653.png", record: "24-10" },
   { name: "Wofford", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2747.png", record: "23-11" },
   { name: "SIU Edwardsville", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2565.png", record: "21-13" },
-  { name: "SIUE", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2565.png", record: "18-16" },
 ];
 
 // Generate sample teams for the bracket
@@ -183,6 +187,7 @@ function NewBracketContent() {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [userPoolId, setUserPoolId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"card" | "bracket">("card");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -519,6 +524,17 @@ function NewBracketContent() {
     return { game: 1, eligibleTeams: championshipTeams };
   };
 
+  // Wrapper for desktop bracket view - get Final Four teams by semifinal number
+  const getFinalFourTeams = (semi: 1 | 2): Team[] => {
+    const matchups = getFinalFourMatchups();
+    return matchups[semi - 1]?.eligibleTeams || [];
+  };
+
+  // Wrapper for desktop bracket view - get Championship teams
+  const getChampionshipTeamsForDesktop = (): Team[] => {
+    return getChampionshipMatchup().eligibleTeams;
+  };
+
   // Clear picks - full bracket or current round
   const handleClearPicks = (mode: "full" | "round") => {
     if (mode === "full") {
@@ -543,9 +559,16 @@ function NewBracketContent() {
     setShowClearDialog(false);
   };
 
+  // Parse round number from gameId string
+  const getRoundFromGameId = (gameId: string): number => {
+    const match = gameId.match(/-r(\d+)-/);
+    return match ? parseInt(match[1]) : currentRound;
+  };
+
   const handlePick = (gameId: string, teamId: string, choiceRank: number) => {
     const currentPick = picks.get(gameId);
-    const maxChoices = getChoicesForRound(currentRound);
+    const round = getRoundFromGameId(gameId);
+    const maxChoices = getChoicesForRound(round);
     
     let newChoices: string[] = currentPick?.choices || [];
     
@@ -561,7 +584,7 @@ function NewBracketContent() {
 
     setPicks(new Map(picks.set(gameId, {
       gameId,
-      round: currentRound,
+      round,
       choices: newChoices,
     })));
   };
@@ -816,8 +839,78 @@ function NewBracketContent() {
         </CardContent>
       </Card>
 
-      {/* Round Selection */}
-      <Card>
+      {/* View Mode Toggle + Download (desktop only) */}
+      <div className="hidden lg:flex justify-end gap-1">
+        <Button
+          variant={viewMode === "card" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("card")}
+          className={viewMode === "card" ? "bg-orange-500 hover:bg-orange-600" : ""}
+        >
+          <LayoutGrid className="mr-1.5 h-4 w-4" />
+          Card View
+        </Button>
+        <Button
+          variant={viewMode === "bracket" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setViewMode("bracket")}
+          className={viewMode === "bracket" ? "bg-orange-500 hover:bg-orange-600" : ""}
+        >
+          <GitBranch className="mr-1.5 h-4 w-4" />
+          Bracket View
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const doc = generateBracketPDF(SAMPLE_TEAMS);
+            doc.save("picknroll-bracket-2025.pdf");
+          }}
+        >
+          <Download className="mr-1.5 h-4 w-4" />
+          Download PDF
+        </Button>
+      </div>
+
+      {/* Desktop Bracket View */}
+      {viewMode === "bracket" && (
+        <div className="hidden lg:block">
+          <Card>
+            <CardContent className="pt-6">
+              <DesktopBracketView
+                teams={SAMPLE_TEAMS}
+                picks={picks}
+                onPick={handlePick}
+                getEligibleTeamsForGame={getEligibleTeamsForGame}
+                getFinalFourTeams={getFinalFourTeams}
+                getChampionshipTeams={getChampionshipTeamsForDesktop}
+              />
+              {/* Tiebreaker in desktop view */}
+              <div className="max-w-md mx-auto mt-6">
+                <Label htmlFor="tiebreaker-desktop" className="text-sm font-medium">
+                  Tiebreaker: Total Combined Score
+                </Label>
+                <p className="text-xs text-slate-500 mt-1 mb-2">
+                  Predict the total combined points of both teams in the championship game
+                </p>
+                <Input
+                  id="tiebreaker-desktop"
+                  type="number"
+                  min="0"
+                  max="300"
+                  placeholder="Enter total points (e.g., 145)"
+                  value={tiebreaker}
+                  onChange={(e) => setTiebreaker(e.target.value === "" ? "" : parseInt(e.target.value))}
+                  className="w-full"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Card-based Round Selection (mobile + card mode on desktop) */}
+      <Card className={viewMode === "bracket" ? "lg:hidden" : ""}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -842,22 +935,23 @@ function NewBracketContent() {
         </CardHeader>
         <CardContent>
           {/* Round Navigation */}
-          <div className="flex flex-col gap-3 mb-6">
-            {/* Round Numbers */}
-            <div className="flex justify-center gap-1 sm:gap-2">
+          <div className="flex flex-col gap-3 mb-4">
+            {/* Round Buttons with Labels */}
+            <div className="flex justify-center gap-1 sm:gap-1.5">
               {SCORING_RULES.map((rule) => (
                 <Button
                   key={rule.round}
                   variant={currentRound === rule.round ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentRound(rule.round)}
-                  className={
+                  className={`flex flex-col items-center h-auto py-1.5 px-2 sm:px-3 ${
                     currentRound === rule.round
-                      ? "bg-orange-500 hover:bg-orange-600 px-3"
-                      : "px-3"
-                  }
+                      ? "bg-orange-500 hover:bg-orange-600"
+                      : ""
+                  }`}
                 >
-                  {rule.round}
+                  <span className="text-xs font-bold">R{rule.round}</span>
+                  <span className="text-[9px] sm:text-[10px] font-normal leading-tight">{rule.roundName}</span>
                 </Button>
               ))}
             </div>
@@ -904,13 +998,16 @@ function NewBracketContent() {
               value={currentRegion}
               onValueChange={(v) => setCurrentRegion(v as Region)}
             >
-              <TabsList className="grid w-full grid-cols-4 mb-6">
-                {REGIONS.map((region) => (
-                  <TabsTrigger key={region} value={region}>
-                    {region}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+              <div className="mb-4">
+                <p className="text-xs text-center text-slate-500 mb-1.5 font-medium uppercase tracking-wide">Region</p>
+                <TabsList className="grid w-full grid-cols-4">
+                  {REGIONS.map((region) => (
+                    <TabsTrigger key={region} value={region}>
+                      {region}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {REGIONS.map((region) => (
                 <TabsContent key={region} value={region}>
@@ -1074,11 +1171,12 @@ function NewBracketContent() {
       </Card>
 
       {/* Bottom Round Navigation */}
-      <Card>
+      <Card className={viewMode === "bracket" ? "lg:hidden" : ""}>
         <CardContent className="py-4 space-y-4">
           {/* Region/Division Tabs (for rounds 1-4) */}
           {currentRound <= 4 && (
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wide">Region</p>
               <div className="inline-flex rounded-lg border p-1 bg-muted">
                 {REGIONS.map((region) => (
                   <Button
@@ -1104,8 +1202,8 @@ function NewBracketContent() {
           
           {/* Round Navigation */}
           <div className="flex flex-col gap-3">
-            {/* Round Numbers */}
-            <div className="flex justify-center gap-1 sm:gap-2">
+            {/* Round Buttons with Labels */}
+            <div className="flex justify-center gap-1 sm:gap-1.5">
               {SCORING_RULES.map((rule) => (
                 <Button
                   key={rule.round}
@@ -1115,13 +1213,14 @@ function NewBracketContent() {
                     setCurrentRound(rule.round);
                     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
                   }}
-                  className={
+                  className={`flex flex-col items-center h-auto py-1.5 px-2 sm:px-3 ${
                     currentRound === rule.round
-                      ? "bg-orange-500 hover:bg-orange-600 px-3"
-                      : "px-3"
-                  }
+                      ? "bg-orange-500 hover:bg-orange-600"
+                      : ""
+                  }`}
                 >
-                  {rule.round}
+                  <span className="text-xs font-bold">R{rule.round}</span>
+                  <span className="text-[9px] sm:text-[10px] font-normal leading-tight">{rule.roundName}</span>
                 </Button>
               ))}
             </div>

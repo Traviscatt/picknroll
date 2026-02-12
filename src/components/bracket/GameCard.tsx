@@ -62,7 +62,14 @@ export function GameCard({
     <Card className="overflow-hidden">
       <CardHeader className="py-3 bg-slate-50 border-b">
         <CardTitle className="text-sm flex items-center justify-between">
-          <span>Game {gameNumber}</span>
+          <div>
+            <span>Game {gameNumber}</span>
+            {maxChoices >= 2 && (
+              <p className="text-[11px] font-normal text-slate-500 mt-0.5">
+                Pick your {["1st", "2nd", "3rd", "4th", "5th"].slice(0, maxChoices).join(", ").replace(/, ([^,]*)$/, ", & $1")} choice{maxChoices > 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
           <span className="text-xs font-normal text-slate-500">
             {ROUND_NAMES[round]} · {region}
           </span>

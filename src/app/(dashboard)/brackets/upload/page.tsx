@@ -140,7 +140,7 @@ export default function UploadBracketPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--team-primary)]" />
       </div>
     );
   }
@@ -162,7 +162,7 @@ export default function UploadBracketPage() {
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
             <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+              <Sparkles className="h-5 w-5 text-[var(--team-primary)]" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900">AI-Powered Extraction</h3>
@@ -245,7 +245,7 @@ export default function UploadBracketPage() {
                   {file?.type === 'application/pdf' ? (
                     <FileText className="h-8 w-8 text-red-500" />
                   ) : (
-                    <FileImage className="h-8 w-8 text-orange-500" />
+                    <FileImage className="h-8 w-8 text-[var(--team-primary)]" />
                   )}
                   <div>
                     <p className="font-medium text-sm">{file.name}</p>
@@ -286,7 +286,7 @@ export default function UploadBracketPage() {
                 <Button
                   onClick={handleProcess}
                   disabled={isProcessing || uploadStatus === "success"}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                  className="flex-1 bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
                 >
                   {isProcessing ? (
                     <>

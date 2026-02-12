@@ -403,7 +403,7 @@ function NewBracketContent() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--team-primary)]" />
       </div>
     );
   }
@@ -877,7 +877,7 @@ function NewBracketContent() {
             variant={showSummary ? "default" : "outline"}
             size="sm"
             onClick={() => setShowSummary(!showSummary)}
-            className={showSummary ? "bg-orange-500 hover:bg-orange-600" : ""}
+            className={showSummary ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]" : ""}
           >
             <ClipboardList className="mr-2 h-4 w-4" />
             Review Picks
@@ -894,7 +894,7 @@ function NewBracketContent() {
           </Button>
           <Button
             size="sm"
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
             onClick={() => {
               if (!validation.isComplete) {
                 toast.error(`Bracket incomplete: ${validation.missingCount} items missing`);
@@ -975,7 +975,7 @@ function NewBracketContent() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-orange-500" />
+              <ClipboardList className="h-5 w-5 text-[var(--team-primary)]" />
               Your Picks Summary
             </CardTitle>
             <CardDescription>Review all your picks before submitting</CardDescription>
@@ -987,7 +987,7 @@ function NewBracketContent() {
                 const gamesPerRegion = rule.round === 1 ? 8 : rule.round === 2 ? 4 : rule.round === 3 ? 2 : 1;
                 return (
                   <div key={rule.round}>
-                    <h3 className="text-sm font-bold mb-2 text-orange-500">
+                    <h3 className="text-sm font-bold mb-2 text-[var(--team-primary)]">
                       Round {rule.round}: {rule.roundName}
                       <span className="text-muted-foreground font-normal ml-2">
                         ({rule.choices === 1 ? `${rule.pointsPerChoice[0]} pts` : `${rule.pointsPerChoice.join("/")} pts`})
@@ -1031,7 +1031,7 @@ function NewBracketContent() {
 
               {/* Final Four */}
               <div>
-                <h3 className="text-sm font-bold mb-2 text-orange-500">
+                <h3 className="text-sm font-bold mb-2 text-[var(--team-primary)]">
                   Round 5: Final Four
                   <span className="text-muted-foreground font-normal ml-2">(25/15/10/5 pts)</span>
                 </h3>
@@ -1066,7 +1066,7 @@ function NewBracketContent() {
 
               {/* Championship */}
               <div>
-                <h3 className="text-sm font-bold mb-2 text-orange-500">
+                <h3 className="text-sm font-bold mb-2 text-[var(--team-primary)]">
                   Round 6: Championship
                   <span className="text-muted-foreground font-normal ml-2">(35/25/15/10/5 pts)</span>
                 </h3>
@@ -1097,7 +1097,7 @@ function NewBracketContent() {
 
               {/* Tiebreaker */}
               <div>
-                <h3 className="text-sm font-bold mb-1 text-orange-500">Tiebreaker</h3>
+                <h3 className="text-sm font-bold mb-1 text-[var(--team-primary)]">Tiebreaker</h3>
                 <p className="text-xs">
                   {tiebreaker !== "" ? (
                     <span className="font-medium">Total combined score: {tiebreaker}</span>
@@ -1149,7 +1149,7 @@ function NewBracketContent() {
               </Select>
               {familyMembers.length === 0 && (
                 <p className="text-xs text-slate-500">
-                  <a href="/settings/family" className="text-orange-500 hover:underline">
+                  <a href="/settings/family" className="text-[var(--team-primary)] hover:underline">
                     Add family members
                   </a>{" "}
                   to create brackets for them
@@ -1166,7 +1166,7 @@ function NewBracketContent() {
           variant={viewMode === "card" ? "default" : "outline"}
           size="sm"
           onClick={() => setViewMode("card")}
-          className={viewMode === "card" ? "bg-orange-500 hover:bg-orange-600" : ""}
+          className={viewMode === "card" ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]" : ""}
         >
           <LayoutGrid className="mr-1.5 h-4 w-4" />
           Card View
@@ -1175,7 +1175,7 @@ function NewBracketContent() {
           variant={viewMode === "bracket" ? "default" : "outline"}
           size="sm"
           onClick={() => setViewMode("bracket")}
-          className={viewMode === "bracket" ? "bg-orange-500 hover:bg-orange-600" : ""}
+          className={viewMode === "bracket" ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]" : ""}
         >
           <GitBranch className="mr-1.5 h-4 w-4" />
           Bracket View
@@ -1246,7 +1246,7 @@ function NewBracketContent() {
                 )}
               </CardDescription>
             </div>
-            <Badge variant="outline" className="text-orange-500 border-orange-500">
+            <Badge variant="outline" className="text-[var(--team-primary)] border-[var(--team-primary)]">
               <Info className="mr-1 h-3 w-3" />
               {scoringRule?.choices === 1
                 ? `${scoringRule.pointsPerChoice[0]} pts`
@@ -1266,7 +1266,7 @@ function NewBracketContent() {
                     onClick={() => goToRound(rule.round)}
                     className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
                       currentRound === rule.round
-                        ? "bg-orange-500 text-white shadow-md"
+                        ? "bg-[var(--team-primary)] text-white shadow-md"
                         : "bg-muted text-muted-foreground hover:bg-accent"
                     }`}
                   >
@@ -1288,7 +1288,7 @@ function NewBracketContent() {
                   onClick={() => goToRound(rule.round)}
                   className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
-                      ? "bg-orange-500 hover:bg-orange-600"
+                      ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
                       : ""
                   }`}
                 >
@@ -1550,7 +1550,7 @@ function NewBracketContent() {
                     onClick={() => goToRegion(region, true)}
                     className={
                       currentRegion === region
-                        ? "bg-orange-500 hover:bg-orange-600"
+                        ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
                         : ""
                     }
                   >
@@ -1572,7 +1572,7 @@ function NewBracketContent() {
                   onClick={() => goToRound(rule.round, true)}
                   className={`flex flex-col items-center h-auto py-1.5 px-3 ${
                     currentRound === rule.round
-                      ? "bg-orange-500 hover:bg-orange-600"
+                      ? "bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
                       : ""
                   }`}
                 >
@@ -1645,7 +1645,7 @@ function NewBracketContent() {
                 onClick={() => goToRound(rule.round, true)}
                 className={`w-8 h-8 rounded-full text-xs font-bold transition-colors ${
                   currentRound === rule.round
-                    ? "bg-orange-500 text-white shadow-md"
+                    ? "bg-[var(--team-primary)] text-white shadow-md"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -1781,7 +1781,7 @@ function NewBracketContent() {
               I&apos;ll Pay Later
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
               onClick={() => {
                 setShowPaymentModal(false);
                 router.push("/brackets");
@@ -1847,7 +1847,7 @@ function NewBracketContent() {
 
 export default function NewBracketPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--team-primary)]" /></div>}>
       <NewBracketContent />
     </Suspense>
   );

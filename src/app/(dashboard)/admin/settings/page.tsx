@@ -123,7 +123,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
         <Button
-          className="bg-orange-500 hover:bg-orange-600"
+          className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
           onClick={handleSave}
           disabled={isSaving}
         >

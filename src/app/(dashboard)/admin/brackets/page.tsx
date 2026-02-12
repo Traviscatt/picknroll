@@ -351,7 +351,7 @@ export default function AdminBracketsPage() {
                       </Button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className="font-bold text-orange-500">
+                      <span className="font-bold text-[var(--team-primary)]">
                         {bracket.totalScore + bracket.bonusScore}
                       </span>
                       {bracket.bonusScore > 0 && (
@@ -434,7 +434,7 @@ export default function AdminBracketsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
               onClick={handleUpdateScore}
             >
               Save Changes

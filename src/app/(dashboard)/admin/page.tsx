@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-500" />
+            <DollarSign className="h-4 w-4 text-[var(--team-primary)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">

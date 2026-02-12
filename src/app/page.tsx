@@ -56,18 +56,10 @@ export default async function Home() {
                 className="h-14 px-8 text-lg bg-orange-500 hover:bg-orange-600"
                 asChild
               >
-                <Link href="/register">
-                  Get Started Free
+                <Link href="/join">
+                  Join a Pool
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-lg"
-                asChild
-              >
-                <Link href="/join">Join a Pool</Link>
               </Button>
             </div>
           </div>
@@ -267,21 +259,13 @@ export default async function Home() {
             Entry fee: <span className="font-bold text-white">$5.00</span> •
             Deadline: Thursday at Noon (Before Tipoff)
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex items-center justify-center">
             <Button
               size="lg"
               className="h-14 px-8 text-lg bg-white text-orange-500 hover:bg-orange-50"
               asChild
             >
-              <Link href="/register">Create Your Bracket</Link>
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-14 px-8 text-lg border-white text-white hover:bg-orange-600"
-              asChild
-            >
-              <Link href="/join">Join with Code</Link>
+              <Link href="/join">Join a Pool</Link>
             </Button>
           </div>
         </div>

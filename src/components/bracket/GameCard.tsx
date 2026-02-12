@@ -52,6 +52,9 @@ export function GameCard({
     } else if (currentChoiceCount < maxChoices) {
       // Add as next choice
       onPick(teamId, currentChoiceCount + 1);
+    } else if (maxChoices === 1) {
+      // Single-choice game already has a pick: replace it
+      onPick(teamId, 1);
     }
   };
 

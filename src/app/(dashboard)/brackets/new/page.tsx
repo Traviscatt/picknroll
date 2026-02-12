@@ -196,6 +196,43 @@ function NewBracketContent() {
   const [showSummary, setShowSummary] = useState(false);
   const slideDirection = useRef(0); // -1 = left, 1 = right
 
+  // Keyboard navigation: arrow keys for rounds/regions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't capture if user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+Right: next region
+          if (currentRound <= 4) {
+            const idx = REGIONS.indexOf(currentRegion);
+            if (idx < REGIONS.length - 1) goToRegion(REGIONS[idx + 1]);
+          }
+        } else {
+          // Right: next round
+          if (currentRound < 6) goToRound(currentRound + 1);
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Shift+Left: previous region
+          if (currentRound <= 4) {
+            const idx = REGIONS.indexOf(currentRegion);
+            if (idx > 0) goToRegion(REGIONS[idx - 1]);
+          }
+        } else {
+          // Left: previous round
+          if (currentRound > 1) goToRound(currentRound - 1);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentRound, currentRegion]);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");

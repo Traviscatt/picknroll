@@ -144,7 +144,7 @@ export default function DashboardPage() {
               Upload Bracket
             </Link>
           </Button>
-          <Button asChild className="bg-orange-500 hover:bg-orange-600">
+          <Button asChild className="bg-primary hover:bg-primary/90">
             <Link href="/brackets/new">
               <Plus className="mr-2 h-4 w-4" />
               New Bracket
@@ -155,10 +155,10 @@ export default function DashboardPage() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="border-t-[3px] border-t-team-secondary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">My Brackets</CardTitle>
-            <Trophy className="h-4 w-4 text-orange-500" />
+            <Trophy className="h-4 w-4 text-team-secondary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{brackets.length}</div>
@@ -167,10 +167,10 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-t-[3px] border-t-team-secondary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Best Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
+            <TrendingUp className="h-4 w-4 text-team-secondary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{bestScore}</div>
@@ -179,10 +179,10 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-t-[3px] border-t-team-secondary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pool</CardTitle>
-            <Users className="h-4 w-4 text-orange-500" />
+            <Users className="h-4 w-4 text-team-secondary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -193,10 +193,10 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-t-[3px] border-t-team-secondary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Payment</CardTitle>
-            <DollarSign className="h-4 w-4 text-orange-500" />
+            <DollarSign className="h-4 w-4 text-team-secondary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$5.00</div>
@@ -204,7 +204,7 @@ export default function DashboardPage() {
               {hasPaidBracket ? (
                 <Badge className="bg-green-500">Paid</Badge>
               ) : (
-                <Badge variant="outline" className="text-orange-500 border-orange-500">
+                <Badge variant="outline" className="text-primary border-primary">
                   Unpaid
                 </Badge>
               )}
@@ -214,10 +214,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Deadline Alert */}
-      <Card className="border-orange-200 bg-orange-50">
+      <Card className="border-accent bg-secondary">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-orange-500" />
+            <Calendar className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Submission Deadline</CardTitle>
           </div>
         </CardHeader>
@@ -237,7 +237,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-orange-500" />
+              <Trophy className="h-5 w-5 text-primary" />
               My Brackets
             </CardTitle>
             <CardDescription>
@@ -249,7 +249,7 @@ export default function DashboardPage() {
               <div className="text-center py-8 text-slate-500">
                 <Trophy className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                 <p className="mb-4">You haven&apos;t created any brackets yet</p>
-                <Button asChild className="bg-orange-500 hover:bg-orange-600">
+                <Button asChild className="bg-primary hover:bg-primary/90">
                   <Link href="/brackets/new">
                     Create Your First Bracket
                     <ChevronRight className="ml-2 h-4 w-4" />
@@ -266,7 +266,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-slate-500">{bracket.name}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-orange-500">{bracket.totalScore} pts</span>
+                        <span className="text-sm font-bold text-primary">{bracket.totalScore} pts</span>
                         <Badge
                           variant={bracket.status === "DRAFT" ? "outline" : "default"}
                           className={bracket.status === "SUBMITTED" ? "bg-blue-500" : bracket.status === "PAID" ? "bg-green-500" : ""}
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                   </Link>
                 ))}
                 {brackets.length > 5 && (
-                  <Link href="/brackets" className="block text-center text-sm text-orange-500 hover:underline pt-2">
+                  <Link href="/brackets" className="block text-center text-sm text-primary hover:underline pt-2">
                     View all {brackets.length} brackets
                   </Link>
                 )}
@@ -293,7 +293,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-orange-500" />
+              <Users className="h-5 w-5 text-primary" />
               My Pool
             </CardTitle>
             <CardDescription>

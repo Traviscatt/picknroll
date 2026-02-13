@@ -82,7 +82,7 @@ export default function BracketDetailPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -148,7 +148,7 @@ export default function BracketDetailPage() {
         </div>
         <div className="flex gap-3">
           {bracket.status === "DRAFT" && (
-            <Button asChild className="bg-orange-500 hover:bg-orange-600">
+            <Button asChild className="bg-primary hover:bg-primary/90">
               <Link href={`/brackets/${bracket.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
                 Edit Bracket
@@ -166,8 +166,8 @@ export default function BracketDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-orange-500" />
-              <span className="text-3xl font-bold text-orange-500">{bracket.totalScore}</span>
+              <Trophy className="h-5 w-5 text-primary" />
+              <span className="text-3xl font-bold text-primary">{bracket.totalScore}</span>
             </div>
           </CardContent>
         </Card>
@@ -224,7 +224,7 @@ export default function BracketDetailPage() {
               <Trophy className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p>No picks have been saved for this bracket yet.</p>
               {bracket.status === "DRAFT" && (
-                <Button asChild className="mt-4 bg-orange-500 hover:bg-orange-600">
+                <Button asChild className="mt-4 bg-primary hover:bg-primary/90">
                   <Link href={`/brackets/${bracket.id}/edit`}>
                     <Edit className="mr-2 h-4 w-4" />
                     Start Filling Out Bracket
@@ -246,7 +246,7 @@ export default function BracketDetailPage() {
                       <p className="font-medium text-sm text-slate-700">
                         Round {round}: {roundNames[round - 1]}
                       </p>
-                      <p className="text-2xl font-bold text-orange-500">
+                      <p className="text-2xl font-bold text-primary">
                         {roundPicks.length} picks
                       </p>
                     </div>

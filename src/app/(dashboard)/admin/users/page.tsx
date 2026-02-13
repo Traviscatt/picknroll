@@ -213,8 +213,8 @@ export default function AdminUsersPage() {
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                          <User className="h-4 w-4 text-orange-600" />
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
                         </div>
                         <span className="font-medium">{user.name}</span>
                       </div>

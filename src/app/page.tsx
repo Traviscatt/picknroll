@@ -29,21 +29,21 @@ export default async function Home() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-orange-100 via-transparent to-transparent opacity-60" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-accent via-transparent to-transparent opacity-60" />
         <div className="container relative mx-auto px-4 py-20 md:py-32">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-primary">
               <Trophy className="h-4 w-4" />
               NCAA Tournament 2025
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
               From Bracket to{" "}
-              <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-accent to-accent bg-clip-text text-transparent">
                 Bankroll
               </span>
             </h1>
             <p className="mb-8 text-xl text-slate-600 md:text-2xl">
-              Pick<span className="font-bold text-orange-500">N</span>Roll!
+              Pick<span className="font-bold text-primary">N</span>Roll!
             </p>
             <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-600">
               The ultimate NCAA Tournament bracket pool with our unique multi-choice
@@ -53,7 +53,7 @@ export default async function Home() {
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 size="lg"
-                className="h-14 px-8 text-lg bg-orange-500 hover:bg-orange-600"
+                className="h-14 px-8 text-lg bg-primary hover:bg-primary/90"
                 asChild
               >
                 <Link href="/join">
@@ -67,7 +67,7 @@ export default async function Home() {
       </section>
 
       {/* Scoring Section */}
-      <section className="py-20 bg-slate-900 text-white">
+      <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">
@@ -79,9 +79,9 @@ export default async function Home() {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-slate-800 border-accent">
               <CardContent className="p-6">
-                <div className="text-orange-500 font-bold text-sm mb-2">
+                <div className="text-primary font-bold text-sm mb-2">
                   ROUNDS 1 & 2
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
@@ -92,20 +92,20 @@ export default async function Home() {
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="bg-slate-700 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-orange-500">2</span>
+                    <span className="text-2xl font-bold text-primary">2</span>
                     <span className="text-slate-400 text-sm ml-1">pts</span>
                   </div>
                   <div className="bg-slate-700 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-orange-500">5</span>
+                    <span className="text-2xl font-bold text-primary">5</span>
                     <span className="text-slate-400 text-sm ml-1">pts</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-slate-800 border-accent">
               <CardContent className="p-6">
-                <div className="text-orange-500 font-bold text-sm mb-2">
+                <div className="text-primary font-bold text-sm mb-2">
                   SWEET 16 & ELITE 8
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
@@ -118,22 +118,22 @@ export default async function Home() {
                   <div className="flex justify-between text-slate-300">
                     <span>Sweet 16:</span>
                     <span>
-                      <span className="text-orange-500 font-semibold">10</span>/5 pts
+                      <span className="text-primary font-semibold">10</span>/5 pts
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-300">
                     <span>Elite 8:</span>
                     <span>
-                      <span className="text-orange-500 font-semibold">15</span>/10/5 pts
+                      <span className="text-primary font-semibold">15</span>/10/5 pts
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-slate-700 md:col-span-2 lg:col-span-1">
+            <Card className="bg-slate-800 border-accent md:col-span-2 lg:col-span-1">
               <CardContent className="p-6">
-                <div className="text-orange-500 font-bold text-sm mb-2">
+                <div className="text-primary font-bold text-sm mb-2">
                   FINAL FOUR & CHAMPIONSHIP
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
@@ -146,13 +146,13 @@ export default async function Home() {
                   <div className="flex justify-between text-slate-300">
                     <span>Final Four:</span>
                     <span>
-                      <span className="text-orange-500 font-semibold">25</span>/15/10/5
+                      <span className="text-primary font-semibold">25</span>/15/10/5
                     </span>
                   </div>
                   <div className="flex justify-between text-slate-300">
                     <span>Championship:</span>
                     <span>
-                      <span className="text-orange-500 font-semibold">35</span>/25/15/10/5
+                      <span className="text-primary font-semibold">35</span>/25/15/10/5
                     </span>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default async function Home() {
           <div className="text-center mt-8">
             <p className="text-slate-400">
               Maximum possible points:{" "}
-              <span className="text-orange-500 font-bold text-2xl">369</span>
+              <span className="text-primary font-bold text-2xl">369</span>
             </p>
           </div>
         </div>
@@ -181,8 +181,8 @@ export default async function Home() {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <Target className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <Target className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Easy Bracket Entry</h3>
               <p className="text-slate-600">
@@ -192,8 +192,8 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <Upload className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <Upload className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">AI Bracket Upload</h3>
               <p className="text-slate-600">
@@ -203,8 +203,8 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <Zap className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <Zap className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Auto Scoring</h3>
               <p className="text-slate-600">
@@ -214,8 +214,8 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <Users className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <Users className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Invite Codes</h3>
               <p className="text-slate-600">
@@ -224,8 +224,8 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <DollarSign className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <DollarSign className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Easy Payments</h3>
               <p className="text-slate-600">
@@ -235,8 +235,8 @@ export default async function Home() {
             </div>
 
             <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center mb-4">
-                <TrendingUp className="h-7 w-7 text-orange-500" />
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <TrendingUp className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Live Leaderboard</h3>
               <p className="text-slate-600">
@@ -249,20 +249,20 @@ export default async function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-orange-500">
+      <section className="py-20 bg-primary">
         <div className="container mx-auto px-4 text-center">
           <Award className="h-16 w-16 text-white/80 mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Dominate Your Pool?
           </h2>
-          <p className="text-orange-100 text-lg mb-8 max-w-xl mx-auto">
+          <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
             Entry fee: <span className="font-bold text-white">$5.00</span> •
             Deadline: Thursday at Noon (Before Tipoff)
           </p>
           <div className="flex items-center justify-center">
             <Button
               size="lg"
-              className="h-14 px-8 text-lg bg-white text-orange-500 hover:bg-orange-50"
+              className="h-14 px-8 text-lg bg-white text-primary hover:bg-secondary"
               asChild
             >
               <Link href="/join">Join a Pool</Link>
@@ -276,9 +276,9 @@ export default async function Home() {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Trophy className="h-6 w-6 text-orange-500" />
+              <Trophy className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold text-white">
-                Pick<span className="text-orange-500">N</span>Roll
+                Pick<span className="text-primary">N</span>Roll
               </span>
             </div>
             <p className="text-sm">

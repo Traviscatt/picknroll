@@ -62,7 +62,7 @@ function ResetPasswordForm() {
         <p className="text-slate-600">
           Invalid reset link. Please request a new one.
         </p>
-        <Button asChild className="bg-orange-500 hover:bg-orange-600">
+        <Button asChild className="bg-primary hover:bg-primary/90">
           <Link href="/forgot-password">Request new link</Link>
         </Button>
       </CardContent>
@@ -76,7 +76,7 @@ function ResetPasswordForm() {
         <p className="text-slate-600">
           Your password has been reset successfully.
         </p>
-        <Button asChild className="bg-orange-500 hover:bg-orange-600">
+        <Button asChild className="bg-primary hover:bg-primary/90">
           <Link href="/login">Sign in</Link>
         </Button>
       </CardContent>
@@ -116,7 +116,7 @@ function ResetPasswordForm() {
       <CardFooter>
         <Button
           type="submit"
-          className="w-full bg-orange-500 hover:bg-orange-600"
+          className="w-full bg-primary hover:bg-primary/90"
           disabled={isLoading}
         >
           {isLoading ? (
@@ -139,9 +139,9 @@ export default function ResetPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <Trophy className="h-8 w-8 text-orange-500" />
+            <Trophy className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold">
-              Pick<span className="text-orange-500">N</span>Roll
+              Pick<span className="text-primary">N</span>Roll
             </span>
           </Link>
           <CardTitle className="text-2xl">Set new password</CardTitle>
@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
             Enter your new password below
           </CardDescription>
         </CardHeader>
-        <Suspense fallback={<CardContent><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto" /></CardContent>}>
+        <Suspense fallback={<CardContent><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" /></CardContent>}>
           <ResetPasswordForm />
         </Suspense>
       </Card>

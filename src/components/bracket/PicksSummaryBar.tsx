@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getPickColor } from "@/lib/pick-colors";
 
 interface Team {
   id: string;
@@ -63,9 +64,7 @@ export function PicksSummaryBar({
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs",
                 team
-                  ? index === 0
-                    ? "bg-orange-100 text-orange-700 border border-orange-200"
-                    : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                  ? `${getPickColor(index).bg} ${getPickColor(index).text} border ${getPickColor(index).border}`
                   : "bg-white text-slate-400 border border-dashed border-slate-300"
               )}
             >

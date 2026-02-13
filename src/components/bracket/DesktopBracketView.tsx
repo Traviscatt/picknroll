@@ -228,8 +228,8 @@ export function DesktopBracketView({
     <div className="w-full overflow-x-auto bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
       <div className="min-w-[1200px] p-4">
 
-        {/* Top half: South (L→R)  ·  FF  ·  East (R←L) */}
-        <div className="flex justify-between items-start mb-0">
+        {/* Top half: South (L→R)  ·  East (R←L) */}
+        <div className="flex justify-between items-start">
           <RegionBracket
             region="South"
             picks={picks}
@@ -237,14 +237,6 @@ export function DesktopBracketView({
             getEligibleTeamsForGame={getEligibleTeamsForGame}
             mirrored={false}
           />
-
-          <div
-            className="flex flex-col items-center justify-center"
-            style={{ paddingTop: e8Y[0] - SL_H / 2 }}
-          >
-            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            {renderCenterSlot("final-four-r5-g2", 5, getFinalFourTeams(2))}
-          </div>
 
           <RegionBracket
             region="East"
@@ -255,17 +247,32 @@ export function DesktopBracketView({
           />
         </div>
 
-        {/* Center: Championship */}
-        <div className="flex justify-center items-center py-0 -mt-12">
-          <div className="flex flex-col items-center gap-2 bg-white border-2 border-orange-300 rounded-xl px-8 py-4 shadow">
-            <div className="text-lg font-extrabold text-orange-600 tracking-wide">CHAMPION</div>
+        {/* Center row: FF(South vs West) · Championship · FF(East vs Midwest) */}
+        <div className="flex items-center justify-center gap-6 py-4 -mt-14">
+          {/* FF Game 1: South vs West */}
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
+            <div className="text-[9px] text-slate-500 mb-1">South vs West</div>
+            {renderCenterSlot("final-four-r5-g1", 5, getFinalFourTeams(1))}
+          </div>
+
+          {/* Championship */}
+          <div className="flex flex-col items-center gap-2 bg-white border-2 border-primary rounded-xl px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
+            <div className="text-lg font-extrabold text-primary tracking-wide">CHAMPION</div>
             <div className="text-[10px] text-slate-600 font-bold">35 / 25 / 15 / 10 / 5 pts</div>
             {renderCenterSlot("championship-r6-g1", 6, getChampionshipTeams())}
           </div>
+
+          {/* FF Game 2: East vs Midwest */}
+          <div className="flex flex-col items-center">
+            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
+            <div className="text-[9px] text-slate-500 mb-1">East vs Midwest</div>
+            {renderCenterSlot("final-four-r5-g2", 5, getFinalFourTeams(2))}
+          </div>
         </div>
 
-        {/* Bottom half: West (L→R)  ·  FF  ·  Midwest (R←L) */}
-        <div className="flex justify-between items-start -mt-12">
+        {/* Bottom half: West (L→R)  ·  Midwest (R←L) */}
+        <div className="flex justify-between items-start -mt-14">
           <RegionBracket
             region="West"
             picks={picks}
@@ -273,14 +280,6 @@ export function DesktopBracketView({
             getEligibleTeamsForGame={getEligibleTeamsForGame}
             mirrored={false}
           />
-
-          <div
-            className="flex flex-col items-center justify-center"
-            style={{ paddingTop: e8Y[0] - SL_H / 2 }}
-          >
-            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            {renderCenterSlot("final-four-r5-g1", 5, getFinalFourTeams(1))}
-          </div>
 
           <RegionBracket
             region="Midwest"

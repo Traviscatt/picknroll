@@ -115,7 +115,7 @@ export default function BracketsPage() {
               Upload Bracket
             </Link>
           </Button>
-          <Button asChild className="bg-orange-500 hover:bg-orange-600">
+          <Button asChild className="bg-primary hover:bg-primary/90">
             <Link href="/brackets/new">
               <Plus className="mr-2 h-4 w-4" />
               New Bracket
@@ -136,7 +136,7 @@ export default function BracketsPage() {
                 fill it out online or upload an image of your completed bracket.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button asChild className="bg-orange-500 hover:bg-orange-600">
+                <Button asChild className="bg-primary hover:bg-primary/90">
                   <Link href="/brackets/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Bracket Online
@@ -214,7 +214,7 @@ export default function BracketsPage() {
                   <div className="flex items-center gap-4">
                     <div>
                       <p className="text-sm text-slate-600">Score</p>
-                      <p className="text-2xl font-bold text-orange-500">
+                      <p className="text-2xl font-bold text-primary">
                         {bracket.totalScore}
                       </p>
                     </div>
@@ -224,7 +224,7 @@ export default function BracketsPage() {
                       <Link href={`/brackets/${bracket.id}`}>View</Link>
                     </Button>
                     {bracket.status === "DRAFT" && (
-                      <Button asChild size="sm" className="bg-orange-500 hover:bg-orange-600">
+                      <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
                         <Link href={`/brackets/${bracket.id}/edit`}>
                           <Edit className="mr-1 h-3 w-3" />
                           Edit

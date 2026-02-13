@@ -44,9 +44,9 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <Trophy className="h-8 w-8 text-orange-500" />
+            <Trophy className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold">
-              Pick<span className="text-orange-500">N</span>Roll
+              Pick<span className="text-primary">N</span>Roll
             </span>
           </Link>
           <CardTitle className="text-2xl">Reset your password</CardTitle>
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
             <CardFooter className="flex flex-col gap-4">
               <Button
                 type="submit"
-                className="w-full bg-orange-500 hover:bg-orange-600"
+                className="w-full bg-primary hover:bg-primary/90"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
         <CardFooter className="justify-center">
           <Link
             href="/login"
-            className="text-sm text-muted-foreground hover:text-orange-500 inline-flex items-center gap-1"
+            className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"
           >
             <ArrowLeft className="h-3 w-3" />
             Back to login

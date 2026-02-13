@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TeamSlot } from "./TeamSlot";
+import { getPickColor } from "@/lib/pick-colors";
 
 interface Team {
   id: string;
@@ -89,11 +90,7 @@ export function GameCard({
                 return team ? (
                   <div
                     key={teamId}
-                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${
-                      index === 0
-                        ? "bg-orange-100 text-orange-700 border border-orange-200"
-                        : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                    }`}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs ${getPickColor(index).bg} ${getPickColor(index).text} border ${getPickColor(index).border}`}
                   >
                     <span className="font-bold">#{index + 1}</span>
                     <span className="font-medium">{team.name}</span>

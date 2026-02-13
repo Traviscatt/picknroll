@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { getPickColor } from "@/lib/pick-colors";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 
@@ -30,8 +31,6 @@ export function TeamSlot({
   disabled = false,
   onSelect,
 }: TeamSlotProps) {
-  const isFirstChoice = choiceRank === 0;
-
   return (
     <button
       onClick={onSelect}
@@ -40,9 +39,7 @@ export function TeamSlot({
         "w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all",
         "active:scale-[0.98] touch-manipulation",
         isSelected
-          ? isFirstChoice
-            ? "border-orange-500 bg-orange-50"
-            : "border-yellow-500 bg-yellow-50"
+          ? `${getPickColor(choiceRank).border} ${getPickColor(choiceRank).bg}`
           : "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
         disabled && "opacity-50 cursor-not-allowed"
       )}
@@ -52,9 +49,7 @@ export function TeamSlot({
           className={cn(
             "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0",
             isSelected
-              ? isFirstChoice
-                ? "bg-orange-500 text-white"
-                : "bg-yellow-500 text-white"
+              ? `${getPickColor(choiceRank).badge} text-white`
               : "bg-slate-100 text-slate-600"
           )}
         >
@@ -72,7 +67,7 @@ export function TeamSlot({
         )}
         <span className="font-medium text-left">{team.name}</span>
         {team.record && (
-          <span className="text-xs text-slate-500 ml-1">({team.record})</span>
+          <span className="text-xs text-muted-foreground ml-1">({team.record})</span>
         )}
       </div>
       
@@ -80,7 +75,7 @@ export function TeamSlot({
         <Badge 
           className={cn(
             "shrink-0",
-            isFirstChoice ? "bg-orange-500" : "bg-yellow-500"
+            getPickColor(choiceRank).badge
           )}
         >
           {maxChoices === 1 ? "✓" : `#${choiceRank + 1}`}

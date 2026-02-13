@@ -127,7 +127,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-            <Users className="h-4 w-4 text-orange-500" />
+            <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.totalEntries ?? 0}</div>
@@ -136,7 +136,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Your Rank</CardTitle>
-            <TrendingUp className="h-4 w-4 text-orange-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
@@ -145,7 +145,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
-            <Trophy className="h-4 w-4 text-orange-500" />
+            <Trophy className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -190,7 +190,7 @@ export default function LeaderboardPage() {
                     key={`${entry.name}-${entry.bracketName}`}
                     className={
                       entry.isCurrentUser
-                        ? "bg-orange-50"
+                        ? "bg-secondary"
                         : undefined
                     }
                   >
@@ -202,14 +202,14 @@ export default function LeaderboardPage() {
                     <TableCell className="font-medium">
                       {entry.name}
                       {entry.isCurrentUser && (
-                        <Badge variant="outline" className="ml-2 text-orange-500 border-orange-500">
+                        <Badge variant="outline" className="ml-2 text-primary border-primary">
                           You
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>{entry.bracketName}</TableCell>
                     <TableCell className="text-right">
-                      <span className="font-bold text-orange-500">
+                      <span className="font-bold text-primary">
                         {entry.score}
                       </span>
                     </TableCell>

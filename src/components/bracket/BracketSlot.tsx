@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { getPickColor } from "@/lib/pick-colors";
 import Image from "next/image";
 import {
   Popover,
@@ -47,8 +48,8 @@ function TeamRow({
         "w-full flex items-center gap-1 px-1.5 h-7 transition-all",
         mirrored ? "flex-row-reverse text-right" : "text-left",
         isSelected
-          ? "bg-orange-500 text-white"
-          : "hover:bg-slate-200 text-slate-900"
+          ? "bg-slate-800 text-white"
+          : "hover:bg-slate-100 text-slate-900"
       )}
     >
       <Image
@@ -61,7 +62,7 @@ function TeamRow({
       />
       <span className={cn(
         "text-[10px] font-bold shrink-0",
-        isSelected ? "text-orange-100" : "text-slate-600"
+        isSelected ? "text-white/60" : "text-slate-600"
       )}>
         {team.seed}
       </span>
@@ -145,8 +146,8 @@ export function BracketSlot({
               "h-7 w-[130px] border-2 rounded flex items-center gap-1.5 px-1.5 text-left transition-all text-xs cursor-pointer",
               mirrored && "flex-row-reverse text-right",
               firstPick
-                ? "border-slate-700 bg-orange-50"
-                : "border-slate-500 bg-white hover:border-orange-500"
+                ? "border-emerald-500 bg-emerald-50"
+                : "border-slate-500 bg-white hover:border-slate-700"
             )}
           >
             {firstPick ? (
@@ -176,7 +177,7 @@ export function BracketSlot({
                 className={cn(
                   "w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs transition-colors",
                   picks[0] === team.id
-                    ? "bg-orange-500 text-white font-semibold"
+                    ? "bg-slate-800 text-white font-semibold"
                     : "hover:bg-slate-100 text-slate-900"
                 )}
               >
@@ -185,10 +186,10 @@ export function BracketSlot({
                   alt={team.name}
                   width={16}
                   height={16}
-                  className={cn("w-4 h-4 object-contain shrink-0", picks[0] === team.id && "brightness-0 invert")}
+                  className="w-4 h-4 object-contain shrink-0"
                   unoptimized
                 />
-                <span className={cn("font-bold text-[10px]", picks[0] === team.id ? "text-orange-100" : "text-slate-600")}>{team.seed}</span>
+                <span className={cn("font-bold text-[10px]", picks[0] === team.id ? "text-white/60" : "text-slate-600")}>{team.seed}</span>
                 <span className="font-semibold truncate">{team.name}</span>
               </button>
             ))}
@@ -207,8 +208,8 @@ export function BracketSlot({
             "min-h-7 w-[130px] border-2 rounded flex flex-col px-1.5 py-0.5 text-left transition-all text-xs cursor-pointer",
             mirrored && "items-end text-right",
             picks.length > 0
-              ? "border-slate-700 bg-orange-50"
-              : "border-slate-500 bg-white hover:border-orange-500"
+              ? "border-slate-700 bg-white"
+              : "border-slate-500 bg-white hover:border-slate-700"
           )}
         >
           {picks.length > 0 ? (
@@ -219,7 +220,7 @@ export function BracketSlot({
                 <div key={pickId} className={cn("flex items-center gap-1 leading-tight", mirrored && "flex-row-reverse")}>
                   <span className={cn(
                     "text-[9px] font-bold w-3",
-                    idx === 0 ? "text-orange-600" : "text-amber-600"
+                    getPickColor(idx).dot
                   )}>
                     {idx + 1}.
                   </span>
@@ -248,7 +249,7 @@ export function BracketSlot({
                 <div key={pickId} className="flex items-center gap-1 text-[11px]">
                   <span className={cn(
                     "font-bold w-4",
-                    idx === 0 ? "text-orange-600" : "text-amber-600"
+                    getPickColor(idx).dot
                   )}>
                     #{idx + 1}
                   </span>

@@ -56,13 +56,13 @@ export default function JoinPoolPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
-            <Trophy className="h-8 w-8 text-orange-500" />
+            <Trophy className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold">
-              Pick<span className="text-orange-500">N</span>Roll
+              Pick<span className="text-primary">N</span>Roll
             </span>
           </Link>
-          <div className="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-            <Users className="h-8 w-8 text-orange-500" />
+          <div className="mx-auto w-16 h-16 bg-accent rounded-full flex items-center justify-center mb-4">
+            <Users className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl">Join a Pool</CardTitle>
           <CardDescription>
@@ -89,7 +89,7 @@ export default function JoinPoolPage() {
           <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
-              className="w-full bg-orange-500 hover:bg-orange-600"
+              className="w-full bg-primary hover:bg-primary/90"
               disabled={isLoading || inviteCode.length < 4}
             >
               {isLoading ? (
@@ -104,7 +104,7 @@ export default function JoinPoolPage() {
             {!session && (
               <p className="text-sm text-muted-foreground text-center">
                 Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-orange-500 hover:underline font-medium">
+                <Link href="/register" className="text-primary hover:underline font-medium">
                   Sign up first
                 </Link>
               </p>

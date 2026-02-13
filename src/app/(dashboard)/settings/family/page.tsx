@@ -182,7 +182,7 @@ export default function FamilyMembersPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -201,7 +201,7 @@ export default function FamilyMembersPage() {
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-orange-500 hover:bg-orange-600">
+            <Button className="bg-primary hover:bg-primary/90">
               <Plus className="mr-2 h-4 w-4" />
               Add Family Member
             </Button>
@@ -245,7 +245,7 @@ export default function FamilyMembersPage() {
                 Cancel
               </Button>
               <Button
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-primary hover:bg-primary/90"
                 onClick={handleAddMember}
                 disabled={isSaving}
               >
@@ -283,7 +283,7 @@ export default function FamilyMembersPage() {
                 Add family members to create and manage brackets on their behalf.
               </p>
               <Button
-                className="bg-orange-500 hover:bg-orange-600"
+                className="bg-primary hover:bg-primary/90"
                 onClick={() => setIsAddDialogOpen(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -418,7 +418,7 @@ export default function FamilyMembersPage() {
               Cancel
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-primary hover:bg-primary/90"
               onClick={handleEditMember}
               disabled={isSaving}
             >

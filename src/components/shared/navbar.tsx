@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,14 +12,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, Trophy, User, LogOut, Settings, Shield, Sun, Moon } from "lucide-react";
+import { Menu, Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
-
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === href;
     return pathname.startsWith(href);
@@ -36,13 +33,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 w-full border-b-[3px] border-b-team-secondary bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-orange-500" />
+            <Trophy className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold">
-              Pick<span className="text-orange-500">N</span>Roll
+              Pick<span className="text-team-secondary">N</span>Roll
             </span>
           </Link>
 
@@ -51,26 +48,26 @@ export function Navbar() {
               <>
                 <Link
                   href="/dashboard"
-                  className={`text-sm font-medium transition-colors ${isActive("/dashboard") ? "text-orange-500" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`text-sm font-medium transition-colors ${isActive("/dashboard") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Dashboard
                 </Link>
                 <Link
                   href="/brackets"
-                  className={`text-sm font-medium transition-colors ${isActive("/brackets") ? "text-orange-500" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`text-sm font-medium transition-colors ${isActive("/brackets") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   My Brackets
                 </Link>
                 <Link
                   href="/leaderboard"
-                  className={`text-sm font-medium transition-colors ${isActive("/leaderboard") ? "text-orange-500" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`text-sm font-medium transition-colors ${isActive("/leaderboard") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   Leaderboard
                 </Link>
                 {session.user?.role === "ADMIN" && (
                   <Link
                     href="/admin"
-                    className={`text-sm font-medium transition-colors ${isActive("/admin") ? "text-orange-500" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`text-sm font-medium transition-colors ${isActive("/admin") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     Admin
                   </Link>
@@ -81,16 +78,6 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          >
-            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-          </Button>
           {status === "loading" ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : session ? (
@@ -98,8 +85,8 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-orange-500 text-white">
+                    <Avatar className="h-8 w-8 ring-2 ring-team-secondary">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {getInitials(session.user?.name || "U")}
                       </AvatarFallback>
                     </Avatar>
@@ -157,26 +144,26 @@ export function Navbar() {
                   <div className="flex flex-col gap-4 mt-8">
                     <Link
                       href="/dashboard"
-                      className={`text-lg font-medium transition-colors ${isActive("/dashboard") ? "text-orange-500" : "hover:text-orange-500"}`}
+                      className={`text-lg font-medium transition-colors ${isActive("/dashboard") ? "text-primary" : "hover:text-primary"}`}
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/brackets"
-                      className={`text-lg font-medium transition-colors ${isActive("/brackets") ? "text-orange-500" : "hover:text-orange-500"}`}
+                      className={`text-lg font-medium transition-colors ${isActive("/brackets") ? "text-primary" : "hover:text-primary"}`}
                     >
                       My Brackets
                     </Link>
                     <Link
                       href="/leaderboard"
-                      className={`text-lg font-medium transition-colors ${isActive("/leaderboard") ? "text-orange-500" : "hover:text-orange-500"}`}
+                      className={`text-lg font-medium transition-colors ${isActive("/leaderboard") ? "text-primary" : "hover:text-primary"}`}
                     >
                       Leaderboard
                     </Link>
                     {session.user?.role === "ADMIN" && (
                       <Link
                         href="/admin"
-                        className={`text-lg font-medium transition-colors ${isActive("/admin") ? "text-orange-500" : "hover:text-orange-500"}`}
+                        className={`text-lg font-medium transition-colors ${isActive("/admin") ? "text-primary" : "hover:text-primary"}`}
                       >
                         Admin
                       </Link>
@@ -190,7 +177,7 @@ export function Navbar() {
               <Button variant="ghost" asChild>
                 <Link href="/login">Log in</Link>
               </Button>
-              <Button asChild className="bg-orange-500 hover:bg-orange-600">
+              <Button asChild className="bg-primary hover:bg-primary/90">
                 <Link href="/register">Sign up</Link>
               </Button>
             </div>

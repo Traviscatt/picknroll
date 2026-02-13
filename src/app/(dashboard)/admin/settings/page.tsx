@@ -98,7 +98,7 @@ export default function AdminSettingsPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -123,7 +123,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
         <Button
-          className="bg-orange-500 hover:bg-orange-600"
+          className="bg-primary hover:bg-primary/90"
           onClick={handleSave}
           disabled={isSaving}
         >
@@ -266,7 +266,7 @@ export default function AdminSettingsPage() {
               <span className="font-medium">🥈 2nd Place</span>
               <span className="text-lg font-bold">25%</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <span className="font-medium">🥉 3rd Place</span>
               <span className="text-lg font-bold">15%</span>
             </div>

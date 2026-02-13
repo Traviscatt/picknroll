@@ -156,7 +156,7 @@ export default function AdminResultsPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -198,7 +198,7 @@ export default function AdminResultsPage() {
             Recalculate Scores
           </Button>
           <Button
-            className="bg-orange-500 hover:bg-orange-600"
+            className="bg-primary hover:bg-primary/90"
             onClick={handleSaveResults}
             disabled={isSaving}
           >
@@ -235,7 +235,7 @@ export default function AdminResultsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-orange-500" />
+                    <Trophy className="h-5 w-5 text-primary" />
                     {round.name}
                   </CardTitle>
                   <CardDescription>

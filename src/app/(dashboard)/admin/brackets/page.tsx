@@ -209,7 +209,7 @@ export default function AdminBracketsPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -351,7 +351,7 @@ export default function AdminBracketsPage() {
                       </Button>
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className="font-bold text-orange-500">
+                      <span className="font-bold text-primary">
                         {bracket.totalScore + bracket.bonusScore}
                       </span>
                       {bracket.bonusScore > 0 && (
@@ -434,7 +434,7 @@ export default function AdminBracketsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-primary hover:bg-primary/90"
               onClick={handleUpdateScore}
             >
               Save Changes

@@ -13,12 +13,16 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { name } = body;
+    const { name, favoriteTeam } = body;
 
     const updateData: Record<string, unknown> = {};
 
     if (name && name.trim().length > 0) {
       updateData.name = name.trim();
+    }
+
+    if (favoriteTeam !== undefined) {
+      updateData.favoriteTeam = favoriteTeam || null;
     }
 
     const user = await db.user.update({

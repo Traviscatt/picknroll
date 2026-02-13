@@ -140,7 +140,7 @@ export default function UploadBracketPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     );
   }
@@ -158,11 +158,11 @@ export default function UploadBracketPage() {
       </div>
 
       {/* AI Info Card */}
-      <Card className="border-orange-200 bg-orange-50">
+      <Card className="border-accent bg-secondary">
         <CardContent className="pt-6">
           <div className="flex items-start gap-4">
-            <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-              <Sparkles className="h-5 w-5 text-orange-500" />
+            <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900">AI-Powered Extraction</h3>
@@ -188,7 +188,7 @@ export default function UploadBracketPage() {
             <div
               onDrop={handleDrop}
               onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-slate-300 rounded-lg p-12 text-center hover:border-orange-400 transition-colors cursor-pointer"
+              className="border-2 border-dashed border-slate-300 rounded-lg p-12 text-center hover:border-primary transition-colors cursor-pointer"
             >
               <input
                 type="file"
@@ -245,7 +245,7 @@ export default function UploadBracketPage() {
                   {file?.type === 'application/pdf' ? (
                     <FileText className="h-8 w-8 text-red-500" />
                   ) : (
-                    <FileImage className="h-8 w-8 text-orange-500" />
+                    <FileImage className="h-8 w-8 text-primary" />
                   )}
                   <div>
                     <p className="font-medium text-sm">{file.name}</p>
@@ -286,7 +286,7 @@ export default function UploadBracketPage() {
                 <Button
                   onClick={handleProcess}
                   disabled={isProcessing || uploadStatus === "success"}
-                  className="flex-1 bg-orange-500 hover:bg-orange-600"
+                  className="flex-1 bg-primary hover:bg-primary/90"
                 >
                   {isProcessing ? (
                     <>

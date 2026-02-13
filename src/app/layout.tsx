@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/session-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { TeamThemeProvider } from "@/components/providers/team-theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
@@ -32,9 +31,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <TeamThemeProvider>
-              {children}
-            </TeamThemeProvider>
+            {children}
             <Toaster position="top-right" />
           </AuthProvider>
         </ThemeProvider>

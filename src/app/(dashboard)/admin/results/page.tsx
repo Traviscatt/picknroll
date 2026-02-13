@@ -198,7 +198,7 @@ export default function AdminResultsPage() {
             Recalculate Scores
           </Button>
           <Button
-            className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
+            className="bg-orange-500 hover:bg-orange-600"
             onClick={handleSaveResults}
             disabled={isSaving}
           >
@@ -235,7 +235,7 @@ export default function AdminResultsPage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-[var(--team-primary)]" />
+                    <Trophy className="h-5 w-5 text-orange-500" />
                     {round.name}
                   </CardTitle>
                   <CardDescription>

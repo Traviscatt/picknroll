@@ -44,22 +44,15 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           role: user.role,
-          favoriteTeam: user.favoriteTeam,
         };
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role: string }).role;
-        token.favoriteTeam = (user as { favoriteTeam: string | null }).favoriteTeam;
-      }
-      // Refresh favoriteTeam from DB when session is updated
-      if (trigger === "update") {
-        const dbUser = await db.user.findUnique({ where: { id: token.id as string }, select: { favoriteTeam: true } });
-        if (dbUser) token.favoriteTeam = dbUser.favoriteTeam;
       }
       return token;
     },
@@ -67,7 +60,6 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
-        session.user.favoriteTeam = token.favoriteTeam as string | null;
       }
       return session;
     },

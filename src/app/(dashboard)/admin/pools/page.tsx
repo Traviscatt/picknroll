@@ -142,7 +142,7 @@ export default function AdminPoolsPage() {
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--team-primary)]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
       </div>
     );
   }
@@ -167,7 +167,7 @@ export default function AdminPoolsPage() {
           </div>
         </div>
         <Button
-          className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
+          className="bg-orange-500 hover:bg-orange-600"
           onClick={() => setShowCreateDialog(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -186,7 +186,7 @@ export default function AdminPoolsPage() {
                 Create your first pool to start accepting bracket entries.
               </p>
               <Button
-                className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
+                className="bg-orange-500 hover:bg-orange-600"
                 onClick={() => setShowCreateDialog(true)}
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -335,7 +335,7 @@ export default function AdminPoolsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
+              className="bg-orange-500 hover:bg-orange-600"
               onClick={handleCreatePool}
               disabled={isCreating}
             >

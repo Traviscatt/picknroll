@@ -127,7 +127,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
-            <Users className="h-4 w-4 text-[var(--team-primary)]" />
+            <Users className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.totalEntries ?? 0}</div>
@@ -136,7 +136,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Your Rank</CardTitle>
-            <TrendingUp className="h-4 w-4 text-[var(--team-primary)]" />
+            <TrendingUp className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
@@ -145,7 +145,7 @@ export default function LeaderboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
-            <Trophy className="h-4 w-4 text-[var(--team-primary)]" />
+            <Trophy className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -202,14 +202,14 @@ export default function LeaderboardPage() {
                     <TableCell className="font-medium">
                       {entry.name}
                       {entry.isCurrentUser && (
-                        <Badge variant="outline" className="ml-2 text-[var(--team-primary)] border-[var(--team-primary)]">
+                        <Badge variant="outline" className="ml-2 text-orange-500 border-orange-500">
                           You
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>{entry.bracketName}</TableCell>
                     <TableCell className="text-right">
-                      <span className="font-bold text-[var(--team-primary)]">
+                      <span className="font-bold text-orange-500">
                         {entry.score}
                       </span>
                     </TableCell>

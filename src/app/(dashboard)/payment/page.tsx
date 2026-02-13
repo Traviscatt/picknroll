@@ -46,7 +46,7 @@ export default function PaymentPage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--team-primary)]" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function PaymentPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-[var(--team-primary)]" />
+            <DollarSign className="h-5 w-5 text-orange-500" />
             Payment Summary
           </CardTitle>
         </CardHeader>
@@ -80,7 +80,7 @@ export default function PaymentPage() {
             <Separator />
             <div className="flex justify-between text-lg">
               <span className="font-semibold">Total Due</span>
-              <span className="font-bold text-[var(--team-primary)]">${entryFee}</span>
+              <span className="font-bold text-orange-500">${entryFee}</span>
             </div>
           </div>
 
@@ -182,7 +182,7 @@ export default function PaymentPage() {
           <Button
             onClick={handleMarkAsPaid}
             disabled={hasPaid}
-            className="w-full bg-[var(--team-primary)] hover:bg-[var(--team-secondary)]"
+            className="w-full bg-orange-500 hover:bg-orange-600"
           >
             {hasPaid ? (
               <>

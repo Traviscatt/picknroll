@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Trophy,
   Plus,
-  Upload,
   Users,
   TrendingUp,
   Calendar,
@@ -138,12 +137,6 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button asChild variant="outline">
-            <Link href="/brackets/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Bracket
-            </Link>
-          </Button>
           <Button asChild className="bg-primary hover:bg-primary/90">
             <Link href="/brackets/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -200,15 +193,17 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$5.00</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {hasPaidBracket ? (
                 <Badge className="bg-green-500">Paid</Badge>
               ) : (
-                <Badge variant="outline" className="text-primary border-primary">
-                  Unpaid
-                </Badge>
+                <Link href="/payment">
+                  <Badge variant="outline" className="text-primary border-primary hover:bg-primary/10 cursor-pointer">
+                    Unpaid - Click to Pay
+                  </Badge>
+                </Link>
               )}
-            </p>
+            </div>
           </CardContent>
         </Card>
       </div>

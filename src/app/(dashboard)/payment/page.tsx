@@ -22,8 +22,8 @@ export default function PaymentPage() {
   const [hasPaid, setHasPaid] = useState(false);
 
   // Get payment links from environment
-  const paypalLink = process.env.NEXT_PUBLIC_PAYPAL_LINK || "https://paypal.me/YOUR_PAYPAL_USERNAME";
-  const venmoUsername = process.env.NEXT_PUBLIC_VENMO_USERNAME || "YOUR_VENMO_USERNAME";
+  const paypalLink = process.env.NEXT_PUBLIC_PAYPAL_LINK || "https://paypal.me/Traviscatt";
+  const venmoUsername = process.env.NEXT_PUBLIC_VENMO_USERNAME || "Traviscatt";
   const entryFee = process.env.NEXT_PUBLIC_ENTRY_FEE || "5.00";
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function PaymentPage() {
               disabled={hasPaid}
             >
               <a
-                href={`https://venmo.com/${venmoUsername}?txn=pay&amount=${entryFee}&note=PickNRoll%20Entry%20Fee`}
+                href={`https://www.venmo.com/u/${venmoUsername}?txn=pay&amount=${entryFee}&note=PickNRoll%20Entry%20Fee`}
                 target="_blank"
                 rel="noopener noreferrer"
               >

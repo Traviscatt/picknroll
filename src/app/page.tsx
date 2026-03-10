@@ -9,7 +9,6 @@ import {
   Trophy,
   Users,
   Zap,
-  Upload,
   DollarSign,
   ChevronRight,
   Target,
@@ -193,12 +192,12 @@ export default async function Home() {
 
             <div className="flex flex-col items-center text-center p-6">
               <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
-                <Upload className="h-7 w-7 text-primary" />
+                <Users className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">AI Bracket Upload</h3>
+              <h3 className="text-xl font-semibold mb-2">Family Brackets</h3>
               <p className="text-slate-600">
-                Upload a photo of your filled bracket and let AI extract your
-                picks automatically.
+                Create brackets for family members who don&apos;t want to manage
+                their own account.
               </p>
             </div>
 

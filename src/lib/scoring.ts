@@ -98,6 +98,11 @@ export function calculatePickPoints(
   return calculatePoints(round, choiceRank);
 }
 
+// Final Four bonus: 10 points if all Final Four picks (round 5, 2 games) are correct with 1st choice
+export const FINAL_FOUR_BONUS = 10;
+export const FINAL_FOUR_ROUND = 5;
+export const FINAL_FOUR_GAMES_COUNT = 2;
+
 // Scoring summary for display
 export const SCORING_SUMMARY = {
   round1: "2 pts per correct pick",
@@ -106,5 +111,6 @@ export const SCORING_SUMMARY = {
   round4: "1st: 15 pts, 2nd: 10 pts, 3rd: 5 pts",
   round5: "1st: 25 pts, 2nd: 15 pts, 3rd: 10 pts, 4th: 5 pts",
   round6: "1st: 35 pts, 2nd: 25 pts, 3rd: 15 pts, 4th: 10 pts, 5th: 5 pts",
+  bonus: "Final Four Perfect: +10 pts (all FF picks correct with 1st choice)",
   maxTotal: getTotalMaxPoints(),
 };

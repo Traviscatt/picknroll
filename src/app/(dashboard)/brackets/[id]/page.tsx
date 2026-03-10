@@ -15,7 +15,22 @@ import {
   Clock, 
   Users,
   DollarSign,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface PickData {
   gameId: string;
@@ -50,6 +65,27 @@ export default function BracketDetailPage() {
   
   const [bracket, setBracket] = useState<Bracket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/brackets/${bracketId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success("Bracket deleted successfully");
+        router.push("/brackets");
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete bracket");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -155,6 +191,55 @@ export default function BracketDetailPage() {
               </Link>
             </Button>
           )}
+          {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
+            <Button asChild className="bg-green-600 hover:bg-green-700">
+              <Link href="/payment">
+                <DollarSign className="mr-2 h-4 w-4" />
+                Pay Now
+              </Link>
+            </Button>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Delete Bracket
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
+                  This action cannot be undone. All picks and scores associated with this
+                  bracket will be permanently removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Bracket
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 

@@ -8,7 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Plus, Upload, Clock, CheckCircle, Edit, Users } from "lucide-react";
+import { Trophy, Plus, Clock, CheckCircle, Edit, Users, Trash2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Bracket {
   id: string;
@@ -98,6 +110,23 @@ export default function BracketsPage() {
 
   if (!session) return null;
 
+  const handleDeleteBracket = async (bracketId: string) => {
+    try {
+      const response = await fetch(`/api/brackets/${bracketId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        toast.success("Bracket deleted successfully");
+        setBrackets((prev) => prev.filter((b) => b.id !== bracketId));
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to delete bracket");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -109,12 +138,6 @@ export default function BracketsPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button asChild variant="outline">
-            <Link href="/brackets/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Bracket
-            </Link>
-          </Button>
           <Button asChild className="bg-primary hover:bg-primary/90">
             <Link href="/brackets/new">
               <Plus className="mr-2 h-4 w-4" />
@@ -133,19 +156,13 @@ export default function BracketsPage() {
               <h3 className="text-xl font-semibold mb-2">No brackets yet</h3>
               <p className="text-slate-600 mb-6 max-w-md mx-auto">
                 Create your first bracket to start competing in the pool. You can
-                fill it out online or upload an image of your completed bracket.
+                fill it out online to start competing.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button asChild className="bg-primary hover:bg-primary/90">
                   <Link href="/brackets/new">
                     <Plus className="mr-2 h-4 w-4" />
                     Create Bracket Online
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href="/brackets/upload">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Bracket Image
                   </Link>
                 </Button>
               </div>
@@ -231,6 +248,35 @@ export default function BracketsPage() {
                         </Link>
                       </Button>
                     )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Delete Bracket
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
+                            This action cannot be undone. All picks and scores will be permanently removed.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteBracket(bracket.id)}
+                            className="bg-destructive hover:bg-destructive/90"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Bracket
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
-import { SCORING_RULES } from "@/lib/scoring";
+import { SCORING_RULES, FINAL_FOUR_BONUS, FINAL_FOUR_ROUND, FINAL_FOUR_GAMES_COUNT } from "@/lib/scoring";
 
 // POST /api/admin/score - Recalculate all bracket scores based on game results
 export async function POST() {
@@ -59,6 +59,10 @@ export async function POST() {
 
     for (const bracket of brackets) {
       let totalScore = 0;
+      let bonusScore = 0;
+      
+      // Track Final Four picks for bonus calculation
+      const finalFourPicks: { gameId: string; teamId: string; choiceRank: number }[] = [];
 
       // Score each pick
       for (const pick of bracket.picks) {
@@ -85,6 +89,32 @@ export async function POST() {
         });
 
         totalScore += points;
+        
+        // Track Final Four picks for bonus
+        if (pick.game.round === FINAL_FOUR_ROUND) {
+          finalFourPicks.push({
+            gameId: pick.gameId,
+            teamId: pick.teamId,
+            choiceRank: pick.choiceRank,
+          });
+        }
+      }
+      
+      // Calculate Final Four bonus: +10 if all FF picks correct with 1st choice
+      const finalFourGames = games.filter(g => g.round === FINAL_FOUR_ROUND);
+      if (finalFourGames.length === FINAL_FOUR_GAMES_COUNT && finalFourPicks.length === FINAL_FOUR_GAMES_COUNT) {
+        let allFirstChoiceCorrect = true;
+        for (const ffGame of finalFourGames) {
+          const pick = finalFourPicks.find(p => p.gameId === ffGame.id);
+          if (!pick || pick.choiceRank !== 1 || pick.teamId !== ffGame.winnerId) {
+            allFirstChoiceCorrect = false;
+            break;
+          }
+        }
+        if (allFirstChoiceCorrect) {
+          bonusScore = FINAL_FOUR_BONUS;
+          totalScore += bonusScore;
+        }
       }
 
       // Also score from picksData JSON if no formal Pick records exist
@@ -124,10 +154,10 @@ export async function POST() {
         }
       }
 
-      // Update bracket total score
+      // Update bracket total score and bonus
       await db.bracket.update({
         where: { id: bracket.id },
-        data: { totalScore },
+        data: { totalScore, bonusScore },
       });
 
       bracketsUpdated++;

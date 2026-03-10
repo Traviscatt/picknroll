@@ -21,9 +21,7 @@ import {
   Users,
   DollarSign,
   CheckCircle,
-  Copy,
   ExternalLink,
-  Upload,
   LayoutGrid,
   GitBranch,
   Download,
@@ -31,7 +29,6 @@ import {
   Trophy,
   ClipboardList,
 } from "lucide-react";
-import Link from "next/link";
 import { GameCard, DesktopBracketView } from "@/components/bracket";
 import { generateBracketPDF } from "@/lib/generateBracketPDF";
 import {
@@ -882,12 +879,6 @@ function NewBracketContent() {
             <ClipboardList className="mr-2 h-4 w-4" />
             Review Picks
           </Button>
-          <Link href="/brackets/upload">
-            <Button variant="outline" size="sm">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload
-            </Button>
-          </Link>
           <Button variant="outline" size="sm" onClick={handleSaveDraft} disabled={isSaving}>
             <Save className="mr-2 h-4 w-4" />
             Save
@@ -1699,19 +1690,18 @@ function NewBracketContent() {
                   </div>
                   <div>
                     <p className="font-medium">Venmo</p>
-                    <p className="text-sm text-slate-500">@PoolAdmin</p>
+                    <p className="text-sm text-slate-500">@Traviscatt</p>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    navigator.clipboard.writeText("@PoolAdmin");
-                    toast.success("Copied to clipboard!");
+                    window.open("https://www.venmo.com/u/Traviscatt", "_blank");
                   }}
                 >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Pay
                 </Button>
               </div>
 
@@ -1723,42 +1713,18 @@ function NewBracketContent() {
                   </div>
                   <div>
                     <p className="font-medium">PayPal</p>
-                    <p className="text-sm text-slate-500">pool@example.com</p>
+                    <p className="text-sm text-slate-500">paypal.me/Traviscatt</p>
                   </div>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    window.open("https://paypal.me/pooladmin", "_blank");
+                    window.open("https://paypal.me/Traviscatt/5", "_blank");
                   }}
                 >
                   <ExternalLink className="h-4 w-4 mr-1" />
                   Pay
-                </Button>
-              </div>
-
-              {/* Cash App */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">$</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Cash App</p>
-                    <p className="text-sm text-slate-500">$PoolAdmin</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText("$PoolAdmin");
-                    toast.success("Copied to clipboard!");
-                  }}
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
                 </Button>
               </div>
             </div>

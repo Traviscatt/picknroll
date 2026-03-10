@@ -181,7 +181,6 @@ export default function LeaderboardPage() {
                   <TableHead>Bracket</TableHead>
                   <TableHead className="text-right">Score</TableHead>
                   <TableHead className="text-right">Tiebreaker</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -215,14 +214,6 @@ export default function LeaderboardPage() {
                     </TableCell>
                     <TableCell className="text-right text-slate-500">
                       {entry.tiebreaker ?? "-"}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge
-                        variant={entry.paid ? "default" : "outline"}
-                        className={entry.paid ? "bg-green-500" : ""}
-                      >
-                        {entry.paid ? "Paid" : "Unpaid"}
-                      </Badge>
                     </TableCell>
                   </TableRow>
                 ))}

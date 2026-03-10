@@ -19,7 +19,6 @@ interface PoolSettings {
   deadline: string;
   venmoHandle: string;
   paypalEmail: string;
-  cashAppHandle: string;
 }
 
 export default function AdminSettingsPage() {
@@ -34,7 +33,6 @@ export default function AdminSettingsPage() {
     deadline: "",
     venmoHandle: "",
     paypalEmail: "",
-    cashAppHandle: "",
   });
 
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function AdminSettingsPage() {
             deadline: data.deadline || "",
             venmoHandle: data.venmoHandle || "",
             paypalEmail: data.paypalLink || "",
-            cashAppHandle: "",
           });
         }
       } catch (error) {
@@ -214,7 +211,7 @@ export default function AdminSettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="venmo">Venmo Handle</Label>
               <Input
@@ -234,15 +231,6 @@ export default function AdminSettingsPage() {
                 placeholder="email@example.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="cashapp">Cash App Handle</Label>
-              <Input
-                id="cashapp"
-                value={settings.cashAppHandle}
-                onChange={(e) => setSettings({ ...settings, cashAppHandle: e.target.value })}
-                placeholder="$username"
-              />
-            </div>
           </div>
           <p className="text-xs text-slate-500">
             Leave blank to hide that payment option from users.
@@ -260,7 +248,7 @@ export default function AdminSettingsPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
               <span className="font-medium">🥇 1st Place</span>
-              <span className="text-lg font-bold">60%</span>
+              <span className="text-lg font-bold">65%</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg">
               <span className="font-medium">🥈 2nd Place</span>
@@ -268,7 +256,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
               <span className="font-medium">🥉 3rd Place</span>
-              <span className="text-lg font-bold">15%</span>
+              <span className="text-lg font-bold">10%</span>
             </div>
           </div>
           <p className="text-xs text-slate-500 mt-3">

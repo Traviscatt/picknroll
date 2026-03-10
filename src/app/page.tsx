@@ -33,11 +33,11 @@ export default async function Home() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-primary">
               <Trophy className="h-4 w-4" />
-              NCAA Tournament 2025
+              NCAA Tournament 2026
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
               From Bracket to{" "}
-              <span className="bg-gradient-to-r from-accent to-accent bg-clip-text text-transparent">
+              <span className="text-primary">
                 Bankroll
               </span>
             </h1>
@@ -66,92 +66,92 @@ export default async function Home() {
       </section>
 
       {/* Scoring Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
+      <section className="py-20 bg-primary">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Our Unique Multi-Choice Scoring System
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-white/70 max-w-2xl mx-auto">
               Don&apos;t just pick winners—rank your confidence! Later rounds let you
               hedge your bets with multiple choices.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <Card className="bg-slate-800 border-accent">
+            <Card className="bg-white/10 border-white/20">
               <CardContent className="p-6">
-                <div className="text-primary font-bold text-sm mb-2">
+                <div className="text-[#b9bc91] font-bold text-sm mb-2">
                   ROUNDS 1 & 2
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
                   Traditional Picks
                 </h3>
-                <p className="text-slate-400 text-sm mb-4">
+                <p className="text-white/60 text-sm mb-4">
                   Pick one winner per game
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="bg-slate-700 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-primary">2</span>
-                    <span className="text-slate-400 text-sm ml-1">pts</span>
+                  <div className="bg-white/10 rounded-lg px-3 py-2">
+                    <span className="text-2xl font-bold text-[#b9bc91]">2</span>
+                    <span className="text-white/60 text-sm ml-1">pts</span>
                   </div>
-                  <div className="bg-slate-700 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-primary">5</span>
-                    <span className="text-slate-400 text-sm ml-1">pts</span>
+                  <div className="bg-white/10 rounded-lg px-3 py-2">
+                    <span className="text-2xl font-bold text-[#b9bc91]">5</span>
+                    <span className="text-white/60 text-sm ml-1">pts</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-accent">
+            <Card className="bg-white/10 border-white/20">
               <CardContent className="p-6">
-                <div className="text-primary font-bold text-sm mb-2">
+                <div className="text-[#b9bc91] font-bold text-sm mb-2">
                   SWEET 16 & ELITE 8
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
                   Multi-Choice Picks
                 </h3>
-                <p className="text-slate-400 text-sm mb-4">
+                <p className="text-white/60 text-sm mb-4">
                   Rank 2-3 teams per game
                 </p>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-white/80">
                     <span>Sweet 16:</span>
                     <span>
-                      <span className="text-primary font-semibold">10</span>/5 pts
+                      <span className="text-[#b9bc91] font-semibold">10</span>/5 pts
                     </span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-white/80">
                     <span>Elite 8:</span>
                     <span>
-                      <span className="text-primary font-semibold">15</span>/10/5 pts
+                      <span className="text-[#b9bc91] font-semibold">15</span>/10/5 pts
                     </span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-accent md:col-span-2 lg:col-span-1">
+            <Card className="bg-white/10 border-white/20 md:col-span-2 lg:col-span-1">
               <CardContent className="p-6">
-                <div className="text-primary font-bold text-sm mb-2">
+                <div className="text-[#b9bc91] font-bold text-sm mb-2">
                   FINAL FOUR & CHAMPIONSHIP
                 </div>
                 <h3 className="text-xl font-semibold mb-2 text-white">
                   Maximum Hedging
                 </h3>
-                <p className="text-slate-400 text-sm mb-4">
+                <p className="text-white/60 text-sm mb-4">
                   Rank 4-5 teams for big points
                 </p>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-white/80">
                     <span>Final Four:</span>
                     <span>
-                      <span className="text-primary font-semibold">25</span>/15/10/5
+                      <span className="text-[#b9bc91] font-semibold">25</span>/15/10/5
                     </span>
                   </div>
-                  <div className="flex justify-between text-slate-300">
+                  <div className="flex justify-between text-white/80">
                     <span>Championship:</span>
                     <span>
-                      <span className="text-primary font-semibold">35</span>/25/15/10/5
+                      <span className="text-[#b9bc91] font-semibold">35</span>/25/15/10/5
                     </span>
                   </div>
                 </div>
@@ -159,9 +159,9 @@ export default async function Home() {
             </Card>
           </div>
           <div className="text-center mt-8">
-            <p className="text-slate-400">
+            <p className="text-white/70">
               Maximum possible points:{" "}
-              <span className="text-primary font-bold text-2xl">369</span>
+              <span className="text-[#b9bc91] font-bold text-2xl">369</span>
             </p>
           </div>
         </div>
@@ -271,13 +271,13 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-12">
+      <footer className="bg-[#1a3328] text-white/60 py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Trophy className="h-6 w-6 text-primary" />
+              <Trophy className="h-6 w-6 text-[#b9bc91]" />
               <span className="text-xl font-bold text-white">
-                Pick<span className="text-primary">N</span>Roll
+                Pick<span className="text-[#b9bc91]">N</span>Roll
               </span>
             </div>
             <p className="text-sm">

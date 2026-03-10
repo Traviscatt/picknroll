@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,18 +11,66 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Trophy, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
-export default function JoinPoolPage() {
+function JoinPoolContent() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
+  const [autoJoining, setAutoJoining] = useState(false);
+
+  // Auto-fill invite code from URL param
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (code) {
+      setInviteCode(code.toUpperCase());
+    }
+  }, [searchParams]);
+
+  // Auto-join if user just authenticated and has a code
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (session && code && !autoJoining) {
+      setAutoJoining(true);
+      handleAutoJoin(code.toUpperCase());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, searchParams]);
+
+  const handleAutoJoin = async (code: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch("/api/pools/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inviteCode: code }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (data.error?.includes("already a member")) {
+          toast.success("You're already in the pool!");
+          router.push("/dashboard");
+        } else {
+          toast.error(data.error || "Failed to join pool");
+        }
+      } else {
+        toast.success(`Joined ${data.poolName || "the pool"}!`);
+        router.push("/dashboard");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setIsLoading(false);
+      setAutoJoining(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!session) {
-      toast.error("Please sign in to join a pool");
-      router.push(`/login?callbackUrl=/join?code=${inviteCode}`);
+      const joinUrl = `/join?code=${inviteCode}`;
+      router.push(`/register?callbackUrl=${encodeURIComponent(joinUrl)}`);
       return;
     }
 
@@ -71,6 +119,16 @@ export default function JoinPoolPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            {!session && status !== "loading" && (
+              <div className="bg-accent border border-primary/20 rounded-lg p-3 text-sm">
+                <p className="font-medium text-foreground mb-1">How it works:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-muted-foreground text-xs">
+                  <li>Enter the invite code below</li>
+                  <li>Create an account (or sign in)</li>
+                  <li>You&apos;ll be automatically added to the pool!</li>
+                </ol>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="inviteCode">Invite Code</Label>
               <Input
@@ -101,17 +159,37 @@ export default function JoinPoolPage() {
                 "Join Pool"
               )}
             </Button>
-            {!session && (
-              <p className="text-sm text-muted-foreground text-center">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-primary hover:underline font-medium">
-                  Sign up first
-                </Link>
-              </p>
+            {!session && status !== "loading" && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground text-center">
+                  Don&apos;t have an account?{" "}
+                  <Link href={`/register?callbackUrl=${encodeURIComponent(`/join${inviteCode ? `?code=${inviteCode}` : ""}`)}`} className="text-primary hover:underline font-medium">
+                    Sign up
+                  </Link>
+                </p>
+                <p className="text-sm text-muted-foreground text-center">
+                  Already have an account?{" "}
+                  <Link href={`/login?callbackUrl=${encodeURIComponent(`/join${inviteCode ? `?code=${inviteCode}` : ""}`)}`} className="text-primary hover:underline font-medium">
+                    Sign in
+                  </Link>
+                </p>
+              </div>
             )}
           </CardFooter>
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function JoinPoolPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    }>
+      <JoinPoolContent />
+    </Suspense>
   );
 }

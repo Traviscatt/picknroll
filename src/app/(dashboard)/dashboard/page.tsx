@@ -146,6 +146,61 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* New User Onboarding Banner */}
+      {!currentPool && brackets.length === 0 && (
+        <Card className="border-2 border-primary bg-accent">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-primary" />
+              Welcome to PickNRoll! Let&apos;s get you started
+            </CardTitle>
+            <CardDescription className="text-sm">
+              Follow these steps to join the action
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Link href="/join">
+                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
+                    1
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Join a Pool</p>
+                    <p className="text-xs text-muted-foreground">Enter the invite code from your pool admin</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                </div>
+              </Link>
+              <Link href="/brackets/new">
+                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
+                    2
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Create a Bracket</p>
+                    <p className="text-xs text-muted-foreground">Make your picks for all 63 games</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                </div>
+              </Link>
+              <Link href="/payment">
+                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
+                    3
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Pay Entry Fee</p>
+                    <p className="text-xs text-muted-foreground">$5.00 via PayPal or Venmo</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
+                </div>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-t-[3px] border-t-team-secondary">

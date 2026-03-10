@@ -26,6 +26,8 @@ import {
   Trophy,
   Loader2,
   CheckCircle,
+  Share2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -137,6 +139,13 @@ export default function AdminPoolsPage() {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success("Invite code copied!");
+  };
+
+  const handleCopyInviteLink = (code: string) => {
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://picknroll.net";
+    const link = `${baseUrl}/join?code=${code}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Invite link copied! Share it with your pool members.");
   };
 
   if (status === "loading" || isLoading) {
@@ -251,6 +260,25 @@ export default function AdminPoolsPage() {
                 </div>
                 <div className="mt-3 text-sm text-slate-500">
                   Deadline: {new Date(pool.deadline).toLocaleString()}
+                </div>
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                    <LinkIcon className="h-3 w-3" />
+                    Shareable Invite Link
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 text-xs bg-slate-100 rounded px-3 py-2 font-mono truncate">
+                      {typeof window !== "undefined" ? window.location.origin : "https://picknroll.net"}/join?code={pool.inviteCode}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleCopyInviteLink(pool.inviteCode)}
+                    >
+                      <Share2 className="h-3.5 w-3.5 mr-1" />
+                      Copy Link
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

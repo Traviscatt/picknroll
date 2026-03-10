@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,16 +13,18 @@ import { Trophy, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { TEAMS } from "@/lib/team-colors";
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
-      router.replace("/dashboard");
+      router.replace(callbackUrl);
     }
-  }, [status, router]);
+  }, [status, router, callbackUrl]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -68,8 +70,19 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success("Account created! Please sign in.");
-      router.push("/login");
+      toast.success("Account created! Signing you in...");
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (signInResult?.error) {
+        toast.error("Account created but auto-login failed. Please sign in.");
+        router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      } else {
+        router.refresh();
+        router.replace(callbackUrl);
+      }
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -241,7 +254,7 @@ export default function RegisterPage() {
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              <Link href={`/login${callbackUrl !== "/dashboard" ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ""}`} className="text-primary hover:underline font-medium">
                 Sign in
               </Link>
             </p>
@@ -249,5 +262,17 @@ export default function RegisterPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }

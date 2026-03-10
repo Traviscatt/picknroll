@@ -36,13 +36,13 @@ export default async function Home() {
               NCAA Tournament 2026
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
-              From Bracket to{" "}
+              Make Every Pick{" "}
               <span className="text-primary">
-                Bankroll
+                Count
               </span>
             </h1>
             <p className="mb-8 text-xl text-slate-600 md:text-2xl">
-              Pick<span className="font-bold text-primary">N</span>Roll!
+              Pick<span className="font-bold text-primary">N</span>Roll
             </p>
             <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-600">
               The ultimate NCAA Tournament bracket pool with our unique multi-choice
@@ -281,7 +281,7 @@ export default async function Home() {
               </span>
             </div>
             <p className="text-sm">
-              © {new Date().getFullYear()} Pick N Roll. From Bracket to Bankroll!
+              © {new Date().getFullYear()} Pick N Roll. Make Every Pick Count.
             </p>
           </div>
         </div>

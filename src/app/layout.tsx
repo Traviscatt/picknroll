@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Pick N Roll | NCAA Tournament Pool",
-  description: "From Bracket to Bankroll - Pick N Roll! The ultimate NCAA Tournament bracket pool with multi-choice scoring.",
+  description: "Make Every Pick Count. The ultimate NCAA Tournament bracket pool with multi-choice scoring.",
   keywords: ["NCAA", "March Madness", "bracket", "pool", "tournament"],
 };
 

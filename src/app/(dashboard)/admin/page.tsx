@@ -130,6 +130,13 @@ export default function AdminDashboardPage() {
       color: "bg-primary",
     },
     {
+      title: "Manage Users",
+      description: "View users, toggle admin privileges",
+      icon: Users,
+      href: "/admin/users",
+      color: "bg-purple-500",
+    },
+    {
       title: "Announcements",
       description: "Post messages to all participants",
       icon: Megaphone,

@@ -10,7 +10,7 @@ const createPoolSchema = z.object({
   description: z.string().optional(),
   entryFee: z.number().min(0).default(5),
   deadline: z.string().datetime(),
-  paypalLink: z.string().url().optional(),
+  paypalLink: z.string().optional(),
   venmoHandle: z.string().optional(),
 });
 

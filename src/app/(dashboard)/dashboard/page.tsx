@@ -20,6 +20,9 @@ import {
   CheckCircle,
   Megaphone,
   Pin,
+  BookOpen,
+  Target,
+  AlertTriangle,
 } from "lucide-react";
 
 interface Bracket {
@@ -440,38 +443,112 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* How Scoring Works */}
-      <Card>
+      {/* Tournament Instructions & Scoring */}
+      <Card className="border-t-4 border-t-primary">
         <CardHeader>
-          <CardTitle>How Our Scoring Works</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            Tournament Instructions
+          </CardTitle>
           <CardDescription>
-            Our unique multi-choice system lets you hedge your bets in later rounds
+            Everything you need to know about the bracket pool
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <h4 className="font-semibold mb-2">Rounds 1 & 2</h4>
-              <p className="text-sm text-slate-600 mb-2">Traditional single picks</p>
-              <div className="flex gap-2">
-                <Badge>R1: 2 pts</Badge>
-                <Badge>R2: 5 pts</Badge>
+        <CardContent className="space-y-6">
+          {/* Key Rules */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Target className="h-5 w-5 text-primary" />
+                <h4 className="font-semibold">How Picks Work</h4>
+              </div>
+              <p className="text-sm text-slate-600 mb-3">
+                <strong>One sheet per person.</strong> Each round lets you pick more potential winners:
+              </p>
+              <ul className="text-sm text-slate-600 space-y-1.5">
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <strong>Round 1 & 2:</strong> 1 pick per game
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <strong>Round 3 (Sweet 16):</strong> 2 picks per game
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <strong>Round 4 (Elite 8):</strong> 3 picks per game
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <strong>Round 5 (Final Four):</strong> 4 picks per game
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-primary"></span>
+                  <strong>Round 6 (Championship):</strong> 5 picks per game
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                  <h4 className="font-semibold text-yellow-800">Important Deadline</h4>
+                </div>
+                <p className="text-sm text-yellow-700">
+                  Bracket must be <strong>submitted and paid</strong> before tip-off of the first game:
+                </p>
+                <p className="text-lg font-bold text-yellow-800 mt-2">
+                  <Clock className="h-4 w-4 inline mr-1" />
+                  Thursday, March 19, 2026 at 12:15 PM ET
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-50 border rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy className="h-5 w-5 text-slate-600" />
+                  <h4 className="font-semibold">Tiebreaker</h4>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Total combined points of the Championship game.
+                </p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Example: Team A scores 45, Team B scores 50 → Tiebreaker = <strong>95 points</strong>
+                </p>
               </div>
             </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <h4 className="font-semibold mb-2">Sweet 16 & Elite 8</h4>
-              <p className="text-sm text-slate-600 mb-2">Multi-choice picks</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">S16: 10/5 pts</Badge>
-                <Badge variant="outline">E8: 15/10/5 pts</Badge>
+          </div>
+
+          {/* Scoring Breakdown */}
+          <div>
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Scoring Breakdown
+            </h4>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <h5 className="font-medium text-sm mb-2">Rounds 1 & 2</h5>
+                <p className="text-xs text-slate-500 mb-2">Single picks</p>
+                <div className="flex gap-2">
+                  <Badge>R1: 2 pts</Badge>
+                  <Badge>R2: 5 pts</Badge>
+                </div>
               </div>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-lg">
-              <h4 className="font-semibold mb-2">Final Four & Championship</h4>
-              <p className="text-sm text-slate-600 mb-2">Maximum hedging</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">FF: 25/15/10/5</Badge>
-                <Badge variant="outline">Champ: 35/25/15/10/5</Badge>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <h5 className="font-medium text-sm mb-2">Sweet 16 & Elite 8</h5>
+                <p className="text-xs text-slate-500 mb-2">Multi-choice picks</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">S16: 10/5 pts</Badge>
+                  <Badge variant="outline">E8: 15/10/5 pts</Badge>
+                </div>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <h5 className="font-medium text-sm mb-2">Final Four & Champ</h5>
+                <p className="text-xs text-slate-500 mb-2">Maximum hedging</p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="outline">FF: 25/15/10/5</Badge>
+                  <Badge variant="outline">Champ: 35/25/15/10/5</Badge>
+                </div>
               </div>
             </div>
           </div>

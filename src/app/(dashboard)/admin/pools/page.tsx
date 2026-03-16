@@ -33,6 +33,9 @@ import {
   Save,
   DollarSign,
   Calendar,
+  ChevronDown,
+  ChevronUp,
+  Crown,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,7 +50,7 @@ interface Pool {
   venmoHandle?: string | null;
   paypalLink?: string | null;
   createdAt: string;
-  members: { userId: string; role: string; user: { name: string } }[];
+  members: { userId: string; role: string; user: { name: string; email?: string } }[];
   _count: { brackets: number };
 }
 
@@ -80,6 +83,7 @@ export default function AdminPoolsPage() {
     paypalLink: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
 
   // New pool form state
   const [newPoolName, setNewPoolName] = useState("");
@@ -407,6 +411,54 @@ export default function AdminPoolsPage() {
                     {pool.paypalLink && <span>PayPal</span>}
                   </div>
                 )}
+
+                {/* Expandable Members List */}
+                <div className="mt-3 pt-3 border-t">
+                  <button
+                    onClick={() => setExpandedPoolId(expandedPoolId === pool.id ? null : pool.id)}
+                    className="flex items-center justify-between w-full text-sm font-medium text-slate-700 hover:text-primary transition-colors"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Users className="h-4 w-4" />
+                      Pool Members ({pool.members?.length ?? 0})
+                    </span>
+                    {expandedPoolId === pool.id ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </button>
+                  {expandedPoolId === pool.id && pool.members && (
+                    <div className="mt-2 space-y-1">
+                      {pool.members.map((member, idx) => (
+                        <div
+                          key={member.userId}
+                          className="flex items-center justify-between py-1.5 px-2 rounded text-sm bg-slate-50"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400 w-5">{idx + 1}.</span>
+                            <span>
+                              <span className="font-medium">{member.user.name || "Unknown"}</span>
+                              {member.user.email && (
+                                <span className="text-xs text-slate-400 ml-2">{member.user.email}</span>
+                              )}
+                            </span>
+                          </span>
+                          {member.role === "ADMIN" && (
+                            <Badge variant="outline" className="text-xs flex items-center gap-1">
+                              <Crown className="h-3 w-3" />
+                              Admin
+                            </Badge>
+                          )}
+                        </div>
+                      ))}
+                      {pool.members.length === 0 && (
+                        <p className="text-xs text-slate-400 py-2">No members yet</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
                     <LinkIcon className="h-3 w-3" />

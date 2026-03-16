@@ -228,10 +228,10 @@ export function DesktopBracketView({
     <div className="w-full overflow-x-auto bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
       <div className="min-w-[1200px] p-4">
 
-        {/* Top half: South (L→R)  ·  East (R←L) → FF Game 1 */}
+        {/* Top half: East (L→R)  ·  West (R←L) → FF Game 1 */}
         <div className="flex justify-between items-start">
           <RegionBracket
-            region="South"
+            region="East"
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -239,7 +239,7 @@ export function DesktopBracketView({
           />
 
           <RegionBracket
-            region="East"
+            region="West"
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -271,10 +271,10 @@ export function DesktopBracketView({
           </div>
         </div>
 
-        {/* Bottom half: West (L→R)  ·  Midwest (R←L) → FF Game 2 */}
+        {/* Bottom half: South (L→R)  ·  Midwest (R←L) → FF Game 2 */}
         <div className="flex justify-between items-start -mt-14">
           <RegionBracket
-            region="West"
+            region="South"
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}

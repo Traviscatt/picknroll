@@ -29,6 +29,10 @@ import {
   Share2,
   Link as LinkIcon,
   Trash2,
+  Pencil,
+  Save,
+  DollarSign,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,9 +44,20 @@ interface Pool {
   inviteCode: string;
   deadline: string;
   status: string;
+  venmoHandle?: string | null;
+  paypalLink?: string | null;
   createdAt: string;
   members: { userId: string; role: string; user: { name: string } }[];
   _count: { brackets: number };
+}
+
+interface EditForm {
+  name: string;
+  description: string;
+  entryFee: string;
+  deadline: string;
+  venmoHandle: string;
+  paypalLink: string;
 }
 
 export default function AdminPoolsPage() {
@@ -53,6 +68,18 @@ export default function AdminPoolsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingPoolId, setDeletingPoolId] = useState<string | null>(null);
+
+  // Edit dialog state
+  const [editingPool, setEditingPool] = useState<Pool | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({
+    name: "",
+    description: "",
+    entryFee: "5",
+    deadline: "",
+    venmoHandle: "",
+    paypalLink: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
 
   // New pool form state
   const [newPoolName, setNewPoolName] = useState("");
@@ -138,6 +165,63 @@ export default function AdminPoolsPage() {
     setNewPoolPaypal("");
   };
 
+  const openEditDialog = (pool: Pool) => {
+    setEditingPool(pool);
+    const deadlineDate = new Date(pool.deadline);
+    const localDeadline = deadlineDate.getFullYear() + "-" +
+      String(deadlineDate.getMonth() + 1).padStart(2, "0") + "-" +
+      String(deadlineDate.getDate()).padStart(2, "0") + "T" +
+      String(deadlineDate.getHours()).padStart(2, "0") + ":" +
+      String(deadlineDate.getMinutes()).padStart(2, "0");
+    setEditForm({
+      name: pool.name,
+      description: pool.description || "",
+      entryFee: parseFloat(pool.entryFee).toString(),
+      deadline: localDeadline,
+      venmoHandle: pool.venmoHandle || "",
+      paypalLink: pool.paypalLink || "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPool) return;
+    if (!editForm.name.trim()) {
+      toast.error("Pool name is required");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/pools/${editingPool.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          description: editForm.description || undefined,
+          entryFee: parseFloat(editForm.entryFee) || 5,
+          deadline: editForm.deadline ? new Date(editForm.deadline).toISOString() : undefined,
+          venmoHandle: editForm.venmoHandle || undefined,
+          paypalLink: editForm.paypalLink || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update pool");
+      }
+
+      const updatedPool = await response.json();
+      setPools(pools.map((p) => (p.id === updatedPool.id ? updatedPool : p)));
+      setEditingPool(null);
+      toast.success("Pool settings saved!");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update pool";
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success("Invite code copied!");
@@ -199,7 +283,7 @@ export default function AdminPoolsPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Manage Pools</h1>
             <p className="text-slate-600">
-              Create and manage bracket pools
+              Create, edit, and manage bracket pools
             </p>
           </div>
         </div>
@@ -253,6 +337,15 @@ export default function AdminPoolsPage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEditDialog(pool)}
+                      title="Edit pool settings"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                       onClick={() => handleDeletePool(pool.id, pool.name)}
                       disabled={deletingPoolId === pool.id}
@@ -302,8 +395,18 @@ export default function AdminPoolsPage() {
                   </div>
                 </div>
                 <div className="mt-3 text-sm text-slate-500">
+                  <Calendar className="h-3.5 w-3.5 inline mr-1" />
                   Deadline: {new Date(pool.deadline).toLocaleString()}
                 </div>
+                {(pool.venmoHandle || pool.paypalLink) && (
+                  <div className="mt-2 text-sm text-slate-500">
+                    <DollarSign className="h-3.5 w-3.5 inline mr-1" />
+                    Payment:{" "}
+                    {pool.venmoHandle && <span>Venmo {pool.venmoHandle}</span>}
+                    {pool.venmoHandle && pool.paypalLink && <span> · </span>}
+                    {pool.paypalLink && <span>PayPal</span>}
+                  </div>
+                )}
                 <div className="mt-3 pt-3 border-t">
                   <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
                     <LinkIcon className="h-3 w-3" />
@@ -327,6 +430,38 @@ export default function AdminPoolsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Prize Distribution */}
+      {pools.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" />
+              Prize Distribution
+            </CardTitle>
+            <CardDescription>How the prize pool will be split</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                <span className="font-medium">1st Place</span>
+                <span className="text-lg font-bold">65%</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg">
+                <span className="font-medium">2nd Place</span>
+                <span className="text-lg font-bold">25%</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                <span className="font-medium">3rd Place</span>
+                <span className="text-lg font-bold">10%</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-500 mt-3">
+              Prize distribution is fixed. Contact support to customize.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Create Pool Dialog */}
@@ -419,6 +554,101 @@ export default function AdminPoolsPage() {
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
                   Create Pool
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Pool Dialog */}
+      <Dialog open={!!editingPool} onOpenChange={(open) => !open && setEditingPool(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Pool Settings</DialogTitle>
+            <DialogDescription>
+              Update pool details, deadline, and payment methods.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Pool Name *</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-desc">Description</Label>
+              <Textarea
+                id="edit-desc"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={2}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-fee">Entry Fee ($)</Label>
+                <Input
+                  id="edit-fee"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editForm.entryFee}
+                  onChange={(e) => setEditForm({ ...editForm, entryFee: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-deadline">Deadline</Label>
+                <Input
+                  id="edit-deadline"
+                  type="datetime-local"
+                  value={editForm.deadline}
+                  onChange={(e) => setEditForm({ ...editForm, deadline: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-venmo">Venmo Handle</Label>
+                <Input
+                  id="edit-venmo"
+                  value={editForm.venmoHandle}
+                  onChange={(e) => setEditForm({ ...editForm, venmoHandle: e.target.value })}
+                  placeholder="@username"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-paypal">PayPal Link</Label>
+                <Input
+                  id="edit-paypal"
+                  value={editForm.paypalLink}
+                  onChange={(e) => setEditForm({ ...editForm, paypalLink: e.target.value })}
+                  placeholder="https://paypal.me/..."
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPool(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-primary hover:bg-primary/90"
+              onClick={handleSaveEdit}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
                 </>
               )}
             </Button>

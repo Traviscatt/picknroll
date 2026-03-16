@@ -12,7 +12,6 @@ import {
   Trophy,
   DollarSign,
   FileText,
-  Settings,
   BarChart3,
   CheckCircle,
   Clock,
@@ -118,7 +117,7 @@ export default function AdminDashboardPage() {
     },
     {
       title: "Manage Pools",
-      description: "Create pools and manage invite codes",
+      description: "Create, edit, and manage pools and settings",
       icon: Users,
       href: "/admin/pools",
       color: "bg-green-500",
@@ -129,13 +128,6 @@ export default function AdminDashboardPage() {
       icon: Trophy,
       href: "/admin/results",
       color: "bg-primary",
-    },
-    {
-      title: "Pool Settings",
-      description: "Edit pool details, deadlines, payment info",
-      icon: Settings,
-      href: "/admin/settings",
-      color: "bg-purple-500",
     },
     {
       title: "Announcements",

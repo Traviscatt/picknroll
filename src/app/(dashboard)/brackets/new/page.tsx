@@ -50,7 +50,7 @@ import { toast } from "sonner";
 import { SCORING_RULES, getChoicesForRound } from "@/lib/scoring";
 
 // Sample teams for demonstration
-const REGIONS = ["South", "West", "East", "Midwest"] as const;
+const REGIONS = ["East", "South", "West", "Midwest"] as const;
 type Region = (typeof REGIONS)[number];
 
 interface Team {
@@ -63,8 +63,25 @@ interface Team {
 }
 
 // 2026 NCAA Tournament Team Data with ESPN logo URLs
-// Regions: South, West, East, Midwest
+// Regions: East, South, West, Midwest
 const TEAM_DATA: { name: string; logo: string; record: string }[] = [
+  // EAST REGION (seeds 1-16) — Washington, D.C.
+  { name: "Duke", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", record: "32-2" },
+  { name: "UConn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/41.png", record: "29-5" },
+  { name: "Michigan State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png", record: "25-7" },
+  { name: "Kansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png", record: "23-10" },
+  { name: "St. John's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2599.png", record: "28-6" },
+  { name: "Louisville", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png", record: "23-10" },
+  { name: "UCLA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/26.png", record: "23-11" },
+  { name: "Ohio State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png", record: "21-12" },
+  { name: "TCU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png", record: "22-11" },
+  { name: "UCF", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2116.png", record: "21-11" },
+  { name: "South Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/58.png", record: "25-8" },
+  { name: "Northern Iowa", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2460.png", record: "23-12" },
+  { name: "Cal Baptist", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2856.png", record: "25-8" },
+  { name: "North Dakota State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2449.png", record: "27-7" },
+  { name: "Furman", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/231.png", record: "22-12" },
+  { name: "Siena", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2561.png", record: "23-11" },
   // SOUTH REGION (seeds 1-16) — Houston
   { name: "Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png", record: "26-7" },
   { name: "Houston", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/248.png", record: "28-6" },
@@ -99,23 +116,6 @@ const TEAM_DATA: { name: string; logo: string; record: string }[] = [
   { name: "Kennesaw State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/338.png", record: "21-13" },
   { name: "Queens", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/693.png", record: "21-13" },
   { name: "LIU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2344.png", record: "24-10" },
-  // EAST REGION (seeds 1-16) — Washington, D.C.
-  { name: "Duke", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", record: "32-2" },
-  { name: "UConn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/41.png", record: "29-5" },
-  { name: "Michigan State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png", record: "25-7" },
-  { name: "Kansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png", record: "23-10" },
-  { name: "St. John's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2599.png", record: "28-6" },
-  { name: "Louisville", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png", record: "23-10" },
-  { name: "UCLA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/26.png", record: "23-11" },
-  { name: "Ohio State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png", record: "21-12" },
-  { name: "TCU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png", record: "22-11" },
-  { name: "UCF", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2116.png", record: "21-11" },
-  { name: "South Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/58.png", record: "25-8" },
-  { name: "Northern Iowa", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2460.png", record: "23-12" },
-  { name: "Cal Baptist", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2856.png", record: "25-8" },
-  { name: "North Dakota State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2449.png", record: "27-7" },
-  { name: "Furman", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/231.png", record: "22-12" },
-  { name: "Siena", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2561.png", record: "23-11" },
   // MIDWEST REGION (seeds 1-16) — Chicago
   { name: "Michigan", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png", record: "31-3" },
   { name: "Iowa State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png", record: "27-7" },
@@ -526,15 +526,15 @@ function NewBracketContent() {
         .filter((t): t is Team => t !== undefined);
     };
     
-    // Semifinal 1: South vs West - show all E8 picks from both regions
-    const semi1Teams = [...getE8Picks("South"), ...getE8Picks("West")];
+    // Semifinal 1: East vs South - show all E8 picks from both regions
+    const semi1Teams = [...getE8Picks("East"), ...getE8Picks("South")];
     
-    // Semifinal 2: East vs Midwest - show all E8 picks from both regions
-    const semi2Teams = [...getE8Picks("East"), ...getE8Picks("Midwest")];
+    // Semifinal 2: West vs Midwest - show all E8 picks from both regions
+    const semi2Teams = [...getE8Picks("West"), ...getE8Picks("Midwest")];
     
     return [
-      { game: 1, eligibleTeams: semi1Teams, label: "South vs West" },
-      { game: 2, eligibleTeams: semi2Teams, label: "East vs Midwest" },
+      { game: 1, eligibleTeams: semi1Teams, label: "East vs South" },
+      { game: 2, eligibleTeams: semi2Teams, label: "West vs Midwest" },
     ];
   };
 

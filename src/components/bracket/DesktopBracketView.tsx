@@ -228,7 +228,7 @@ export function DesktopBracketView({
     <div className="w-full overflow-x-auto bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
       <div className="min-w-[1200px] p-4">
 
-        {/* Top half: South (L→R)  ·  East (R←L) */}
+        {/* Top half: South (L→R)  ·  East (R←L) → FF Game 1 */}
         <div className="flex justify-between items-start">
           <RegionBracket
             region="South"
@@ -247,12 +247,12 @@ export function DesktopBracketView({
           />
         </div>
 
-        {/* Center row: FF(South vs West) · Championship · FF(East vs Midwest) */}
+        {/* Center row: FF(East vs South) · Championship · FF(West vs Midwest) */}
         <div className="flex items-center justify-center gap-6 py-4 -mt-14">
-          {/* FF Game 1: South vs West */}
+          {/* FF Game 1: East vs South */}
           <div className="flex flex-col items-center">
             <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">South vs West</div>
+            <div className="text-[9px] text-slate-500 mb-1">East vs South</div>
             {renderCenterSlot("final-four-r5-g1", 5, getFinalFourTeams(1))}
           </div>
 
@@ -263,15 +263,15 @@ export function DesktopBracketView({
             {renderCenterSlot("championship-r6-g1", 6, getChampionshipTeams())}
           </div>
 
-          {/* FF Game 2: East vs Midwest */}
+          {/* FF Game 2: West vs Midwest */}
           <div className="flex flex-col items-center">
             <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">East vs Midwest</div>
+            <div className="text-[9px] text-slate-500 mb-1">West vs Midwest</div>
             {renderCenterSlot("final-four-r5-g2", 5, getFinalFourTeams(2))}
           </div>
         </div>
 
-        {/* Bottom half: West (L→R)  ·  Midwest (R←L) */}
+        {/* Bottom half: West (L→R)  ·  Midwest (R←L) → FF Game 2 */}
         <div className="flex justify-between items-start -mt-14">
           <RegionBracket
             region="West"

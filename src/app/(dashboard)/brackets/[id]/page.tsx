@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,8 @@ import {
   Trash2,
   AlertTriangle,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -31,6 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { getTeamName, getTeamInfo, getTeamLogo, REGIONS } from "@/lib/bracket-teams";
 
 interface PickData {
   gameId: string;
@@ -57,6 +61,9 @@ interface Bracket {
   } | null;
 }
 
+const ROUND_NAMES = ["First Round", "Second Round", "Sweet 16", "Elite 8", "Final Four", "Championship"];
+const ROUND_POINTS = ["2 pts", "5 pts", "10/5 pts", "15/10/5 pts", "25/15/10/5 pts", "35/25/15/10/5 pts"];
+
 export default function BracketDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -66,6 +73,16 @@ export default function BracketDetailPage() {
   const [bracket, setBracket] = useState<Bracket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [expandedRounds, setExpandedRounds] = useState<Set<number>>(new Set([1, 2, 3, 4, 5, 6]));
+
+  const toggleRound = (round: number) => {
+    setExpandedRounds((prev) => {
+      const next = new Set(prev);
+      if (next.has(round)) next.delete(round);
+      else next.add(round);
+      return next;
+    });
+  };
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -154,6 +171,34 @@ export default function BracketDetailPage() {
           </Badge>
         );
     }
+  };
+
+  // Render team picks for a game
+  const renderTeamPick = (teamId: string, rank: number) => {
+    const name = getTeamName(teamId);
+    const info = getTeamInfo(teamId);
+    const logo = getTeamLogo(teamId);
+    return (
+      <div key={teamId} className="flex items-center gap-2 py-1">
+        {rank > 0 && (
+          <span className="text-xs text-slate-400 w-4 text-right shrink-0">{rank}.</span>
+        )}
+        {logo && (
+          <Image
+            src={logo}
+            alt={name}
+            width={20}
+            height={20}
+            className="w-5 h-5 object-contain shrink-0"
+            unoptimized
+          />
+        )}
+        <span className="text-sm font-medium">{name}</span>
+        {info && (
+          <span className="text-xs text-slate-400">({info.seed})</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -292,13 +337,16 @@ export default function BracketDetailPage() {
         </Card>
       </div>
 
-      {/* Bracket Picks Summary */}
+      {/* Bracket Picks - Full Detail */}
       <Card>
         <CardHeader>
-          <CardTitle>Bracket Picks</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-5 w-5 text-primary" />
+            Your Bracket Picks
+          </CardTitle>
           <CardDescription>
             {parsedPicks.length > 0 
-              ? `${parsedPicks.length} picks made`
+              ? `${parsedPicks.length} games picked across all rounds`
               : "No picks recorded yet"
             }
           </CardDescription>
@@ -318,26 +366,101 @@ export default function BracketDetailPage() {
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              <p className="text-slate-600 mb-4">
-                Your picks have been saved. {parsedPicks.length} games selected.
-              </p>
-              <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3, 4, 5, 6].map((round) => {
-                  const roundPicks = parsedPicks.filter((p: PickData) => p.round === round);
-                  const roundNames = ["First Round", "Second Round", "Sweet 16", "Elite 8", "Final Four", "Championship"];
-                  return (
-                    <div key={round} className="p-3 bg-slate-50 rounded-lg">
-                      <p className="font-medium text-sm text-slate-700">
-                        Round {round}: {roundNames[round - 1]}
-                      </p>
-                      <p className="text-2xl font-bold text-primary">
-                        {roundPicks.length} picks
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5, 6].map((round) => {
+                const roundPicks = parsedPicks.filter((p) => p.round === round);
+                if (roundPicks.length === 0) return null;
+                const isExpanded = expandedRounds.has(round);
+
+                return (
+                  <div key={round} className="border rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => toggleRound(round)}
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-primary">
+                          Round {round}: {ROUND_NAMES[round - 1]}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {ROUND_POINTS[round - 1]}
+                        </Badge>
+                        <span className="text-xs text-slate-500">
+                          {roundPicks.length} {roundPicks.length === 1 ? "game" : "games"}
+                        </span>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4 text-slate-400" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                      )}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="p-3">
+                        {round <= 4 ? (
+                          // Region-based rounds
+                          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                            {REGIONS.map((region) => {
+                              const regionPicks = roundPicks.filter((p) =>
+                                p.gameId.startsWith(region.toLowerCase())
+                              );
+                              if (regionPicks.length === 0) return null;
+                              return (
+                                <div key={region}>
+                                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                                    {region}
+                                  </p>
+                                  <div className="space-y-2">
+                                    {regionPicks.map((pick) => (
+                                      <div
+                                        key={pick.gameId}
+                                        className="bg-slate-50 rounded-md p-2"
+                                      >
+                                        <p className="text-[10px] text-slate-400 mb-0.5">
+                                          Game {pick.gameId.split("-g")[1]}
+                                        </p>
+                                        {pick.choices.map((teamId, i) =>
+                                          renderTeamPick(teamId, pick.choices.length > 1 ? i + 1 : 0)
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          // Final Four & Championship
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {roundPicks.map((pick) => {
+                              const label =
+                                round === 5
+                                  ? pick.gameId.includes("g1")
+                                    ? "East vs South"
+                                    : "West vs Midwest"
+                                  : "Championship Game";
+                              return (
+                                <div
+                                  key={pick.gameId}
+                                  className="bg-slate-50 rounded-md p-3"
+                                >
+                                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                                    {label}
+                                  </p>
+                                  {pick.choices.map((teamId, i) =>
+                                    renderTeamPick(teamId, i + 1)
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </CardContent>

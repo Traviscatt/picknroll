@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  Megaphone,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -135,6 +136,13 @@ export default function AdminDashboardPage() {
       icon: Settings,
       href: "/admin/settings",
       color: "bg-purple-500",
+    },
+    {
+      title: "Announcements",
+      description: "Post messages to all participants",
+      icon: Megaphone,
+      href: "/admin/announcements",
+      color: "bg-pink-500",
     },
   ];
 

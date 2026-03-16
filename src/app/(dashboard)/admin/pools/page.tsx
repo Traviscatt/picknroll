@@ -28,6 +28,7 @@ import {
   CheckCircle,
   Share2,
   Link as LinkIcon,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +52,7 @@ export default function AdminPoolsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingPoolId, setDeletingPoolId] = useState<string | null>(null);
 
   // New pool form state
   const [newPoolName, setNewPoolName] = useState("");
@@ -148,6 +150,32 @@ export default function AdminPoolsPage() {
     toast.success("Invite link copied! Share it with your pool members.");
   };
 
+  const handleDeletePool = async (poolId: string, poolName: string) => {
+    if (!confirm(`Are you sure you want to delete "${poolName}"? This will also delete all brackets and picks in this pool. This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingPoolId(poolId);
+    try {
+      const response = await fetch(`/api/pools/${poolId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete pool");
+      }
+
+      setPools(pools.filter((p) => p.id !== poolId));
+      toast.success(`Pool "${poolName}" deleted successfully`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete pool";
+      toast.error(message);
+    } finally {
+      setDeletingPoolId(null);
+    }
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -216,11 +244,26 @@ export default function AdminPoolsPage() {
                       <CardDescription className="mt-1">{pool.description}</CardDescription>
                     )}
                   </div>
-                  <Badge
-                    className={pool.status === "OPEN" ? "bg-green-500" : "bg-slate-500"}
-                  >
-                    {pool.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      className={pool.status === "OPEN" ? "bg-green-500" : "bg-slate-500"}
+                    >
+                      {pool.status}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDeletePool(pool.id, pool.name)}
+                      disabled={deletingPoolId === pool.id}
+                    >
+                      {deletingPoolId === pool.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>

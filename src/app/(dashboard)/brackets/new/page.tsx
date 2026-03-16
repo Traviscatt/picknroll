@@ -30,7 +30,6 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { GameCard, DesktopBracketView } from "@/components/bracket";
-import { generateBracketPDF } from "@/lib/generateBracketPDF";
 import {
   Dialog,
   DialogContent,
@@ -1175,8 +1174,10 @@ function NewBracketContent() {
           variant="outline"
           size="sm"
           onClick={() => {
-            const doc = generateBracketPDF(SAMPLE_TEAMS);
-            doc.save("picknroll-bracket-2025.pdf");
+            const link = document.createElement("a");
+            link.href = "/NCAA_Bracket2026.pdf";
+            link.download = "NCAA_Bracket2026.pdf";
+            link.click();
           }}
         >
           <Download className="mr-1.5 h-4 w-4" />

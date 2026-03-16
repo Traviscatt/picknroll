@@ -27,6 +27,7 @@ model User {
   sessions           Session[]
   familyMembers      FamilyMember[]
   linkedAsFamilyMember FamilyMember? @relation("LinkedFamilyMember")
+  announcements      Announcement[] @relation("Announcements")
 }
 
 // Family Members - can have their own brackets, optionally get their own login later
@@ -235,6 +236,19 @@ model Pick {
   teamId    String
 
   @@unique([bracketId, gameId, choiceRank])
+}
+
+// Announcements / Message Board
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User   @relation("Announcements", fields: [authorId], references: [id])
+  authorId String
 }
 
 // Payments

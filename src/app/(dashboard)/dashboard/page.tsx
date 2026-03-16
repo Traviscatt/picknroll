@@ -18,6 +18,8 @@ import {
   ChevronRight,
   Clock,
   CheckCircle,
+  Megaphone,
+  Pin,
 } from "lucide-react";
 
 interface Bracket {
@@ -41,11 +43,21 @@ interface Pool {
   members: { userId: string; role: string; user: { name: string } }[];
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  pinned: boolean;
+  createdAt: string;
+  author: { name: string };
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [brackets, setBrackets] = useState<Bracket[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -57,12 +69,14 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bracketsRes, poolsRes] = await Promise.all([
+        const [bracketsRes, poolsRes, announcementsRes] = await Promise.all([
           fetch("/api/brackets"),
           fetch("/api/pools"),
+          fetch("/api/announcements"),
         ]);
         if (bracketsRes.ok) setBrackets(await bracketsRes.json());
         if (poolsRes.ok) setPools(await poolsRes.json());
+        if (announcementsRes.ok) setAnnouncements(await announcementsRes.json());
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -197,6 +211,43 @@ export default function DashboardPage() {
                 </div>
               </Link>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Announcements */}
+      {announcements.length > 0 && (
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-primary" />
+              Announcements
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {announcements.slice(0, 3).map((announcement) => (
+              <div
+                key={announcement.id}
+                className={`p-4 rounded-lg border ${announcement.pinned ? "bg-primary/5 border-primary/20" : "bg-slate-50"}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm">{announcement.title}</h4>
+                      {announcement.pinned && (
+                        <Pin className="h-3 w-3 text-primary" />
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap line-clamp-2">
+                      {announcement.message}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {announcement.author.name} · {new Date(announcement.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

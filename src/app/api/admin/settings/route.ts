@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
 
@@ -34,6 +35,7 @@ export async function GET() {
       venmoHandle: pool.venmoHandle || "",
       paypalLink: pool.paypalLink || "",
       inviteCode: pool.inviteCode,
+      viewCode: pool.viewCode || null,
     });
   } catch (error) {
     console.error("Error fetching settings:", error);
@@ -76,6 +78,9 @@ export async function PATCH(req: NextRequest) {
     if (status !== undefined && ["OPEN", "CLOSED"].includes(status)) {
       updateData.status = status;
     }
+    if (body.generateViewCode) {
+      updateData.viewCode = randomBytes(6).toString("hex");
+    }
 
     const pool = await db.pool.update({
       where: { id: membership.poolId },
@@ -92,6 +97,7 @@ export async function PATCH(req: NextRequest) {
       venmoHandle: pool.venmoHandle || "",
       paypalLink: pool.paypalLink || "",
       inviteCode: pool.inviteCode,
+      viewCode: pool.viewCode || null,
     });
   } catch (error) {
     console.error("Error updating settings:", error);

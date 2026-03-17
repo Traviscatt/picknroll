@@ -1,34 +1,31 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// GET /api/leaderboard - Get leaderboard data for user's pool
-export async function GET() {
+// GET /api/share/leaderboard/[code] - Public leaderboard by viewCode (no auth)
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ code: string }> }
+) {
   try {
-    const session = await getServerSession(authOptions);
+    const { code } = await params;
 
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Find user's pool
-    const poolMembership = await db.poolMember.findFirst({
-      where: { userId: session.user.id },
+    const pool = await db.pool.findUnique({
+      where: { viewCode: code },
       select: {
-        poolId: true,
-        pool: { select: { viewCode: true } },
+        id: true,
+        name: true,
+        entryFee: true,
       },
     });
 
-    if (!poolMembership) {
-      return NextResponse.json({ entries: [], userRank: null, totalPrize: 0 });
+    if (!pool) {
+      return NextResponse.json({ error: "Invalid share code" }, { status: 404 });
     }
 
     // Get all submitted brackets in this pool
     const brackets = await db.bracket.findMany({
       where: {
-        poolId: poolMembership.poolId,
+        poolId: pool.id,
         status: { in: ["SUBMITTED", "PAID"] },
       },
       select: {
@@ -39,10 +36,6 @@ export async function GET() {
         bonusScore: true,
         tiebreaker: true,
         paid: true,
-        userId: true,
-        familyMember: {
-          select: { name: true },
-        },
       },
       orderBy: [
         { totalScore: "desc" },
@@ -53,7 +46,6 @@ export async function GET() {
     // Build ranked entries
     let currentRank = 0;
     let lastScore = -1;
-    let userRank: number | null = null;
 
     const entries = brackets.map((b, idx) => {
       const totalWithBonus = b.totalScore + b.bonusScore;
@@ -62,35 +54,27 @@ export async function GET() {
         lastScore = totalWithBonus;
       }
 
-      if (b.userId === session.user.id && userRank === null) {
-        userRank = currentRank;
-      }
-
       return {
         rank: currentRank,
-        bracketId: b.id,
         name: b.entryName,
         bracketName: b.name,
         score: b.totalScore + b.bonusScore,
         tiebreaker: b.tiebreaker,
-        paid: b.paid,
-        isCurrentUser: b.userId === session.user.id,
       };
     });
 
     const paidCount = brackets.filter((b) => b.paid).length;
-    const totalPrize = paidCount * 5; // $5 entry fee
+    const entryFee = parseFloat(pool.entryFee.toString());
+    const totalPrize = paidCount * entryFee;
 
     return NextResponse.json({
+      poolName: pool.name,
       entries,
-      userRank,
       totalPrize,
       totalEntries: brackets.length,
-      paidEntries: paidCount,
-      viewCode: poolMembership.pool?.viewCode || null,
     });
   } catch (error) {
-    console.error("Error fetching leaderboard:", error);
+    console.error("Error fetching shared leaderboard:", error);
     return NextResponse.json(
       { error: "Failed to fetch leaderboard" },
       { status: 500 }

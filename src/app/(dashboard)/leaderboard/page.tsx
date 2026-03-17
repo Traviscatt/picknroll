@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Medal, TrendingUp, Users } from "lucide-react";
+import { Trophy, Medal, TrendingUp, Users, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface LeaderboardEntry {
   rank: number;
@@ -25,6 +27,7 @@ interface LeaderboardData {
   totalPrize: number;
   totalEntries: number;
   paidEntries: number;
+  viewCode: string | null;
 }
 
 export default function LeaderboardPage() {
@@ -115,11 +118,27 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Leaderboard</h1>
-        <p className="text-slate-600 mt-1">
-          See how you stack up against the competition
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Leaderboard</h1>
+          <p className="text-slate-600 mt-1">
+            See how you stack up against the competition
+          </p>
+        </div>
+        {data?.viewCode && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(
+                `${window.location.origin}/share/leaderboard/${data.viewCode}`
+              );
+              toast.success("Share link copied!");
+            }}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+        )}
       </div>
 
       {/* Stats Overview */}

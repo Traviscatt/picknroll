@@ -104,6 +104,7 @@ model Pool {
   status      String   @default("OPEN")
   paypalLink  String?
   venmoHandle String?
+  viewCode    String?  @unique
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

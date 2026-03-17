@@ -32,7 +32,8 @@ interface Bracket {
   updatedAt: string;
   pool?: {
     name: string;
-  };
+    deadline: string;
+  } | null;
   familyMember?: {
     id: string;
     name: string;
@@ -240,14 +241,22 @@ export default function BracketsPage() {
                     <Button asChild variant="outline" size="sm">
                       <Link href={`/brackets/${bracket.id}`}>View</Link>
                     </Button>
-                    {bracket.status === "DRAFT" && (
-                      <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
-                        <Link href={`/brackets/${bracket.id}/edit`}>
-                          <Edit className="mr-1 h-3 w-3" />
-                          Edit
-                        </Link>
-                      </Button>
-                    )}
+                    {(() => {
+                      const deadlinePassed = bracket.pool?.deadline
+                        ? new Date() > new Date(bracket.pool.deadline)
+                        : false;
+                      const canEdit =
+                        bracket.status === "DRAFT" ||
+                        ((bracket.status === "SUBMITTED" || bracket.status === "PAID") && !deadlinePassed);
+                      return canEdit ? (
+                        <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
+                          <Link href={`/brackets/${bracket.id}/edit`}>
+                            <Edit className="mr-1 h-3 w-3" />
+                            Edit
+                          </Link>
+                        </Button>
+                      ) : null;
+                    })()}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="outline" size="sm" className="text-destructive border-destructive hover:bg-destructive/10">

@@ -59,6 +59,10 @@ interface Bracket {
     id: string;
     name: string;
   } | null;
+  pool?: {
+    id: string;
+    deadline: string;
+  } | null;
 }
 
 const ROUND_LABELS: Record<number, string> = { 1: "R1", 2: "R2", 3: "S16", 4: "E8" };
@@ -381,14 +385,34 @@ export default function BracketDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          {bracket.status === "DRAFT" && (
-            <Button asChild className="bg-primary hover:bg-primary/90">
-              <Link href={`/brackets/${bracket.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit Bracket
-              </Link>
-            </Button>
-          )}
+          {(() => {
+            const deadlinePassed = bracket.pool?.deadline
+              ? new Date() > new Date(bracket.pool.deadline)
+              : false;
+            const canEdit =
+              bracket.status === "DRAFT" ||
+              ((bracket.status === "SUBMITTED" || bracket.status === "PAID") && !deadlinePassed);
+
+            if (canEdit) {
+              return (
+                <Button asChild className="bg-primary hover:bg-primary/90">
+                  <Link href={`/brackets/${bracket.id}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Bracket
+                  </Link>
+                </Button>
+              );
+            }
+            if (deadlinePassed && (bracket.status === "SUBMITTED" || bracket.status === "PAID")) {
+              return (
+                <Button variant="outline" disabled>
+                  <Clock className="mr-2 h-4 w-4" />
+                  Locked (Deadline Passed)
+                </Button>
+              );
+            }
+            return null;
+          })()}
           {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
             <Button asChild className="bg-green-600 hover:bg-green-700">
               <Link href="/payment">

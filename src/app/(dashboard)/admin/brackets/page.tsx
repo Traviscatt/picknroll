@@ -129,20 +129,28 @@ export default function AdminBracketsPage() {
 
   const handleTogglePaid = async (bracket: Bracket) => {
     try {
+      const newPaid = !bracket.paid;
+      // When marking paid, also set status to PAID; when un-marking, revert to SUBMITTED
+      const newStatus = newPaid
+        ? "PAID"
+        : bracket.status === "PAID"
+          ? "SUBMITTED"
+          : bracket.status;
+
       const response = await fetch(`/api/admin/brackets/${bracket.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paid: !bracket.paid }),
+        body: JSON.stringify({ paid: newPaid, status: newStatus }),
       });
 
       if (!response.ok) throw new Error("Failed to update");
 
       setBrackets(
         brackets.map((b) =>
-          b.id === bracket.id ? { ...b, paid: !b.paid } : b
+          b.id === bracket.id ? { ...b, paid: newPaid, status: newStatus } : b
         )
       );
-      toast.success(`Marked as ${!bracket.paid ? "paid" : "unpaid"}`);
+      toast.success(`Marked as ${newPaid ? "paid" : "unpaid"}`);
     } catch {
       toast.error("Failed to update payment status");
     }
@@ -324,8 +332,14 @@ export default function AdminBracketsPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <Badge
-                        variant={bracket.status === "SUBMITTED" ? "default" : "outline"}
-                        className={bracket.status === "SUBMITTED" ? "bg-blue-500" : ""}
+                        variant={bracket.status === "DRAFT" ? "outline" : "default"}
+                        className={
+                          bracket.status === "PAID"
+                            ? "bg-green-500"
+                            : bracket.status === "SUBMITTED"
+                              ? "bg-blue-500"
+                              : ""
+                        }
                       >
                         {bracket.status}
                       </Badge>

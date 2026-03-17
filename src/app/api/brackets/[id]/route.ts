@@ -72,28 +72,26 @@ export async function PATCH(
 
     const { name, entryName, status, tiebreaker, picks, poolId } = body;
 
-    // Check deadline if submitting
-    if (status === "SUBMITTED") {
-      const bracketPoolId = poolId || existing.poolId;
-      if (bracketPoolId) {
-        const pool = await db.pool.findUnique({
-          where: { id: bracketPoolId },
-          select: { deadline: true, status: true },
-        });
+    // Check deadline for any update to a bracket in a pool
+    const bracketPoolId = poolId || existing.poolId;
+    if (bracketPoolId) {
+      const pool = await db.pool.findUnique({
+        where: { id: bracketPoolId },
+        select: { deadline: true, status: true },
+      });
 
-        if (pool) {
-          if (pool.status !== "OPEN") {
-            return NextResponse.json(
-              { error: "This pool is no longer accepting submissions." },
-              { status: 400 }
-            );
-          }
-          if (new Date() > pool.deadline) {
-            return NextResponse.json(
-              { error: "The submission deadline for this pool has passed." },
-              { status: 400 }
-            );
-          }
+      if (pool) {
+        if (pool.status !== "OPEN") {
+          return NextResponse.json(
+            { error: "This pool is no longer accepting changes." },
+            { status: 400 }
+          );
+        }
+        if (new Date() > pool.deadline) {
+          return NextResponse.json(
+            { error: "The deadline for this pool has passed. Brackets are locked." },
+            { status: 400 }
+          );
         }
       }
     }

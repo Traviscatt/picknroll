@@ -7,6 +7,20 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   Users,
   Trophy,
@@ -19,8 +33,16 @@ import {
   Megaphone,
   Bell,
   Loader2,
+  MessageSquare,
+  Search,
 } from "lucide-react";
 import { toast } from "sonner";
+
+interface UserForNotification {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface DashboardStats {
   totalBrackets: number;
@@ -43,6 +65,89 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sendingPaymentReminder, setSendingPaymentReminder] = useState(false);
   const [sendingDeadlineReminder, setSendingDeadlineReminder] = useState(false);
+  
+  // Custom notification state
+  const [customDialogOpen, setCustomDialogOpen] = useState(false);
+  const [customTitle, setCustomTitle] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
+  const [sendToAll, setSendToAll] = useState(true);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [allUsers, setAllUsers] = useState<UserForNotification[]>([]);
+  const [userSearch, setUserSearch] = useState("");
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [sendingCustom, setSendingCustom] = useState(false);
+  const [sendEmailWithCustom, setSendEmailWithCustom] = useState(true);
+
+  const fetchUsers = async () => {
+    if (allUsers.length > 0) return;
+    setLoadingUsers(true);
+    try {
+      const res = await fetch("/api/admin/users");
+      if (res.ok) {
+        const data = await res.json();
+        setAllUsers(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const filteredUsers = allUsers.filter(
+    (u) =>
+      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+      u.email.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const sendCustomNotification = async () => {
+    if (!customTitle.trim() || !customMessage.trim()) {
+      toast.error("Title and message are required");
+      return;
+    }
+    if (!sendToAll && selectedUserIds.length === 0) {
+      toast.error("Select at least one recipient");
+      return;
+    }
+
+    setSendingCustom(true);
+    try {
+      const res = await fetch("/api/admin/notifications/custom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: customTitle,
+          message: customMessage,
+          sendToAll,
+          userIds: sendToAll ? undefined : selectedUserIds,
+          sendEmail: sendEmailWithCustom,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`Notification sent to ${data.notified} users`);
+        setCustomDialogOpen(false);
+        setCustomTitle("");
+        setCustomMessage("");
+        setSelectedUserIds([]);
+        setSendToAll(true);
+      } else {
+        toast.error(data.error || "Failed to send notification");
+      }
+    } catch {
+      toast.error("Failed to send notification");
+    } finally {
+      setSendingCustom(false);
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -372,6 +477,133 @@ export default function AdminDashboardPage() {
               )}
               Send Deadline Reminders
             </Button>
+
+            <Dialog open={customDialogOpen} onOpenChange={(open) => {
+              setCustomDialogOpen(open);
+              if (open) fetchUsers();
+            }}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Custom Notification
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Send Custom Notification</DialogTitle>
+                  <DialogDescription>
+                    Send a custom message to all users or selected recipients
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="notif-title">Title</Label>
+                    <Input
+                      id="notif-title"
+                      placeholder="Notification title"
+                      value={customTitle}
+                      onChange={(e) => setCustomTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notif-message">Message</Label>
+                    <Textarea
+                      id="notif-message"
+                      placeholder="Your message..."
+                      rows={4}
+                      value={customMessage}
+                      onChange={(e) => setCustomMessage(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="send-email"
+                      checked={sendEmailWithCustom}
+                      onCheckedChange={(checked) => setSendEmailWithCustom(checked === true)}
+                    />
+                    <Label htmlFor="send-email" className="text-sm font-normal">
+                      Also send via email
+                    </Label>
+                  </div>
+                  <div className="space-y-3">
+                    <Label>Recipients</Label>
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="send-all"
+                          checked={sendToAll}
+                          onCheckedChange={(checked) => setSendToAll(checked === true)}
+                        />
+                        <Label htmlFor="send-all" className="text-sm font-normal">
+                          All Members ({allUsers.length})
+                        </Label>
+                      </div>
+                    </div>
+                    {!sendToAll && (
+                      <div className="space-y-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Input
+                            placeholder="Search users..."
+                            className="pl-9"
+                            value={userSearch}
+                            onChange={(e) => setUserSearch(e.target.value)}
+                          />
+                        </div>
+                        <ScrollArea className="h-48 border rounded-md p-2">
+                          {loadingUsers ? (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                            </div>
+                          ) : filteredUsers.length === 0 ? (
+                            <p className="text-sm text-slate-500 text-center py-4">
+                              No users found
+                            </p>
+                          ) : (
+                            <div className="space-y-1">
+                              {filteredUsers.map((user) => (
+                                <div
+                                  key={user.id}
+                                  className="flex items-center space-x-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
+                                  onClick={() => toggleUserSelection(user.id)}
+                                >
+                                  <Checkbox
+                                    checked={selectedUserIds.includes(user.id)}
+                                    onCheckedChange={() => toggleUserSelection(user.id)}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{user.name}</p>
+                                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </ScrollArea>
+                        {selectedUserIds.length > 0 && (
+                          <p className="text-xs text-slate-600">
+                            {selectedUserIds.length} user{selectedUserIds.length !== 1 ? "s" : ""} selected
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setCustomDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={sendCustomNotification} disabled={sendingCustom}>
+                    {sendingCustom ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                    )}
+                    Send Notification
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <p className="text-xs text-slate-500 mt-3">
             Notifications are sent via email and appear in the bell icon for each user.

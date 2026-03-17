@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -54,6 +55,9 @@ export async function PATCH(
     if (data.venmoHandle !== undefined) updateData.venmoHandle = data.venmoHandle;
     if (data.paypalLink !== undefined) updateData.paypalLink = data.paypalLink;
     if (data.status !== undefined) updateData.status = data.status;
+    if (body.generateViewCode) {
+      updateData.viewCode = randomBytes(6).toString("hex");
+    }
 
     const pool = await db.pool.update({
       where: { id },

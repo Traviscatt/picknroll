@@ -36,6 +36,8 @@ import {
   ChevronDown,
   ChevronUp,
   Crown,
+  RefreshCw,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,6 +51,7 @@ interface Pool {
   status: string;
   venmoHandle?: string | null;
   paypalLink?: string | null;
+  viewCode?: string | null;
   createdAt: string;
   members: { userId: string; role: string; user: { name: string; email?: string } }[];
   _count: { brackets: number };
@@ -84,6 +87,7 @@ export default function AdminPoolsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [expandedPoolId, setExpandedPoolId] = useState<string | null>(null);
+  const [generatingViewCodeFor, setGeneratingViewCodeFor] = useState<string | null>(null);
 
   // New pool form state
   const [newPoolName, setNewPoolName] = useState("");
@@ -456,6 +460,92 @@ export default function AdminPoolsPage() {
                         <p className="text-xs text-slate-400 py-2">No members yet</p>
                       )}
                     </div>
+                  )}
+                </div>
+
+                {/* Share Leaderboard */}
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                    <Eye className="h-3 w-3" />
+                    Share Leaderboard (Public — No Account Needed)
+                  </p>
+                  {pool.viewCode ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-xs bg-slate-100 rounded px-3 py-2 font-mono truncate">
+                          {typeof window !== "undefined" ? window.location.origin : ""}/share/leaderboard/{pool.viewCode}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `${window.location.origin}/share/leaderboard/${pool.viewCode}`
+                            );
+                            toast.success("Share link copied!");
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                        disabled={generatingViewCodeFor === pool.id}
+                        onClick={async () => {
+                          setGeneratingViewCodeFor(pool.id);
+                          try {
+                            const res = await fetch(`/api/pools/${pool.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ generateViewCode: true }),
+                            });
+                            if (res.ok) {
+                              const updated = await res.json();
+                              setPools(pools.map((p) => (p.id === updated.id ? updated : p)));
+                              toast.success("New share link generated!");
+                            }
+                          } catch {
+                            toast.error("Failed to regenerate");
+                          } finally {
+                            setGeneratingViewCodeFor(null);
+                          }
+                        }}
+                      >
+                        <RefreshCw className={`h-3 w-3 mr-1 ${generatingViewCodeFor === pool.id ? "animate-spin" : ""}`} />
+                        Regenerate Link
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={generatingViewCodeFor === pool.id}
+                      onClick={async () => {
+                        setGeneratingViewCodeFor(pool.id);
+                        try {
+                          const res = await fetch(`/api/pools/${pool.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ generateViewCode: true }),
+                          });
+                          if (res.ok) {
+                            const updated = await res.json();
+                            setPools(pools.map((p) => (p.id === updated.id ? updated : p)));
+                            toast.success("Share link generated!");
+                          }
+                        } catch {
+                          toast.error("Failed to generate");
+                        } finally {
+                          setGeneratingViewCodeFor(null);
+                        }
+                      }}
+                    >
+                      <Share2 className="h-3.5 w-3.5 mr-1" />
+                      {generatingViewCodeFor === pool.id ? "Generating..." : "Generate Share Link"}
+                    </Button>
                   )}
                 </div>
 

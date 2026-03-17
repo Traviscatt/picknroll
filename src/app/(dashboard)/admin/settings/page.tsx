@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Save, DollarSign, Calendar, Link as LinkIcon, Share2, Copy, RefreshCw } from "lucide-react";
+import { ArrowLeft, Save, DollarSign, Calendar, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface PoolSettings {
@@ -19,7 +19,6 @@ interface PoolSettings {
   deadline: string;
   venmoHandle: string;
   paypalEmail: string;
-  viewCode: string | null;
 }
 
 export default function AdminSettingsPage() {
@@ -27,7 +26,6 @@ export default function AdminSettingsPage() {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [settings, setSettings] = useState<PoolSettings>({
     name: "",
     description: "",
@@ -35,7 +33,6 @@ export default function AdminSettingsPage() {
     deadline: "",
     venmoHandle: "",
     paypalEmail: "",
-    viewCode: null,
   });
 
   useEffect(() => {
@@ -59,7 +56,6 @@ export default function AdminSettingsPage() {
             deadline: data.deadline || "",
             venmoHandle: data.venmoHandle || "",
             paypalEmail: data.paypalLink || "",
-            viewCode: data.viewCode || null,
           });
         }
       } catch (error) {
@@ -239,101 +235,6 @@ export default function AdminSettingsPage() {
           <p className="text-xs text-slate-500">
             Leave blank to hide that payment option from users.
           </p>
-        </CardContent>
-      </Card>
-
-      {/* Share Leaderboard */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-purple-500" />
-            Share Leaderboard
-          </CardTitle>
-          <CardDescription>
-            Generate a view code so anyone can see the leaderboard without an account
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {settings.viewCode ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-100 border rounded-lg px-4 py-2.5 font-mono text-sm">
-                  {`${typeof window !== "undefined" ? window.location.origin : ""}/share/leaderboard/${settings.viewCode}`}
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/share/leaderboard/${settings.viewCode}`
-                    );
-                    toast.success("Link copied!");
-                  }}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-slate-500">
-                  View code: <span className="font-mono font-medium">{settings.viewCode}</span>
-                </p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={isGenerating}
-                  onClick={async () => {
-                    setIsGenerating(true);
-                    try {
-                      const res = await fetch("/api/admin/settings", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ generateViewCode: true }),
-                      });
-                      if (res.ok) {
-                        const data = await res.json();
-                        setSettings((s) => ({ ...s, viewCode: data.viewCode }));
-                        toast.success("New view code generated!");
-                      }
-                    } catch {
-                      toast.error("Failed to regenerate code");
-                    } finally {
-                      setIsGenerating(false);
-                    }
-                  }}
-                >
-                  <RefreshCw className={`h-3 w-3 mr-1 ${isGenerating ? "animate-spin" : ""}`} />
-                  Regenerate
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              className="bg-purple-500 hover:bg-purple-600"
-              disabled={isGenerating}
-              onClick={async () => {
-                setIsGenerating(true);
-                try {
-                  const res = await fetch("/api/admin/settings", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ generateViewCode: true }),
-                  });
-                  if (res.ok) {
-                    const data = await res.json();
-                    setSettings((s) => ({ ...s, viewCode: data.viewCode }));
-                    toast.success("Share link generated!");
-                  }
-                } catch {
-                  toast.error("Failed to generate code");
-                } finally {
-                  setIsGenerating(false);
-                }
-              }}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              {isGenerating ? "Generating..." : "Generate Share Link"}
-            </Button>
-          )}
         </CardContent>
       </Card>
 

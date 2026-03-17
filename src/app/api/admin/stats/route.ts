@@ -7,14 +7,16 @@ export async function GET() {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response!;
 
-    const [totalBrackets, paidBrackets, totalUsers] = await Promise.all([
-      db.bracket.count(),
-      db.bracket.count({ where: { paid: true } }),
+    // Only count submitted/paid brackets (not drafts)
+    const [totalBrackets, paidBrackets, totalUsers, pool] = await Promise.all([
+      db.bracket.count({ where: { status: { in: ["SUBMITTED", "PAID"] } } }),
+      db.bracket.count({ where: { paid: true, status: { in: ["SUBMITTED", "PAID"] } } }),
       db.user.count(),
+      db.pool.findFirst({ select: { entryFee: true } }),
     ]);
 
     const unpaidBrackets = totalBrackets - paidBrackets;
-    const entryFee = 5; // TODO: Get from pool settings
+    const entryFee = pool ? parseFloat(pool.entryFee.toString()) : 5;
     const prizePool = paidBrackets * entryFee;
 
     return NextResponse.json({

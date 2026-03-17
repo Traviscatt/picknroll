@@ -17,7 +17,7 @@ export async function GET() {
       where: { userId: session.user.id },
       select: {
         poolId: true,
-        pool: { select: { viewCode: true } },
+        pool: { select: { viewCode: true, entryFee: true } },
       },
     });
 
@@ -79,7 +79,10 @@ export async function GET() {
     });
 
     const paidCount = brackets.filter((b) => b.paid).length;
-    const totalPrize = paidCount * 5; // $5 entry fee
+    const entryFee = poolMembership.pool?.entryFee 
+      ? parseFloat(poolMembership.pool.entryFee.toString()) 
+      : 5;
+    const totalPrize = paidCount * entryFee;
 
     return NextResponse.json({
       entries,

@@ -17,7 +17,10 @@ import {
   Clock,
   AlertCircle,
   Megaphone,
+  Bell,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface DashboardStats {
   totalBrackets: number;
@@ -38,6 +41,8 @@ export default function AdminDashboardPage() {
     prizePool: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [sendingPaymentReminder, setSendingPaymentReminder] = useState(false);
+  const [sendingDeadlineReminder, setSendingDeadlineReminder] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -285,6 +290,92 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Send Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Send Notifications
+          </CardTitle>
+          <CardDescription>
+            Send email and in-app notifications to pool members
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              disabled={sendingPaymentReminder || stats.unpaidBrackets === 0}
+              onClick={async () => {
+                setSendingPaymentReminder(true);
+                try {
+                  const res = await fetch("/api/admin/notifications/payment-reminder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({}),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    toast.success(`Payment reminders sent to ${data.sent} users`);
+                  } else {
+                    toast.error(data.error || "Failed to send reminders");
+                  }
+                } catch {
+                  toast.error("Failed to send payment reminders");
+                } finally {
+                  setSendingPaymentReminder(false);
+                }
+              }}
+            >
+              {sendingPaymentReminder ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <DollarSign className="h-4 w-4 mr-2" />
+              )}
+              Send Payment Reminders
+              {stats.unpaidBrackets > 0 && (
+                <span className="ml-2 bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded-full">
+                  {stats.unpaidBrackets}
+                </span>
+              )}
+            </Button>
+
+            <Button
+              variant="outline"
+              disabled={sendingDeadlineReminder}
+              onClick={async () => {
+                setSendingDeadlineReminder(true);
+                try {
+                  const res = await fetch("/api/admin/notifications/deadline-reminder", {
+                    method: "POST",
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    toast.success(`Deadline reminders sent to ${data.sent} users`);
+                  } else {
+                    toast.error(data.error || "Failed to send reminders");
+                  }
+                } catch {
+                  toast.error("Failed to send deadline reminders");
+                } finally {
+                  setSendingDeadlineReminder(false);
+                }
+              }}
+            >
+              {sendingDeadlineReminder ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Clock className="h-4 w-4 mr-2" />
+              )}
+              Send Deadline Reminders
+            </Button>
+          </div>
+          <p className="text-xs text-slate-500 mt-3">
+            Notifications are sent via email and appear in the bell icon for each user.
+          </p>
         </CardContent>
       </Card>
     </div>

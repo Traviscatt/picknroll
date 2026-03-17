@@ -28,6 +28,7 @@ model User {
   familyMembers      FamilyMember[]
   linkedAsFamilyMember FamilyMember? @relation("LinkedFamilyMember")
   announcements      Announcement[] @relation("Announcements")
+  notifications      Notification[]
 }
 
 // Family Members - can have their own brackets, optionally get their own login later
@@ -264,4 +265,20 @@ model Payment {
   user   User   @relation(fields: [userId], references: [id])
   userId String
   poolId String
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // PAYMENT_REMINDER, DEADLINE_REMINDER, SCORE_UPDATE, ANNOUNCEMENT, etc.
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  emailSent Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId, read])
 }

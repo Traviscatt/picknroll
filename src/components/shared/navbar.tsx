@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu, Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { NotificationBell } from "@/components/shared/notification-bell";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -82,6 +83,7 @@ export function Navbar() {
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : session ? (
             <>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">

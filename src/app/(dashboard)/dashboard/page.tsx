@@ -288,7 +288,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currentPool ? currentPool.members.length : "--"}
+              {currentPool ? currentPool._count.brackets : "--"}
             </div>
             <p className="text-xs text-muted-foreground">
               {currentPool ? `${currentPool.name}` : "Join a pool to compete"}

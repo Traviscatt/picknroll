@@ -179,6 +179,11 @@ export default function LeaderboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">
               ${(data?.totalPrize ?? 0).toFixed(2)}
+              {data && data.totalEntries - data.paidEntries > 0 && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">
+                  ({data.totalEntries - data.paidEntries} unpaid)
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>

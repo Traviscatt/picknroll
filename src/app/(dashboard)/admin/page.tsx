@@ -48,6 +48,7 @@ interface DashboardStats {
   totalBrackets: number;
   paidBrackets: number;
   unpaidBrackets: number;
+  draftBrackets: number;
   totalUsers: number;
   prizePool: number;
 }
@@ -59,6 +60,7 @@ export default function AdminDashboardPage() {
     totalBrackets: 0,
     paidBrackets: 0,
     unpaidBrackets: 0,
+    draftBrackets: 0,
     totalUsers: 0,
     prizePool: 0,
   });
@@ -299,6 +301,16 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Drafts</CardTitle>
+            <FileText className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-slate-500">{stats.draftBrackets}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
@@ -391,6 +403,19 @@ export default function AdminDashboardPage() {
                 </p>
                 <p className="text-xs text-yellow-700">
                   Consider sending payment reminders before the deadline.
+                </p>
+              </div>
+            </div>
+          )}
+          {stats.draftBrackets > 0 && (
+            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2">
+              <FileText className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-slate-700">
+                  {stats.draftBrackets} unsubmitted {stats.draftBrackets === 1 ? "draft" : "drafts"}
+                </p>
+                <p className="text-xs text-slate-600">
+                  These brackets haven&apos;t been submitted yet.
                 </p>
               </div>
             </div>

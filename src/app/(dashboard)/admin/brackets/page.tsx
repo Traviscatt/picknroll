@@ -70,7 +70,7 @@ export default function AdminBracketsPage() {
   const [filteredBrackets, setFilteredBrackets] = useState<Bracket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid">("all");
+  const [filterPaid, setFilterPaid] = useState<"all" | "paid" | "unpaid" | "draft">("all");
   const [editingBracket, setEditingBracket] = useState<Bracket | null>(null);
   const [editScore, setEditScore] = useState("");
   const [editBonus, setEditBonus] = useState("");
@@ -118,10 +118,12 @@ export default function AdminBracketsPage() {
       );
     }
 
-    if (filterPaid !== "all") {
-      filtered = filtered.filter((b) =>
-        filterPaid === "paid" ? b.paid : !b.paid
-      );
+    if (filterPaid === "paid") {
+      filtered = filtered.filter((b) => b.paid);
+    } else if (filterPaid === "unpaid") {
+      filtered = filtered.filter((b) => !b.paid && b.status !== "DRAFT");
+    } else if (filterPaid === "draft") {
+      filtered = filtered.filter((b) => b.status === "DRAFT");
     }
 
     setFilteredBrackets(filtered);
@@ -225,7 +227,8 @@ export default function AdminBracketsPage() {
   if (!session) return null;
 
   const paidCount = brackets.filter((b) => b.paid).length;
-  const unpaidCount = brackets.filter((b) => !b.paid).length;
+  const draftCount = brackets.filter((b) => b.status === "DRAFT").length;
+  const unpaidCount = brackets.filter((b) => !b.paid && b.status !== "DRAFT").length;
 
   return (
     <div className="space-y-6">
@@ -239,7 +242,7 @@ export default function AdminBracketsPage() {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Manage Brackets</h1>
           <p className="text-slate-600">
-            {brackets.length} total • {paidCount} paid • {unpaidCount} unpaid
+            {brackets.length} total • {paidCount} paid • {unpaidCount} unpaid • {draftCount} {draftCount === 1 ? "draft" : "drafts"}
           </p>
         </div>
       </div>
@@ -282,6 +285,15 @@ export default function AdminBracketsPage() {
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Unpaid ({unpaidCount})
+              </Button>
+              <Button
+                variant={filterPaid === "draft" ? "default" : "outline"}
+                onClick={() => setFilterPaid("draft")}
+                size="sm"
+                className={filterPaid === "draft" ? "bg-slate-500 hover:bg-slate-600" : ""}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Drafts ({draftCount})
               </Button>
             </div>
           </div>

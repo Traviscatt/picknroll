@@ -17,15 +17,18 @@ export async function GET(
 
     const { id } = await params;
 
+    // Admins can view any bracket; regular users can only view their own
+    const isAdmin = session.user.role === "ADMIN";
     const bracket = await db.bracket.findFirst({
       where: {
         id,
-        userId: session.user.id,
+        ...(isAdmin ? {} : { userId: session.user.id }),
       },
       include: {
         pool: true,
         familyMember: true,
         picks: true,
+        user: isAdmin ? { select: { id: true, name: true, email: true } } : false,
       },
     });
 

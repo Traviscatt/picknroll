@@ -38,6 +38,7 @@ import {
   Edit,
   Trash2,
   ArrowLeft,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -404,6 +405,12 @@ export default function AdminBracketsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/brackets/${bracket.id}`)}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View Bracket
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleTogglePaid(bracket)}>
                             <DollarSign className="h-4 w-4 mr-2" />
                             {bracket.paid ? "Mark Unpaid" : "Mark Paid"}

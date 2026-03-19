@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,7 +64,7 @@ interface Bracket {
   } | null;
 }
 
-export default function AdminBracketsPage() {
+function AdminBracketsContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -483,5 +483,13 @@ export default function AdminBracketsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AdminBracketsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+      <AdminBracketsContent />
+    </Suspense>
   );
 }

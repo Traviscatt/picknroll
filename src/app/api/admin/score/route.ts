@@ -76,9 +76,18 @@ export async function POST() {
     }
 
     if (games.length === 0) {
+      // Reset all bracket scores to 0 when no completed games
+      const resetResult = await db.bracket.updateMany({
+        where: { status: { in: ["SUBMITTED", "PAID"] } },
+        data: { totalScore: 0, bonusScore: 0 },
+      });
+      await db.pick.updateMany({
+        where: { bracket: { status: { in: ["SUBMITTED", "PAID"] } } },
+        data: { correct: false, pointsEarned: 0 },
+      });
       return NextResponse.json({
-        message: "No completed games found. Enter results first.",
-        bracketsUpdated: 0,
+        message: `No completed games. Reset scores for ${resetResult.count} brackets.`,
+        bracketsUpdated: resetResult.count,
       });
     }
 

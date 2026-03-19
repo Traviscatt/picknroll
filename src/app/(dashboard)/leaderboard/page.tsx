@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Medal, TrendingUp, Users, Share2 } from "lucide-react";
+import { Trophy, Medal, TrendingUp, Users, Share2, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -101,6 +103,14 @@ export default function LeaderboardPage() {
   if (!session) return null;
 
   const leaderboard = data?.entries ?? [];
+  
+  const filteredLeaderboard = searchQuery.trim()
+    ? leaderboard.filter(
+        (entry) =>
+          entry.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          entry.bracketName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : leaderboard;
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -192,18 +202,33 @@ export default function LeaderboardPage() {
               </p>
             </div>
           ) : (
-            <Table className="table-fixed w-full">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10 px-2">Rank</TableHead>
-                  <TableHead className="max-w-[140px] truncate">Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Bracket</TableHead>
-                  <TableHead className="text-right w-16 px-2">Score</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leaderboard.map((entry) => (
+            <>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search by name or bracket..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              {filteredLeaderboard.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  No results found for &quot;{searchQuery}&quot;
+                </div>
+              ) : (
+              <Table className="table-fixed w-full">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10 px-2">Rank</TableHead>
+                    <TableHead className="max-w-[140px] truncate">Name</TableHead>
+                    <TableHead className="hidden md:table-cell">Bracket</TableHead>
+                    <TableHead className="text-right w-16 px-2">Score</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLeaderboard.map((entry) => (
                   <TableRow
                     key={`${entry.name}-${entry.bracketName}`}
                     className={
@@ -245,6 +270,8 @@ export default function LeaderboardPage() {
                 ))}
               </TableBody>
             </Table>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

@@ -195,11 +195,11 @@ export default function LeaderboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Rank</TableHead>
+                  <TableHead className="w-12">Rank</TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Bracket</TableHead>
+                  <TableHead className="hidden md:table-cell">Bracket</TableHead>
                   <TableHead className="text-right">Score</TableHead>
-                  <TableHead className="text-right">Tiebreaker</TableHead>
+                  <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,20 +218,27 @@ export default function LeaderboardPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {entry.name}
-                      {entry.isCurrentUser && (
-                        <Badge variant="outline" className="ml-2 text-primary border-primary">
-                          You
-                        </Badge>
-                      )}
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          {entry.name}
+                          {entry.isCurrentUser && (
+                            <Badge variant="outline" className="text-primary border-primary text-xs">
+                              You
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 font-normal md:hidden">
+                          {entry.bracketName}
+                        </div>
+                      </div>
                     </TableCell>
-                    <TableCell>{entry.bracketName}</TableCell>
+                    <TableCell className="hidden md:table-cell">{entry.bracketName}</TableCell>
                     <TableCell className="text-right">
                       <span className="font-bold text-primary">
                         {entry.score}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right text-slate-500">
+                    <TableCell className="text-right text-slate-500 hidden md:table-cell">
                       {entry.tiebreaker ?? "-"}
                     </TableCell>
                   </TableRow>

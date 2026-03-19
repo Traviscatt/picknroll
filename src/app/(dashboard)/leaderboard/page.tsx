@@ -192,13 +192,13 @@ export default function LeaderboardPage() {
               </p>
             </div>
           ) : (
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">Rank</TableHead>
-                  <TableHead>Name</TableHead>
+                  <TableHead className="w-10 px-2">Rank</TableHead>
+                  <TableHead className="max-w-[140px] truncate">Name</TableHead>
                   <TableHead className="hidden md:table-cell">Bracket</TableHead>
-                  <TableHead className="text-right">Score</TableHead>
+                  <TableHead className="text-right w-16 px-2">Score</TableHead>
                   <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
                 </TableRow>
               </TableHeader>
@@ -212,28 +212,28 @@ export default function LeaderboardPage() {
                         : undefined
                     }
                   >
-                    <TableCell className="font-medium">
-                      <div className="flex items-center justify-center w-8 h-8">
+                    <TableCell className="font-medium px-2">
+                      <div className="flex items-center justify-center w-6 h-6">
                         {getRankIcon(entry.rank)}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          {entry.name}
+                    <TableCell className="font-medium max-w-[140px]">
+                      <div className="truncate">
+                        <div className="flex items-center gap-1 truncate">
+                          <span className="truncate">{entry.name}</span>
                           {entry.isCurrentUser && (
-                            <Badge variant="outline" className="text-primary border-primary text-xs">
+                            <Badge variant="outline" className="text-primary border-primary text-xs shrink-0">
                               You
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-slate-500 font-normal md:hidden">
+                        <div className="text-xs text-slate-500 font-normal md:hidden truncate">
                           {entry.bracketName}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{entry.bracketName}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right px-2 w-16">
                       <span className="font-bold text-primary">
                         {entry.score}
                       </span>

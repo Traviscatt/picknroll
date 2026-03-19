@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,8 @@ interface Bracket {
 export default function AdminBracketsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const userIdFilter = searchParams.get("user");
   const [brackets, setBrackets] = useState<Bracket[]>([]);
   const [filteredBrackets, setFilteredBrackets] = useState<Bracket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +109,11 @@ export default function AdminBracketsPage() {
   useEffect(() => {
     let filtered = brackets;
 
+    // Filter by user ID if provided in URL
+    if (userIdFilter) {
+      filtered = filtered.filter((b) => b.user.id === userIdFilter);
+    }
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -127,7 +134,7 @@ export default function AdminBracketsPage() {
     }
 
     setFilteredBrackets(filtered);
-  }, [searchQuery, filterPaid, brackets]);
+  }, [searchQuery, filterPaid, brackets, userIdFilter]);
 
   const handleTogglePaid = async (bracket: Bracket) => {
     try {

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Trophy, CheckCircle, Save, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Trophy, CheckCircle, Save, Loader2, RefreshCw, Zap } from "lucide-react";
 import { toast } from "sonner";
 
 const ROUNDS = [
@@ -56,6 +56,7 @@ export default function AdminResultsPage() {
   const [localResults, setLocalResults] = useState<Map<string, LocalResult>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [actualTiebreaker, setActualTiebreaker] = useState("");
 
@@ -153,6 +154,39 @@ export default function AdminResultsPage() {
     }
   };
 
+  const handleEspnSync = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch("/api/admin/espn-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) throw new Error("Failed to sync");
+      const data = await response.json();
+      toast.success(data.message);
+      // Refresh the games list after sync
+      const gamesResponse = await fetch("/api/admin/results");
+      if (gamesResponse.ok) {
+        const gamesData = await gamesResponse.json();
+        setGames(gamesData.games || []);
+        const map = new Map<string, LocalResult>();
+        for (const game of gamesData.games || []) {
+          map.set(game.id, {
+            winnerId: game.winnerId,
+            team1Score: game.team1Score?.toString() || "",
+            team2Score: game.team2Score?.toString() || "",
+          });
+        }
+        setLocalResults(map);
+      }
+    } catch {
+      toast.error("Failed to sync ESPN scores");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -187,6 +221,19 @@ export default function AdminResultsPage() {
         <div className="flex gap-2">
           <Button
             variant="outline"
+            onClick={handleEspnSync}
+            disabled={isSyncing}
+            className="border-green-300 text-green-700 hover:bg-green-50"
+          >
+            {isSyncing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            {isSyncing ? "Syncing..." : "Sync ESPN Scores"}
+          </Button>
+          <Button
+            variant="outline"
             onClick={handleRecalculateScores}
             disabled={isScoring}
           >
@@ -212,8 +259,8 @@ export default function AdminResultsPage() {
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
           <p className="text-sm text-blue-800">
-            <strong>How it works:</strong> Click a team to mark them as the winner. Optionally enter scores.
-            Click &quot;Save Results&quot; to persist, then &quot;Recalculate Scores&quot; to update all bracket scores.
+            <strong>How it works:</strong> Click <strong>&quot;Sync ESPN Scores&quot;</strong> to automatically pull game results from ESPN and recalculate all bracket scores.
+            You can also manually click a team to mark them as the winner if needed.
           </p>
         </CardContent>
       </Card>

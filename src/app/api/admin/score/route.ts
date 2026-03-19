@@ -9,12 +9,21 @@ export async function POST() {
     const { authorized, response } = await requireAdmin();
     if (!authorized) return response!;
 
-    // Get all completed games with winners
-    const games = await db.game.findMany({
-      where: {
-        winnerId: { not: null },
-        status: "FINAL",
-      },
+    // Get the current tournament (latest year)
+    const tournament = await db.tournament.findFirst({
+      orderBy: { year: "desc" },
+    });
+
+    if (!tournament) {
+      return NextResponse.json({
+        message: "No tournament found.",
+        bracketsUpdated: 0,
+      });
+    }
+
+    // Fetch ALL tournament games to build the bracket gameId mapping
+    const allGames = await db.game.findMany({
+      where: { tournamentId: tournament.id },
       select: {
         id: true,
         round: true,
@@ -23,8 +32,48 @@ export async function POST() {
         winnerId: true,
         team1Score: true,
         team2Score: true,
+        status: true,
       },
     });
+
+    // Only completed games count for scoring
+    const games = allGames.filter(g => g.winnerId && g.status === "FINAL");
+
+    // Build a map from "east-1" style IDs to TournamentTeam IDs for picksData scoring
+    const tournamentTeams = await db.tournamentTeam.findMany({
+      where: { tournamentId: tournament.id },
+      select: { id: true, seed: true, region: true },
+    });
+    const teamIdMap = new Map<string, string>(); // "east-1" -> TournamentTeam.id
+    for (const tt of tournamentTeams) {
+      const key = `${tt.region.toLowerCase()}-${tt.seed}`;
+      teamIdMap.set(key, tt.id);
+    }
+
+    // Build a map from bracket-style gameId (e.g. "East-r1-g1") to DB game
+    // Group all games by round+region, sort by gameNumber, assign per-region indices
+    const bracketGameMap = new Map<string, typeof allGames[0]>();
+    const grouped = new Map<string, typeof allGames>();
+    for (const g of allGames) {
+      const key = `${g.round}-${g.region || "none"}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(g);
+    }
+    for (const [, group] of grouped) {
+      group.sort((a, b) => a.gameNumber - b.gameNumber);
+      for (let i = 0; i < group.length; i++) {
+        const g = group[i];
+        let bracketId: string;
+        if (g.region && g.round <= 4) {
+          bracketId = `${g.region}-r${g.round}-g${i + 1}`;
+        } else if (g.round === 5) {
+          bracketId = `final-four-r5-g${g.gameNumber}`;
+        } else {
+          bracketId = `championship-r6-g${g.gameNumber}`;
+        }
+        bracketGameMap.set(bracketId, g);
+      }
+    }
 
     if (games.length === 0) {
       return NextResponse.json({
@@ -125,26 +174,19 @@ export async function POST() {
           for (const pickData of picksArray) {
             if (!pickData.gameId || !pickData.choices) continue;
 
-            // Find the matching game
-            const game = games.find((g) => {
-              // Match by composite key: region-round-game pattern
-              const gameKey = g.region
-                ? `${g.region}-r${g.round}-g${g.gameNumber}`
-                : g.round === 5
-                ? `final-four-r5-g${g.gameNumber}`
-                : `championship-r6-g${g.gameNumber}`;
-              return gameKey === pickData.gameId;
-            });
+            // Find the matching game using the bracket gameId map
+            const game = bracketGameMap.get(pickData.gameId);
 
             if (!game || !game.winnerId) continue;
 
             const rule = SCORING_RULES.find((r) => r.round === game.round);
             if (!rule) continue;
 
-            // Check each ranked choice
+            // Check each ranked choice — resolve "east-1" style IDs to TournamentTeam IDs
             for (let rank = 0; rank < pickData.choices.length; rank++) {
               if (rank >= rule.pointsPerChoice.length) break;
-              if (pickData.choices[rank] === game.winnerId) {
+              const pickedTeamId = teamIdMap.get(pickData.choices[rank]) || pickData.choices[rank];
+              if (pickedTeamId === game.winnerId) {
                 totalScore += rule.pointsPerChoice[rank];
               }
             }

@@ -25,6 +25,7 @@ interface LeaderboardEntry {
 interface LeaderboardData {
   entries: LeaderboardEntry[];
   userRank: number | null;
+  userScore: number | null;
   totalPrize: number;
   totalEntries: number;
   paidEntries: number;
@@ -152,8 +153,43 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+        {/* Your Rank - always visible */}
         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Your Rank</CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
+            {data?.userScore !== null && data?.userScore !== undefined && (
+              <p className="text-sm text-muted-foreground">{data.userScore} pts</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pool Stats - combined on mobile, separate on desktop */}
+        <Card className="md:hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pool Stats</CardTitle>
+            <div className="flex gap-1">
+              <Users className="h-4 w-4 text-primary" />
+              <Trophy className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data?.totalEntries ?? 0} entries</div>
+            <p className="text-sm text-muted-foreground">
+              ${(data?.totalPrize ?? 0).toFixed(2)}
+              {data && data.totalEntries - data.paidEntries > 0 && (
+                <span> ({data.totalEntries - data.paidEntries} unpaid)</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Desktop only: Total Entries */}
+        <Card className="hidden md:block">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Entries</CardTitle>
             <Users className="h-4 w-4 text-primary" />
@@ -162,16 +198,9 @@ export default function LeaderboardPage() {
             <div className="text-2xl font-bold">{data?.totalEntries ?? 0}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Your Rank</CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
-          </CardContent>
-        </Card>
-        <Card>
+
+        {/* Desktop only: Prize Pool */}
+        <Card className="hidden md:block">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Prize Pool</CardTitle>
             <Trophy className="h-4 w-4 text-primary" />

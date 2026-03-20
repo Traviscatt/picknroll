@@ -54,6 +54,7 @@ export async function GET() {
     let currentRank = 0;
     let lastScore = -1;
     let userRank: number | null = null;
+    let userScore: number | null = null;
 
     const entries = brackets.map((b, idx) => {
       const totalWithBonus = b.totalScore + b.bonusScore;
@@ -64,6 +65,7 @@ export async function GET() {
 
       if (b.userId === session.user.id && userRank === null) {
         userRank = currentRank;
+        userScore = totalWithBonus;
       }
 
       return {
@@ -87,6 +89,7 @@ export async function GET() {
     return NextResponse.json({
       entries,
       userRank,
+      userScore,
       totalPrize,
       totalEntries: brackets.length,
       paidEntries: paidCount,

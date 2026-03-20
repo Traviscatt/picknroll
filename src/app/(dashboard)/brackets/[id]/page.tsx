@@ -44,6 +44,7 @@ interface PickData {
 
 interface CompletedGame {
   round: number;
+  gameNumber: number;
   region: string | null;
   winnerBracketId: string | null;
 }
@@ -258,14 +259,17 @@ export default function BracketDetailPage() {
   };
 
   const renderGameCard = (pick: PickData, roundNum: number) => {
-    const gameNum = pick.gameId.split("-g")[1];
-    // Extract region from gameId (e.g., "East-r1-g1" -> "East")
+    // Extract game number and region from gameId (e.g., "East-r1-g1" -> region="East", gameNum=1)
+    const gameNumStr = pick.gameId.split("-g")[1];
+    const gameNum = parseInt(gameNumStr || "0");
     const regionMatch = pick.gameId.match(/^([A-Za-z]+)-r/);
     const pickRegion = regionMatch ? regionMatch[1] : null;
     
-    // Check if this game is completed
+    // Check if this specific game is completed (match by round, gameNumber, AND region)
     const completedGame = bracket?.completedGames?.find(
-      (g) => g.round === roundNum && g.region?.toLowerCase() === pickRegion?.toLowerCase()
+      (g) => g.round === roundNum && 
+             g.gameNumber === gameNum && 
+             g.region?.toLowerCase() === pickRegion?.toLowerCase()
     );
     const isCompleted = !!completedGame;
     const winnerBracketId = completedGame?.winnerBracketId;
@@ -278,7 +282,7 @@ export default function BracketDetailPage() {
         }`}
       >
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-slate-400 font-medium">Game {gameNum}</span>
+          <span className="text-[10px] text-slate-400 font-medium">Game {gameNumStr}</span>
           <span className="text-[10px] text-slate-400">{ROUND_LABELS[roundNum]}</span>
         </div>
         {pick.choices.map((teamId, i) => {

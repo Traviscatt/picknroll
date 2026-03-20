@@ -41,7 +41,7 @@ export async function GET(
       orderBy: { year: "desc" },
     });
 
-    let completedGames: { round: number; region: string | null; winnerBracketId: string | null }[] = [];
+    let completedGames: { round: number; gameNumber: number; region: string | null; winnerBracketId: string | null }[] = [];
     if (tournament) {
       // Get tournament teams to map TournamentTeam.id -> bracket-style ID (e.g., "east-1")
       const tournamentTeams = await db.tournamentTeam.findMany({
@@ -60,6 +60,7 @@ export async function GET(
         },
         select: {
           round: true,
+          gameNumber: true,
           region: true,
           winnerId: true,
         },
@@ -67,6 +68,7 @@ export async function GET(
       
       completedGames = games.map(g => ({
         round: g.round,
+        gameNumber: g.gameNumber,
         region: g.region,
         winnerBracketId: g.winnerId ? ttIdToBracketId.get(g.winnerId) || null : null,
       }));

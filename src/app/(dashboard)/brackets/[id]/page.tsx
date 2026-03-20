@@ -55,6 +55,8 @@ interface Bracket {
   createdAt: string;
   updatedAt: string;
   submittedAt: string | null;
+  rank: number | null;
+  totalInPool: number | null;
   familyMember?: {
     id: string;
     name: string;
@@ -504,7 +506,7 @@ export default function BracketDetailPage() {
         {/* Card 1: Score & Ranking */}
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Score</CardDescription>
+            <CardDescription>Score & Rank</CardDescription>
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex items-center gap-2">
@@ -512,6 +514,11 @@ export default function BracketDetailPage() {
               <span className="text-2xl md:text-3xl font-bold text-primary">
                 {bracket.totalScore + bracket.bonusScore}
               </span>
+              {bracket.rank !== null && (
+                <span className="text-sm text-muted-foreground">
+                  • #{bracket.rank}{bracket.totalInPool ? `/${bracket.totalInPool}` : ""}
+                </span>
+              )}
             </div>
             {bracket.bonusScore > 0 && (
               <p className="text-xs text-muted-foreground">

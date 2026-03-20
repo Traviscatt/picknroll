@@ -36,7 +36,44 @@ export async function GET(
       return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
     }
 
-    return NextResponse.json(bracket);
+    // Calculate rank within pool if bracket is in a pool and submitted
+    let rank: number | null = null;
+    let totalInPool: number | null = null;
+    if (bracket.poolId && bracket.status !== "DRAFT") {
+      const poolBrackets = await db.bracket.findMany({
+        where: {
+          poolId: bracket.poolId,
+          status: { in: ["SUBMITTED", "PAID"] },
+        },
+        select: {
+          id: true,
+          totalScore: true,
+          bonusScore: true,
+        },
+        orderBy: [
+          { totalScore: "desc" },
+          { bonusScore: "desc" },
+        ],
+      });
+
+      totalInPool = poolBrackets.length;
+      let currentRank = 0;
+      let lastScore = -1;
+      for (let i = 0; i < poolBrackets.length; i++) {
+        const b = poolBrackets[i];
+        const score = b.totalScore + b.bonusScore;
+        if (score !== lastScore) {
+          currentRank = i + 1;
+          lastScore = score;
+        }
+        if (b.id === bracket.id) {
+          rank = currentRank;
+          break;
+        }
+      }
+    }
+
+    return NextResponse.json({ ...bracket, rank, totalInPool });
   } catch (error) {
     console.error("Error fetching bracket:", error);
     return NextResponse.json(

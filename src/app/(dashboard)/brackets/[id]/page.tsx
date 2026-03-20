@@ -314,6 +314,8 @@ export default function BracketDetailPage() {
   const renderFinalContent = () => {
     const ff = getFinalFourPicks();
     const champ = getChampionshipPick();
+    const ffGame1 = ff.find((p) => p.gameId.includes("g1"));
+    const ffGame2 = ff.find((p) => p.gameId.includes("g2"));
 
     if (ff.length === 0 && !champ) {
       return (
@@ -321,50 +323,96 @@ export default function BracketDetailPage() {
       );
     }
 
+    // Check if user has all 4 Final Four teams picked (potential bonus)
+    const hasFinalFourBonus = ff.length === 2 && 
+      ffGame1?.choices.length === 4 && 
+      ffGame2?.choices.length === 4;
+
     return (
-      <div className="space-y-6">
-        {ff.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wide">Final Four</h4>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">25/15/10/5 pts</Badge>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {ff.map((pick) => {
-                const label = pick.gameId.includes("g1") ? "East vs South" : "West vs Midwest";
-                return (
-                  <div key={pick.gameId} className="bg-white border rounded-lg p-3">
-                    <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-2">{label}</p>
+      <div className="space-y-4">
+        {/* Bonus indicator */}
+        {bracket.bonusScore > 0 ? (
+          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+            <Trophy className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-medium text-green-700">
+              Final Four Bonus Earned: +{bracket.bonusScore} pts
+            </span>
+          </div>
+        ) : hasFinalFourBonus && (
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <Trophy className="h-4 w-4 text-amber-600" />
+            <span className="text-sm text-amber-700">
+              Perfect Final Four = +10 bonus pts
+            </span>
+          </div>
+        )}
+
+        {/* Mini Bracket Visual */}
+        {(ff.length > 0 || champ) && (
+          <div className="bg-white border rounded-lg p-4">
+            <div className="flex flex-col items-center gap-4">
+              {/* Final Four Games Row */}
+              <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                {/* FF Game 1: East vs South */}
+                <div className="border rounded-lg p-3 bg-slate-50">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">East vs South</p>
+                  {ffGame1 ? (
                     <div className="space-y-1">
-                      {pick.choices.map((teamId, i) => renderTeam(teamId, i + 1, "md"))}
+                      {ffGame1.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
                     </div>
-                  </div>
-                );
-              })}
+                  ) : (
+                    <p className="text-xs text-slate-300 text-center py-2">—</p>
+                  )}
+                </div>
+
+                {/* FF Game 2: West vs Midwest */}
+                <div className="border rounded-lg p-3 bg-slate-50">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">West vs Midwest</p>
+                  {ffGame2 ? (
+                    <div className="space-y-1">
+                      {ffGame2.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-300 text-center py-2">—</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Connector lines */}
+              <div className="flex items-center justify-center w-full max-w-lg">
+                <div className="flex-1 h-px bg-slate-200" />
+                <Crown className="h-5 w-5 text-yellow-500 mx-2" />
+                <div className="flex-1 h-px bg-slate-200" />
+              </div>
+
+              {/* Championship */}
+              <div className="w-full max-w-xs">
+                <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-4">
+                  <p className="text-[10px] font-semibold text-primary/60 uppercase tracking-wide mb-2 text-center">Championship</p>
+                  {champ ? (
+                    <div className="space-y-1.5">
+                      {champ.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "md"))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-300 text-center py-2">—</p>
+                  )}
+                  {bracket.tiebreaker !== null && (
+                    <div className="mt-3 pt-3 border-t border-primary/10 text-center">
+                      <span className="text-xs text-slate-500">Tiebreaker: </span>
+                      <span className="text-sm font-bold text-primary">{bracket.tiebreaker}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {champ && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Crown className="h-4 w-4 text-yellow-500" />
-              <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wide">Championship</h4>
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">35/25/15/10/5 pts</Badge>
-            </div>
-            <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-4 max-w-md">
-              <div className="space-y-1.5">
-                {champ.choices.map((teamId, i) => renderTeam(teamId, i + 1, "md"))}
-              </div>
-              {bracket.tiebreaker !== null && (
-                <div className="mt-3 pt-3 border-t border-primary/10">
-                  <span className="text-xs text-slate-500">Tiebreaker (total score): </span>
-                  <span className="text-sm font-bold text-primary">{bracket.tiebreaker}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Points breakdown */}
+        <div className="flex flex-wrap gap-3 justify-center text-xs text-slate-500">
+          <span className="bg-slate-100 px-2 py-1 rounded">Final Four: 25/15/10/5 pts</span>
+          <span className="bg-slate-100 px-2 py-1 rounded">Championship: 35/25/15/10/5 pts</span>
+        </div>
       </div>
     );
   };
@@ -506,7 +554,7 @@ export default function BracketDetailPage() {
         {/* Card 1: Score & Ranking */}
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Score & Rank</CardDescription>
+            <CardTitle className="text-base">Score & Rank</CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex items-center gap-2">
@@ -531,7 +579,7 @@ export default function BracketDetailPage() {
         {/* Card 2: Payment & Tiebreaker */}
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Details</CardDescription>
+            <CardTitle className="text-base">Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="flex items-center gap-2">

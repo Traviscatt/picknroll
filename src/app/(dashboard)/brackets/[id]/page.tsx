@@ -42,6 +42,12 @@ interface PickData {
   choices: string[];
 }
 
+interface CompletedGame {
+  round: number;
+  region: string | null;
+  winnerBracketId: string | null;
+}
+
 interface Bracket {
   id: string;
   name: string;
@@ -57,6 +63,7 @@ interface Bracket {
   submittedAt: string | null;
   rank: number | null;
   totalInPool: number | null;
+  completedGames: CompletedGame[];
   familyMember?: {
     id: string;
     name: string;
@@ -252,15 +259,37 @@ export default function BracketDetailPage() {
 
   const renderGameCard = (pick: PickData, roundNum: number) => {
     const gameNum = pick.gameId.split("-g")[1];
+    // Extract region from gameId (e.g., "East-r1-g1" -> "East")
+    const regionMatch = pick.gameId.match(/^([A-Za-z]+)-r/);
+    const pickRegion = regionMatch ? regionMatch[1] : null;
+    
+    // Check if this game is completed
+    const completedGame = bracket?.completedGames?.find(
+      (g) => g.round === roundNum && g.region?.toLowerCase() === pickRegion?.toLowerCase()
+    );
+    const isCompleted = !!completedGame;
+    const winnerBracketId = completedGame?.winnerBracketId;
+
     return (
-      <div key={pick.gameId} className="bg-white border rounded-md p-2 space-y-0.5">
+      <div 
+        key={pick.gameId} 
+        className={`bg-white rounded-md p-2 space-y-0.5 ${
+          isCompleted ? "border-2 border-slate-400" : "border border-slate-200"
+        }`}
+      >
         <div className="flex items-center justify-between mb-1">
           <span className="text-[10px] text-slate-400 font-medium">Game {gameNum}</span>
           <span className="text-[10px] text-slate-400">{ROUND_LABELS[roundNum]}</span>
         </div>
-        {pick.choices.map((teamId, i) =>
-          renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0)
-        )}
+        {pick.choices.map((teamId, i) => {
+          // Check if this pick is incorrect (game completed and this team didn't win)
+          const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
+          return (
+            <div key={`${teamId}-${i}`} className={isIncorrect ? "line-through opacity-50" : ""}>
+              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0)}
+            </div>
+          );
+        })}
       </div>
     );
   };

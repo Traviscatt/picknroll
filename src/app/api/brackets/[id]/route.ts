@@ -36,6 +36,42 @@ export async function GET(
       return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
     }
 
+    // Fetch completed games for this tournament to determine game status
+    const tournament = await db.tournament.findFirst({
+      orderBy: { year: "desc" },
+    });
+
+    let completedGames: { round: number; region: string | null; winnerBracketId: string | null }[] = [];
+    if (tournament) {
+      // Get tournament teams to map TournamentTeam.id -> bracket-style ID (e.g., "east-1")
+      const tournamentTeams = await db.tournamentTeam.findMany({
+        where: { tournamentId: tournament.id },
+        select: { id: true, seed: true, region: true },
+      });
+      const ttIdToBracketId = new Map<string, string>();
+      for (const tt of tournamentTeams) {
+        ttIdToBracketId.set(tt.id, `${tt.region.toLowerCase()}-${tt.seed}`);
+      }
+
+      const games = await db.game.findMany({
+        where: {
+          tournamentId: tournament.id,
+          status: "FINAL",
+        },
+        select: {
+          round: true,
+          region: true,
+          winnerId: true,
+        },
+      });
+      
+      completedGames = games.map(g => ({
+        round: g.round,
+        region: g.region,
+        winnerBracketId: g.winnerId ? ttIdToBracketId.get(g.winnerId) || null : null,
+      }));
+    }
+
     // Calculate rank within pool if bracket is in a pool and submitted
     let rank: number | null = null;
     let totalInPool: number | null = null;
@@ -73,7 +109,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ ...bracket, rank, totalInPool });
+    return NextResponse.json({ ...bracket, rank, totalInPool, completedGames });
   } catch (error) {
     console.error("Error fetching bracket:", error);
     return NextResponse.json(

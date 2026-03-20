@@ -358,7 +358,7 @@ export default function BracketDetailPage() {
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">East vs South</p>
                   {ffGame1 ? (
                     <div className="space-y-1">
-                      {ffGame1.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
+                      {ffGame1.choices.map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
                     </div>
                   ) : (
                     <p className="text-xs text-slate-300 text-center py-2">—</p>
@@ -370,7 +370,7 @@ export default function BracketDetailPage() {
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">West vs Midwest</p>
                   {ffGame2 ? (
                     <div className="space-y-1">
-                      {ffGame2.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
+                      {ffGame2.choices.map((teamId, i) => renderTeam(teamId, i + 1, "sm"))}
                     </div>
                   ) : (
                     <p className="text-xs text-slate-300 text-center py-2">—</p>
@@ -391,7 +391,7 @@ export default function BracketDetailPage() {
                   <p className="text-[10px] font-semibold text-primary/60 uppercase tracking-wide mb-2 text-center">Championship</p>
                   {champ ? (
                     <div className="space-y-1.5">
-                      {champ.choices.slice(0, 2).map((teamId, i) => renderTeam(teamId, i + 1, "md"))}
+                      {champ.choices.map((teamId, i) => renderTeam(teamId, i + 1, "md"))}
                     </div>
                   ) : (
                     <p className="text-xs text-slate-300 text-center py-2">—</p>

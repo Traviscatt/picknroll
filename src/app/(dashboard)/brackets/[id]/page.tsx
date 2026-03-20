@@ -259,8 +259,13 @@ export default function BracketDetailPage() {
   };
 
   // Region order and games per region for calculating DB game numbers
+  // DB uses sequential numbering across regions per round:
+  // R1: East 1-8, South 9-16, West 17-24, Midwest 25-32
+  // R2: East 1-4, South 5-8, West 9-12, Midwest 13-16
+  // R3: East 1-2, South 3-4, West 5-6, Midwest 7-8
+  // R4: East 1, South 2, West 3, Midwest 4
   const REGION_ORDER = ["East", "South", "West", "Midwest"];
-  const GAMES_PER_REGION_R1 = 8;
+  const GAMES_PER_REGION: Record<number, number> = { 1: 8, 2: 4, 3: 2, 4: 1 };
 
   const renderGameCard = (pick: PickData, roundNum: number) => {
     // Extract game number and region from gameId (e.g., "East-r1-g1" -> region="East", localGameNum=1)
@@ -269,15 +274,14 @@ export default function BracketDetailPage() {
     const regionMatch = pick.gameId.match(/^([A-Za-z]+)-r/);
     const pickRegion = regionMatch ? regionMatch[1] : null;
     
-    // For Round 1, DB gameNumbers are sequential across regions (East 1-8, South 9-16, etc.)
-    // Convert local game number to DB game number
+    // Convert local per-region game number to sequential DB game number
     const regionIndex = pickRegion ? REGION_ORDER.findIndex(r => r.toLowerCase() === pickRegion.toLowerCase()) : -1;
-    const dbGameNumber = roundNum === 1 && regionIndex >= 0 
-      ? (regionIndex * GAMES_PER_REGION_R1) + localGameNum 
+    const gamesPerRegion = GAMES_PER_REGION[roundNum] || 0;
+    const dbGameNumber = regionIndex >= 0 && gamesPerRegion > 0
+      ? (regionIndex * gamesPerRegion) + localGameNum 
       : localGameNum;
     
     // Check if this specific game is completed
-    // Match by round + calculated gameNumber (gameNumber is unique across regions within a round)
     const completedGame = bracket?.completedGames?.find(
       (g) => g.round === roundNum && g.gameNumber === dbGameNumber
     );

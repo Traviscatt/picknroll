@@ -41,9 +41,10 @@ export async function GET(
       orderBy: { year: "desc" },
     });
 
-    let completedGames: { round: number; gameNumber: number; region: string | null; winnerBracketId: string | null }[] = [];
+    // Build a map from bracket-style gameId (e.g. "East-r1-g1") to winner bracket ID
+    // Uses same grouping logic as scoring route: group by round+region, sort by gameNumber, assign per-region index
+    const completedGames: { bracketGameId: string; winnerBracketId: string | null }[] = [];
     if (tournament) {
-      // Get tournament teams to map TournamentTeam.id -> bracket-style ID (e.g., "east-1")
       const tournamentTeams = await db.tournamentTeam.findMany({
         where: { tournamentId: tournament.id },
         select: { id: true, seed: true, region: true },
@@ -53,25 +54,46 @@ export async function GET(
         ttIdToBracketId.set(tt.id, `${tt.region.toLowerCase()}-${tt.seed}`);
       }
 
-      const games = await db.game.findMany({
-        where: {
-          tournamentId: tournament.id,
-          status: "FINAL",
-        },
+      const allGames = await db.game.findMany({
+        where: { tournamentId: tournament.id },
         select: {
           round: true,
           gameNumber: true,
           region: true,
+          status: true,
           winnerId: true,
         },
       });
-      
-      completedGames = games.map(g => ({
-        round: g.round,
-        gameNumber: g.gameNumber,
-        region: g.region,
-        winnerBracketId: g.winnerId ? ttIdToBracketId.get(g.winnerId) || null : null,
-      }));
+
+      // Group games by round+region, sort by gameNumber, assign per-region indices
+      const grouped = new Map<string, typeof allGames>();
+      for (const g of allGames) {
+        const key = `${g.round}-${g.region || "none"}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key)!.push(g);
+      }
+
+      for (const [, group] of grouped) {
+        group.sort((a, b) => a.gameNumber - b.gameNumber);
+        for (let i = 0; i < group.length; i++) {
+          const g = group[i];
+          if (g.status !== "FINAL") continue;
+
+          let bracketGameId: string;
+          if (g.region && g.round <= 4) {
+            bracketGameId = `${g.region}-r${g.round}-g${i + 1}`;
+          } else if (g.round === 5) {
+            bracketGameId = `final-four-r5-g${g.gameNumber}`;
+          } else {
+            bracketGameId = `championship-r6-g${g.gameNumber}`;
+          }
+
+          completedGames.push({
+            bracketGameId,
+            winnerBracketId: g.winnerId ? ttIdToBracketId.get(g.winnerId) || null : null,
+          });
+        }
+      }
     }
 
     // Calculate rank within pool if bracket is in a pool and submitted

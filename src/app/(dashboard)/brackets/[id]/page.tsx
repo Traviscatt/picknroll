@@ -224,7 +224,7 @@ export default function BracketDetailPage() {
     const imgSize = size === "md" ? 24 : 18;
     const isEliminated = eliminatedTeams.has(teamId);
     return (
-      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-50" : ""}`}>
+      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-30 grayscale" : ""}`}>
         {rank > 0 && (
           <span className={`font-bold shrink-0 w-4 text-right ${rank === 1 ? "text-primary" : "text-slate-400"} ${size === "md" ? "text-sm" : "text-[11px]"}`}>
             {rank}.

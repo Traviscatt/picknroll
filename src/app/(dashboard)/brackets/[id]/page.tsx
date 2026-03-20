@@ -232,7 +232,7 @@ export default function BracketDetailPage() {
     const imgSize = size === "md" ? 24 : 18;
     const isEliminated = eliminatedTeams.has(teamId);
     return (
-      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-30 grayscale" : ""} ${isIncorrect ? "line-through" : ""}`}>
+      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isIncorrect ? "line-through opacity-60" : isEliminated ? "opacity-30 grayscale" : ""}`}>
         {rank > 0 && (
           <span className={`font-bold shrink-0 w-4 text-right ${rank === 1 ? "text-primary" : "text-slate-400"} ${size === "md" ? "text-sm" : "text-[11px]"}`}>
             {rank}.
@@ -244,11 +244,11 @@ export default function BracketDetailPage() {
             alt={name}
             width={imgSize}
             height={imgSize}
-            className={`${size === "md" ? "w-6 h-6" : "w-[18px] h-[18px]"} object-contain shrink-0 ${isIncorrect ? "opacity-50" : ""}`}
+            className={`${size === "md" ? "w-6 h-6" : "w-[18px] h-[18px]"} object-contain shrink-0`}
             unoptimized
           />
         )}
-        <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"} ${isIncorrect ? "text-slate-500" : ""}`}>{name}</span>
+        <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"}`}>{name}</span>
         {info && (
           <span className={`text-slate-400 shrink-0 ${size === "md" ? "text-xs" : "text-[10px]"}`}>({info.seed})</span>
         )}

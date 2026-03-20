@@ -369,184 +369,181 @@ export default function BracketDetailPage() {
 
   const tabs = [...REGIONS, "Final Four"];
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/brackets">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-slate-900">{bracket.name}</h1>
-              {getStatusBadge()}
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-slate-600">
-              <span>Entry: {bracket.entryName}</span>
-              {bracket.familyMember && (
-                <Badge variant="outline" className="font-normal">
-                  <Users className="mr-1 h-3 w-3" />
-                  {bracket.familyMember.name}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          {(() => {
-            const deadlinePassed = bracket.pool?.deadline
-              ? new Date() > new Date(bracket.pool.deadline)
-              : false;
-            const canEdit =
-              bracket.status === "DRAFT" ||
-              ((bracket.status === "SUBMITTED" || bracket.status === "PAID") && !deadlinePassed);
+  const deadlinePassed = bracket.pool?.deadline
+    ? new Date() > new Date(bracket.pool.deadline)
+    : false;
+  const canEdit =
+    bracket.status === "DRAFT" ||
+    ((bracket.status === "SUBMITTED" || bracket.status === "PAID") && !deadlinePassed);
 
-            if (canEdit) {
-              return (
-                <Button asChild className="bg-primary hover:bg-primary/90">
-                  <Link href={`/brackets/${bracket.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Bracket
-                  </Link>
-                </Button>
-              );
-            }
-            if (deadlinePassed && (bracket.status === "SUBMITTED" || bracket.status === "PAID")) {
-              return (
-                <Button variant="outline" disabled>
-                  <Clock className="mr-2 h-4 w-4" />
-                  Locked (Deadline Passed)
-                </Button>
-              );
-            }
-            return null;
-          })()}
-          {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
-            <Button asChild className="bg-green-600 hover:bg-green-700">
-              <Link href="/payment">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Pay Now
-              </Link>
-            </Button>
-          )}
-          {parsedPicks.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={handleDownloadPdf}
-              disabled={isDownloading}
-            >
-              {isDownloading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </>
-              )}
-            </Button>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-destructive border-destructive hover:bg-destructive/10">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Delete Bracket
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
-                  This action cannot be undone. All picks and scores associated with this
-                  bracket will be permanently removed.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Bracket
-                    </>
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" asChild className="shrink-0 mt-1">
+          <Link href="/brackets">
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">{bracket.name}</h1>
+            {getStatusBadge()}
+            {deadlinePassed && (bracket.status === "SUBMITTED" || bracket.status === "PAID") && (
+              <Badge variant="outline" className="text-slate-500">
+                <Clock className="mr-1 h-3 w-3" />
+                Locked
+              </Badge>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-600">
+            <span>{bracket.entryName}</span>
+            {bracket.familyMember && (
+              <Badge variant="outline" className="font-normal text-xs">
+                <Users className="mr-1 h-3 w-3" />
+                {bracket.familyMember.name}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Score Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      {/* Action Buttons - Toolbar style */}
+      <div className="flex flex-wrap items-center gap-2">
+        {canEdit && (
+          <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
+            <Link href={`/brackets/${bracket.id}/edit`}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
+        )}
+        {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
+          <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
+            <Link href="/payment">
+              <DollarSign className="mr-2 h-4 w-4" />
+              Pay Now
+            </Link>
+          </Button>
+        )}
+        {parsedPicks.length > 0 && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="hidden sm:flex"
+            >
+              {isDownloading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              {isDownloading ? "Generating..." : "Download PDF"}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="sm:hidden"
+            >
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </Button>
+          </>
+        )}
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="icon" className="text-destructive border-destructive hover:bg-destructive/10">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Delete Bracket
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
+                This action cannot be undone. All picks and scores associated with this
+                bracket will be permanently removed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Bracket
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      {/* Score Cards - 2 cards on mobile, 4 on desktop */}
+      <div className="grid gap-3 grid-cols-2">
+        {/* Card 1: Score & Ranking */}
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total Score</CardDescription>
+            <CardDescription>Score</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-1">
             <div className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-primary" />
-              <span className="text-3xl font-bold text-primary">{bracket.totalScore}</span>
+              <span className="text-2xl md:text-3xl font-bold text-primary">
+                {bracket.totalScore + bracket.bonusScore}
+              </span>
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Bonus Points</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold text-slate-700">{bracket.bonusScore}</span>
+            {bracket.bonusScore > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Base: {bracket.totalScore} + Bonus: {bracket.bonusScore}
+              </p>
+            )}
           </CardContent>
         </Card>
 
+        {/* Card 2: Payment & Tiebreaker */}
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tiebreaker</CardDescription>
+            <CardDescription>Details</CardDescription>
           </CardHeader>
-          <CardContent>
-            <span className="text-3xl font-bold text-slate-700">
-              {bracket.tiebreaker ?? "—"}
-            </span>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Payment</CardDescription>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <div className="flex items-center gap-2">
-              <DollarSign className={`h-5 w-5 ${bracket.paid ? "text-green-500" : "text-slate-400"}`} />
-              <span className={`text-lg font-semibold ${bracket.paid ? "text-green-600" : "text-slate-500"}`}>
+              <DollarSign className={`h-4 w-4 ${bracket.paid ? "text-green-500" : "text-slate-400"}`} />
+              <span className={`text-sm font-medium ${bracket.paid ? "text-green-600" : "text-slate-500"}`}>
                 {bracket.paid ? "Paid" : "Unpaid"}
               </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <span className="text-muted-foreground">Tiebreaker:</span>
+              <span className="font-semibold">{bracket.tiebreaker ?? "—"}</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Bracket Picks - Region Tabs */}
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-0">
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" />
             Your Bracket Picks
@@ -558,9 +555,9 @@ export default function BracketDetailPage() {
             }
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {parsedPicks.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 px-4 text-slate-500">
               <Trophy className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p>No picks have been saved for this bracket yet.</p>
               {bracket.status === "DRAFT" && (
@@ -574,40 +571,34 @@ export default function BracketDetailPage() {
             </div>
           ) : (
             <div>
-              {/* Tab navigation */}
-              <div className="flex gap-1 mb-4 overflow-x-auto pb-1 border-b">
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab;
-                  const isFinal = tab === "Final Four";
-                  const pickCount = isFinal
-                    ? getFinalFourPicks().length + (getChampionshipPick() ? 1 : 0)
-                    : getRegionPicks(tab).length;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-3 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap
-                        ${isActive
-                          ? "text-primary border-b-2 border-primary bg-primary/5"
-                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                        }
-                        ${isFinal ? "flex items-center gap-1.5" : ""}
-                      `}
-                    >
-                      {isFinal && <Crown className="h-3.5 w-3.5" />}
-                      {tab}
-                      {pickCount > 0 && (
-                        <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? "bg-primary/10 text-primary" : "bg-slate-100 text-slate-500"}`}>
-                          {pickCount}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+              {/* Sticky Tab navigation */}
+              <div className="sticky top-0 z-10 bg-white border-b px-4 pt-3">
+                <div className="flex gap-1 overflow-x-auto pb-0 -mb-px">
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab;
+                    const isFinal = tab === "Final Four";
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`px-3 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap border-b-2
+                          ${isActive
+                            ? "text-primary border-primary bg-primary/5"
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-transparent"
+                          }
+                          ${isFinal ? "flex items-center gap-1.5" : ""}
+                        `}
+                      >
+                        {isFinal && <Crown className="h-3.5 w-3.5" />}
+                        {tab}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Tab content */}
-              <div className="bg-slate-50 rounded-lg p-4">
+              <div className="bg-slate-50 p-4">
                 {activeTab === "Final Four"
                   ? renderFinalContent()
                   : renderRegionContent(activeTab)
@@ -618,27 +609,18 @@ export default function BracketDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Timestamps */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-wrap gap-6 text-sm text-slate-500">
-            <div>
-              <span className="font-medium">Created:</span>{" "}
-              {new Date(bracket.createdAt).toLocaleString()}
-            </div>
-            <div>
-              <span className="font-medium">Last Updated:</span>{" "}
-              {new Date(bracket.updatedAt).toLocaleString()}
-            </div>
-            {bracket.submittedAt && (
-              <div>
-                <span className="font-medium">Submitted:</span>{" "}
-                {new Date(bracket.submittedAt).toLocaleString()}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Timestamps - Subtle footer */}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-slate-400 pt-2">
+        <span>Created {new Date(bracket.createdAt).toLocaleDateString()}</span>
+        <span>•</span>
+        <span>Updated {new Date(bracket.updatedAt).toLocaleDateString()}</span>
+        {bracket.submittedAt && (
+          <>
+            <span>•</span>
+            <span>Submitted {new Date(bracket.submittedAt).toLocaleDateString()}</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

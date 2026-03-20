@@ -225,14 +225,14 @@ export default function BracketDetailPage() {
     return parsedPicks.find((p) => p.gameId.startsWith("championship-"));
   };
 
-  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm") => {
+  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false) => {
     const name = getTeamName(teamId);
     const info = getTeamInfo(teamId);
     const logo = getTeamLogo(teamId);
     const imgSize = size === "md" ? 24 : 18;
     const isEliminated = eliminatedTeams.has(teamId);
     return (
-      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-30 grayscale" : ""}`}>
+      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-30 grayscale" : ""} ${isIncorrect ? "line-through" : ""}`}>
         {rank > 0 && (
           <span className={`font-bold shrink-0 w-4 text-right ${rank === 1 ? "text-primary" : "text-slate-400"} ${size === "md" ? "text-sm" : "text-[11px]"}`}>
             {rank}.
@@ -244,11 +244,11 @@ export default function BracketDetailPage() {
             alt={name}
             width={imgSize}
             height={imgSize}
-            className={`${size === "md" ? "w-6 h-6" : "w-[18px] h-[18px]"} object-contain shrink-0`}
+            className={`${size === "md" ? "w-6 h-6" : "w-[18px] h-[18px]"} object-contain shrink-0 ${isIncorrect ? "opacity-50" : ""}`}
             unoptimized
           />
         )}
-        <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"}`}>{name}</span>
+        <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"} ${isIncorrect ? "text-slate-500" : ""}`}>{name}</span>
         {info && (
           <span className={`text-slate-400 shrink-0 ${size === "md" ? "text-xs" : "text-[10px]"}`}>({info.seed})</span>
         )}
@@ -281,8 +281,8 @@ export default function BracketDetailPage() {
           // Check if this pick is incorrect (game completed and this team didn't win)
           const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
           return (
-            <div key={`${teamId}-${i}`} className={isIncorrect ? "line-through text-slate-600" : ""}>
-              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0)}
+            <div key={`${teamId}-${i}`}>
+              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect)}
             </div>
           );
         })}

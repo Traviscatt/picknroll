@@ -281,7 +281,7 @@ export default function BracketDetailPage() {
           // Check if this pick is incorrect (game completed and this team didn't win)
           const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
           return (
-            <div key={`${teamId}-${i}`} className={isIncorrect ? "line-through opacity-50" : ""}>
+            <div key={`${teamId}-${i}`} className={isIncorrect ? "line-through opacity-70 text-slate-500" : ""}>
               {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0)}
             </div>
           );

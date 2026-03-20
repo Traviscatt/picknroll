@@ -56,7 +56,7 @@ const REGIONS = {
     { espnId: "62", name: "Hawaii Rainbow Warriors", short: "HAW", seed: 13 },
     { espnId: "338", name: "Kennesaw State Owls", short: "KENN", seed: 14 },
     { espnId: "693", name: "Queens Royals", short: "QU", seed: 15 },
-    { espnId: "2344", name: "LIU Sharks", short: "LIU", seed: 16 },
+    { espnId: "112358", name: "LIU Sharks", short: "LIU", seed: 16 },
   ],
   Midwest: [
     { espnId: "130", name: "Michigan Wolverines", short: "MICH", seed: 1 },

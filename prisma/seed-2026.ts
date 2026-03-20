@@ -74,7 +74,7 @@ const REGIONS = {
     { espnId: "2275", name: "Hofstra Pride", short: "HOF", seed: 13 },
     { espnId: "2750", name: "Wright State Raiders", short: "WRST", seed: 14 },
     { espnId: "2634", name: "Tennessee State Tigers", short: "TNST", seed: 15 },
-    { espnId: "2674", name: "UMBC Retrievers", short: "UMBC", seed: 16 },
+    { espnId: "47", name: "Howard Bison", short: "HOW", seed: 16 },
   ],
 };
 

@@ -28,28 +28,32 @@ export async function GET() {
       }
     }
 
-    // Fetch today's ESPN scoreboard (tournament games only via groups=100)
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, "0");
-    const d = String(today.getDate()).padStart(2, "0");
-    const dateStr = `${y}${m}${d}`;
+    // Fetch ESPN scoreboard for the last 3 days (catches missed syncs and games spanning midnight)
+    const datesToCheck: string[] = [];
+    for (let daysAgo = 0; daysAgo < 3; daysAgo++) {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      datesToCheck.push(`${y}${m}${dd}`);
+    }
 
+    let gamesUpdated = 0;
+
+    for (const dateStr of datesToCheck) {
     const url = `${ESPN_BASE_URL}/scoreboard?dates=${dateStr}&limit=100&groups=100`;
 
     let espnData;
     try {
       const espnResponse = await fetch(url, { cache: "no-store" });
-      if (!espnResponse.ok) {
-        return NextResponse.json({ message: "ESPN API unavailable" });
-      }
+      if (!espnResponse.ok) continue;
       espnData = await espnResponse.json();
     } catch {
-      return NextResponse.json({ message: "Failed to fetch ESPN data" });
+      continue;
     }
 
     const events = espnData.events || [];
-    let gamesUpdated = 0;
 
     for (const event of events) {
       const competition = event.competitions?.[0];
@@ -109,6 +113,7 @@ export async function GET() {
         if (filled) gamesUpdated++;
       }
     }
+    } // end for datesToCheck
 
     // Auto-recalculate scores if any games were updated
     let bracketsUpdated = 0;
@@ -121,7 +126,6 @@ export async function GET() {
       message: `Cron sync: ${gamesUpdated} games updated, ${bracketsUpdated} brackets scored.`,
       gamesUpdated,
       bracketsUpdated,
-      date: dateStr,
     });
   } catch (error) {
     console.error("Cron ESPN sync error:", error);

@@ -78,6 +78,7 @@ export default function BracketDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("East");
   const [isDownloading, setIsDownloading] = useState(false);
+  const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
@@ -134,12 +135,21 @@ export default function BracketDetailPage() {
   useEffect(() => {
     const fetchBracket = async () => {
       try {
-        const response = await fetch(`/api/brackets/${bracketId}`);
-        if (response.ok) {
-          const data = await response.json();
+        const [bracketRes, eliminatedRes] = await Promise.all([
+          fetch(`/api/brackets/${bracketId}`),
+          fetch("/api/eliminated-teams"),
+        ]);
+        
+        if (bracketRes.ok) {
+          const data = await bracketRes.json();
           setBracket(data);
-        } else if (response.status === 404) {
+        } else if (bracketRes.status === 404) {
           router.push("/brackets");
+        }
+        
+        if (eliminatedRes.ok) {
+          const elimData = await eliminatedRes.json();
+          setEliminatedTeams(new Set(elimData.eliminated || []));
         }
       } catch (error) {
         console.error("Failed to fetch bracket:", error);
@@ -212,8 +222,9 @@ export default function BracketDetailPage() {
     const info = getTeamInfo(teamId);
     const logo = getTeamLogo(teamId);
     const imgSize = size === "md" ? 24 : 18;
+    const isEliminated = eliminatedTeams.has(teamId);
     return (
-      <div key={`${teamId}-${rank}`} className="flex items-center gap-1.5">
+      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isEliminated ? "opacity-50" : ""}`}>
         {rank > 0 && (
           <span className={`font-bold shrink-0 w-4 text-right ${rank === 1 ? "text-primary" : "text-slate-400"} ${size === "md" ? "text-sm" : "text-[11px]"}`}>
             {rank}.

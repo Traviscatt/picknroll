@@ -142,68 +142,42 @@ async function fillLaterRoundGame(
   score2: number,
   espnGameId: string
 ): Promise<boolean> {
-  const unfilledGames = await db.game.findMany({
-    where: {
-      tournamentId,
-      status: { not: "FINAL" },
-      OR: [{ team1Id: null }, { team2Id: null }],
-    },
-    orderBy: [{ round: "asc" }, { gameNumber: "asc" }],
+  // Find the most recent game each team won to determine the correct next-round slot.
+  // Game numbering is sequential per round (R1: 1-32, R2: 1-16, R3: 1-8, R4: 1-4, R5: 1-2, R6: 1).
+  // The bracket structure means: nextRoundGameNumber = ceil(prevRoundGameNumber / 2).
+  const prevGame1 = await db.game.findFirst({
+    where: { tournamentId, winnerId: tt1Id, status: "FINAL" },
+    orderBy: { round: "desc" },
+  });
+  const prevGame2 = await db.game.findFirst({
+    where: { tournamentId, winnerId: tt2Id, status: "FINAL" },
+    orderBy: { round: "desc" },
   });
 
-  for (const game of unfilledGames) {
-    if (!game.team1Id && !game.team2Id) {
-      await db.game.update({
-        where: { id: game.id },
-        data: {
-          team1Id: tt1Id, team2Id: tt2Id, winnerId: winnerTtId,
-          team1Score: score1, team2Score: score2, status: "FINAL", espnGameId,
-        },
-      });
-      return true;
-    }
-    if (game.team1Id === tt1Id && !game.team2Id) {
-      await db.game.update({
-        where: { id: game.id },
-        data: {
-          team2Id: tt2Id, winnerId: winnerTtId,
-          team1Score: score1, team2Score: score2, status: "FINAL", espnGameId,
-        },
-      });
-      return true;
-    }
-    if (game.team1Id === tt2Id && !game.team2Id) {
-      await db.game.update({
-        where: { id: game.id },
-        data: {
-          team2Id: tt1Id, winnerId: winnerTtId,
-          team1Score: score2, team2Score: score1, status: "FINAL", espnGameId,
-        },
-      });
-      return true;
-    }
-    if (!game.team1Id && game.team2Id === tt1Id) {
-      await db.game.update({
-        where: { id: game.id },
-        data: {
-          team1Id: tt2Id, winnerId: winnerTtId,
-          team1Score: score2, team2Score: score1, status: "FINAL", espnGameId,
-        },
-      });
-      return true;
-    }
-    if (!game.team1Id && game.team2Id === tt2Id) {
-      await db.game.update({
-        where: { id: game.id },
-        data: {
-          team1Id: tt1Id, winnerId: winnerTtId,
-          team1Score: score1, team2Score: score2, status: "FINAL", espnGameId,
-        },
-      });
-      return true;
-    }
-  }
-  return false;
+  if (!prevGame1 || !prevGame2) return false;
+  if (prevGame1.round !== prevGame2.round) return false;
+
+  const nextRound = prevGame1.round + 1;
+  const expectedGameNumber = Math.ceil(prevGame1.gameNumber / 2);
+
+  // Verify both feeder games map to the same next-round game
+  if (Math.ceil(prevGame2.gameNumber / 2) !== expectedGameNumber) return false;
+
+  // Find the target game slot
+  const targetGame = await db.game.findFirst({
+    where: { tournamentId, round: nextRound, gameNumber: expectedGameNumber },
+  });
+
+  if (!targetGame || targetGame.status === "FINAL") return false;
+
+  await db.game.update({
+    where: { id: targetGame.id },
+    data: {
+      team1Id: tt1Id, team2Id: tt2Id, winnerId: winnerTtId,
+      team1Score: score1, team2Score: score2, status: "FINAL", espnGameId,
+    },
+  });
+  return true;
 }
 
 async function recalculateScores(tournamentId: string) {

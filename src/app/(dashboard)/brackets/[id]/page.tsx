@@ -225,12 +225,12 @@ export default function BracketDetailPage() {
     return parsedPicks.find((p) => p.gameId.startsWith("championship-"));
   };
 
-  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false) => {
+  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false, showEliminated: boolean = true) => {
     const name = getTeamName(teamId);
     const info = getTeamInfo(teamId);
     const logo = getTeamLogo(teamId);
     const imgSize = size === "md" ? 24 : 18;
-    const isEliminated = eliminatedTeams.has(teamId);
+    const isEliminated = showEliminated && eliminatedTeams.has(teamId);
     return (
       <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isIncorrect ? "line-through opacity-40" : isEliminated ? "opacity-30 grayscale" : ""}`}>
         {rank > 0 && (
@@ -280,9 +280,11 @@ export default function BracketDetailPage() {
         {pick.choices.map((teamId, i) => {
           // Check if this pick is incorrect (game completed and this team didn't win)
           const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
+          // Don't show eliminated styling for teams that won this specific game
+          const isWinner = isCompleted && winnerBracketId === teamId;
           return (
             <div key={`${teamId}-${i}`}>
-              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect)}
+              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect, !isWinner)}
             </div>
           );
         })}

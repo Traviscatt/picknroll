@@ -7,13 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Medal, TrendingUp, Users, Share2, Search } from "lucide-react";
+import { Trophy, Medal, TrendingUp, Users, Share2, Search, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface LeaderboardEntry {
   rank: number;
+  bracketId: string;
   name: string;
   bracketName: string;
   score: number;
@@ -265,11 +266,12 @@ export default function LeaderboardPage() {
                   {filteredLeaderboard.map((entry) => (
                   <TableRow
                     key={`${entry.name}-${entry.bracketName}`}
-                    className={
+                    className={`cursor-pointer transition-colors hover:bg-slate-50 ${
                       entry.isCurrentUser
-                        ? "bg-secondary"
-                        : undefined
-                    }
+                        ? "bg-secondary hover:bg-secondary/80"
+                        : ""
+                    }`}
+                    onClick={() => router.push(`/brackets/${entry.bracketId}`)}
                   >
                     <TableCell className="font-medium px-2">
                       <div className="flex items-center justify-center w-6 h-6">
@@ -299,6 +301,9 @@ export default function LeaderboardPage() {
                     </TableCell>
                     <TableCell className="text-right text-slate-500 hidden md:table-cell">
                       {entry.tiebreaker ?? "-"}
+                    </TableCell>
+                    <TableCell className="w-8 px-2">
+                      <Eye className="h-4 w-4 text-slate-300" />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -18,8 +18,10 @@ export async function GET(
     const { id } = await params;
 
     // Admins can view any bracket; regular users can only view their own
+    // OR brackets from the same pool after the deadline has passed
     const isAdmin = session.user.role === "ADMIN";
-    const bracket = await db.bracket.findFirst({
+
+    let bracket = await db.bracket.findFirst({
       where: {
         id,
         ...(isAdmin ? {} : { userId: session.user.id }),
@@ -28,13 +30,52 @@ export async function GET(
         pool: true,
         familyMember: true,
         picks: true,
-        user: isAdmin ? { select: { id: true, name: true, email: true } } : false,
+        user: { select: { id: true, name: true } },
       },
     });
+
+    // If not found as owner/admin, check if they're in the same pool and deadline passed
+    if (!bracket) {
+      const targetBracket = await db.bracket.findFirst({
+        where: { id, status: { in: ["SUBMITTED", "PAID"] } },
+        include: {
+          pool: true,
+          familyMember: true,
+          picks: true,
+          user: { select: { id: true, name: true } },
+        },
+      });
+
+      if (!targetBracket || !targetBracket.poolId) {
+        return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
+      }
+
+      // Verify the requesting user is in the same pool
+      const membership = await db.poolMember.findFirst({
+        where: { userId: session.user.id, poolId: targetBracket.poolId },
+      });
+
+      if (!membership) {
+        return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
+      }
+
+      // Verify the pool deadline has passed
+      if (targetBracket.pool && new Date() <= new Date(targetBracket.pool.deadline)) {
+        return NextResponse.json(
+          { error: "Brackets are hidden until the submission deadline passes" },
+          { status: 403 }
+        );
+      }
+
+      bracket = targetBracket;
+    }
 
     if (!bracket) {
       return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
     }
+
+    const bracketIsOwner = bracket.userId === session.user.id || isAdmin;
+    const ownerName = !bracketIsOwner ? (bracket.user?.name || "Unknown") : null;
 
     // Fetch completed games for this tournament to determine game status
     const tournament = await db.tournament.findFirst({
@@ -133,7 +174,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ ...bracket, rank, totalInPool, completedGames });
+    return NextResponse.json({ ...bracket, rank, totalInPool, completedGames, isOwner: bracketIsOwner, ownerName });
   } catch (error) {
     console.error("Error fetching bracket:", error);
     return NextResponse.json(

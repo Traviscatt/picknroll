@@ -58,6 +58,8 @@ interface Bracket {
   paid: boolean;
   picksData: string | null;
   createdAt: string;
+  isOwner: boolean;
+  ownerName: string | null;
   updatedAt: string;
   submittedAt: string | null;
   rank: number | null;
@@ -151,6 +153,9 @@ export default function BracketDetailPage() {
         if (bracketRes.ok) {
           const data = await bracketRes.json();
           setBracket(data);
+        } else if (bracketRes.status === 403) {
+          toast.error("Brackets are hidden until the submission deadline passes");
+          router.push("/leaderboard");
         } else if (bracketRes.status === 404) {
           router.push("/brackets");
         }
@@ -180,6 +185,8 @@ export default function BracketDetailPage() {
   }
 
   if (!session || !bracket) return null;
+
+  const isOwner = bracket.isOwner !== false;
 
   // Parse picks data from JSON
   const parsedPicks: PickData[] = bracket.picksData 
@@ -458,13 +465,15 @@ export default function BracketDetailPage() {
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button variant="ghost" size="icon" asChild className="shrink-0 mt-1">
-          <Link href="/brackets">
+          <Link href={isOwner ? "/brackets" : "/leaderboard"}>
             <ArrowLeft className="h-5 w-5" />
           </Link>
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">{bracket.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">
+              {isOwner ? bracket.name : `${bracket.ownerName}'s Bracket`}
+            </h1>
             {getStatusBadge()}
             {deadlinePassed && (bracket.status === "SUBMITTED" || bracket.status === "PAID") && (
               <Badge variant="outline" className="text-slate-500">
@@ -474,7 +483,11 @@ export default function BracketDetailPage() {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-600">
-            <span>{bracket.entryName}</span>
+            {isOwner ? (
+              <span>{bracket.entryName}</span>
+            ) : (
+              <span>{bracket.name} — {bracket.entryName}</span>
+            )}
             {bracket.familyMember && (
               <Badge variant="outline" className="font-normal text-xs">
                 <Users className="mr-1 h-3 w-3" />
@@ -485,96 +498,108 @@ export default function BracketDetailPage() {
         </div>
       </div>
 
-      {/* Action Buttons - Toolbar style */}
-      <div className="flex flex-wrap items-center gap-2">
-        {canEdit && (
-          <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
-            <Link href={`/brackets/${bracket.id}/edit`}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Link>
-          </Button>
-        )}
-        {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
-          <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-            <Link href="/payment">
-              <DollarSign className="mr-2 h-4 w-4" />
-              Pay Now
-            </Link>
-          </Button>
-        )}
-        {parsedPicks.length > 0 && (
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadPdf}
-              disabled={isDownloading}
-              className="hidden sm:flex"
-            >
-              {isDownloading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-2 h-4 w-4" />
-              )}
-              {isDownloading ? "Generating..." : "Download PDF"}
+      {/* Action Buttons - Toolbar style (only for owner) */}
+      {isOwner && (
+        <div className="flex flex-wrap items-center gap-2">
+          {canEdit && (
+            <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
+              <Link href={`/brackets/${bracket.id}/edit`}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleDownloadPdf}
-              disabled={isDownloading}
-              className="sm:hidden"
-            >
-              {isDownloading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
+          )}
+          {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
+            <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
+              <Link href="/payment">
+                <DollarSign className="mr-2 h-4 w-4" />
+                Pay Now
+              </Link>
             </Button>
-          </>
-        )}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="icon" className="text-destructive border-destructive hover:bg-destructive/10">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Delete Bracket
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
-                This action cannot be undone. All picks and scores associated with this
-                bracket will be permanently removed.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="bg-destructive hover:bg-destructive/90"
+          )}
+          {parsedPicks.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadPdf}
+                disabled={isDownloading}
+                className="hidden sm:flex"
               >
-                {isDeleting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
-                  </>
+                {isDownloading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Bracket
-                  </>
+                  <Download className="mr-2 h-4 w-4" />
                 )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+                {isDownloading ? "Generating..." : "Download PDF"}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleDownloadPdf}
+                disabled={isDownloading}
+                className="sm:hidden"
+              >
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+              </Button>
+            </>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="icon" className="text-destructive border-destructive hover:bg-destructive/10">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Delete Bracket
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
+                  This action cannot be undone. All picks and scores associated with this
+                  bracket will be permanently removed.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Bracket
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+      {!isOwner && (
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/leaderboard">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Leaderboard
+            </Link>
+          </Button>
+        </div>
+      )}
 
       {/* Score Cards - 2 cards on mobile, 4 on desktop */}
       <div className="grid gap-3 grid-cols-2">
@@ -628,7 +653,7 @@ export default function BracketDetailPage() {
         <CardHeader className="pb-0">
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-primary" />
-            Your Bracket Picks
+            {isOwner ? "Your Bracket Picks" : `${bracket.ownerName}'s Picks`}
           </CardTitle>
           <CardDescription>
             {parsedPicks.length > 0 
@@ -642,7 +667,7 @@ export default function BracketDetailPage() {
             <div className="text-center py-8 px-4 text-slate-500">
               <Trophy className="h-12 w-12 mx-auto mb-3 text-slate-300" />
               <p>No picks have been saved for this bracket yet.</p>
-              {bracket.status === "DRAFT" && (
+              {isOwner && bracket.status === "DRAFT" && (
                 <Button asChild className="mt-4 bg-primary hover:bg-primary/90">
                   <Link href={`/brackets/${bracket.id}/edit`}>
                     <Edit className="mr-2 h-4 w-4" />

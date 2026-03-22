@@ -258,8 +258,9 @@ export default function LeaderboardPage() {
                     <TableHead className="w-10 px-2">Rank</TableHead>
                     <TableHead className="max-w-[140px] truncate">Name</TableHead>
                     <TableHead className="hidden md:table-cell">Bracket</TableHead>
-                    <TableHead className="text-right w-16 px-2">Score</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
+                    <TableHead className="text-right w-16 px-2">Score</TableHead>
+                    <TableHead className="w-8 px-1"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -294,15 +295,15 @@ export default function LeaderboardPage() {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{entry.bracketName}</TableCell>
+                    <TableCell className="text-right text-slate-500 hidden md:table-cell">
+                      {entry.tiebreaker ?? "-"}
+                    </TableCell>
                     <TableCell className="text-right px-2 w-16">
                       <span className="font-bold text-primary">
                         {entry.score}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right text-slate-500 hidden md:table-cell">
-                      {entry.tiebreaker ?? "-"}
-                    </TableCell>
-                    <TableCell className="w-8 px-2">
+                    <TableCell className="w-8 px-1">
                       <Eye className="h-4 w-4 text-slate-300" />
                     </TableCell>
                   </TableRow>

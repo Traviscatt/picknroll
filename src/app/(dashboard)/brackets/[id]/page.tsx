@@ -634,12 +634,14 @@ export default function BracketDetailPage() {
             <CardTitle className="text-base">Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="flex items-center gap-2">
-              <DollarSign className={`h-4 w-4 ${bracket.paid ? "text-green-500" : "text-slate-400"}`} />
-              <span className={`text-sm font-medium ${bracket.paid ? "text-green-600" : "text-slate-500"}`}>
-                {bracket.paid ? "Paid" : "Unpaid"}
-              </span>
-            </div>
+            {isOwner && (
+              <div className="flex items-center gap-2">
+                <DollarSign className={`h-4 w-4 ${bracket.paid ? "text-green-500" : "text-slate-400"}`} />
+                <span className={`text-sm font-medium ${bracket.paid ? "text-green-600" : "text-slate-500"}`}>
+                  {bracket.paid ? "Paid" : "Unpaid"}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <span className="text-muted-foreground">Tiebreaker:</span>
               <span className="font-semibold">{bracket.tiebreaker ?? "—"}</span>

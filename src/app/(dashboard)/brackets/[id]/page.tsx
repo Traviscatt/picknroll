@@ -196,10 +196,15 @@ export default function BracketDetailPage() {
   const getStatusBadge = () => {
     switch (bracket.status) {
       case "PAID":
-        return (
+        return isOwner ? (
           <Badge className="bg-green-500">
             <CheckCircle className="mr-1 h-3 w-3" />
             Paid
+          </Badge>
+        ) : (
+          <Badge className="bg-blue-500">
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Submitted
           </Badge>
         );
       case "SUBMITTED":

@@ -4,10 +4,12 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { getTeamName, getTeamInfo, getTeamLogo } from "@/lib/bracket-teams";
 import {
   Trophy,
   Plus,
@@ -23,6 +25,7 @@ import {
   BookOpen,
   Target,
   AlertTriangle,
+  Crown,
 } from "lucide-react";
 
 interface Bracket {
@@ -55,12 +58,24 @@ interface Announcement {
   author: { name: string };
 }
 
+interface ChampionshipPick {
+  teamId: string;
+  count: number;
+  percentage: number;
+}
+
+interface PickStats {
+  championshipPicks: ChampionshipPick[];
+  totalBrackets: number;
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [brackets, setBrackets] = useState<Bracket[]>([]);
   const [pools, setPools] = useState<Pool[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [pickStats, setPickStats] = useState<PickStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -72,14 +87,16 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [bracketsRes, poolsRes, announcementsRes] = await Promise.all([
+        const [bracketsRes, poolsRes, announcementsRes, pickStatsRes] = await Promise.all([
           fetch("/api/brackets"),
           fetch("/api/pools"),
           fetch("/api/announcements"),
+          fetch("/api/pool/pick-stats"),
         ]);
         if (bracketsRes.ok) setBrackets(await bracketsRes.json());
         if (poolsRes.ok) setPools(await poolsRes.json());
         if (announcementsRes.ok) setAnnouncements(await announcementsRes.json());
+        if (pickStatsRes.ok) setPickStats(await pickStatsRes.json());
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
       } finally {
@@ -316,6 +333,68 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Championship Pick Distribution */}
+      {pickStats && pickStats.championshipPicks.length > 0 && (
+        <Card className="border-t-4 border-t-primary">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-yellow-500" />
+              Championship Picks
+            </CardTitle>
+            <CardDescription>
+              Who the pool is picking to win it all ({pickStats.totalBrackets} brackets)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pickStats.championshipPicks.slice(0, 8).map((pick, i) => {
+                const name = getTeamName(pick.teamId);
+                const logo = getTeamLogo(pick.teamId);
+                const info = getTeamInfo(pick.teamId);
+                const maxPct = pickStats.championshipPicks[0].percentage;
+                const barWidth = maxPct > 0 ? (pick.percentage / maxPct) * 100 : 0;
+                return (
+                  <div key={pick.teamId} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 w-4 text-right shrink-0">
+                      {i + 1}
+                    </span>
+                    {logo && (
+                      <Image
+                        src={logo}
+                        alt={name}
+                        width={24}
+                        height={24}
+                        className="w-6 h-6 object-contain shrink-0"
+                        unoptimized
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium truncate">
+                          {info ? `(${info.seed}) ` : ""}{name}
+                        </span>
+                        <span className="text-sm font-bold text-primary shrink-0 ml-2">
+                          {pick.percentage}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-100 rounded-full h-2">
+                        <div
+                          className="bg-primary rounded-full h-2 transition-all duration-500"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400 shrink-0 w-12 text-right">
+                      {pick.count}/{pickStats.totalBrackets}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Deadline Alert */}
       <Card className="border-accent bg-secondary">

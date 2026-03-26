@@ -89,6 +89,7 @@ export default function BracketDetailPage() {
   const [activeTab, setActiveTab] = useState<string>("East");
   const [isDownloading, setIsDownloading] = useState(false);
   const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
+  const [gamePicks, setGamePicks] = useState<Record<string, Record<string, number>>>({});
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
@@ -145,9 +146,10 @@ export default function BracketDetailPage() {
   useEffect(() => {
     const fetchBracket = async () => {
       try {
-        const [bracketRes, eliminatedRes] = await Promise.all([
+        const [bracketRes, eliminatedRes, pickStatsRes] = await Promise.all([
           fetch(`/api/brackets/${bracketId}`),
           fetch("/api/eliminated-teams"),
+          fetch("/api/pool/pick-stats"),
         ]);
         
         if (bracketRes.ok) {
@@ -163,6 +165,11 @@ export default function BracketDetailPage() {
         if (eliminatedRes.ok) {
           const elimData = await eliminatedRes.json();
           setEliminatedTeams(new Set(elimData.eliminated || []));
+        }
+
+        if (pickStatsRes.ok) {
+          const statsData = await pickStatsRes.json();
+          if (statsData.gamePicks) setGamePicks(statsData.gamePicks);
         }
       } catch (error) {
         console.error("Failed to fetch bracket:", error);
@@ -237,7 +244,7 @@ export default function BracketDetailPage() {
     return parsedPicks.find((p) => p.gameId.startsWith("championship-"));
   };
 
-  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false, showEliminated: boolean = true) => {
+  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false, showEliminated: boolean = true, pickPct?: number) => {
     const name = getTeamName(teamId);
     const info = getTeamInfo(teamId);
     const logo = getTeamLogo(teamId);
@@ -263,6 +270,9 @@ export default function BracketDetailPage() {
         <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"}`}>{name}</span>
         {info && (
           <span className={`text-slate-400 shrink-0 ${size === "md" ? "text-xs" : "text-[10px]"}`}>({info.seed})</span>
+        )}
+        {pickPct !== undefined && (
+          <span className="text-[10px] text-primary/60 font-medium shrink-0 ml-auto">{pickPct}%</span>
         )}
       </div>
     );
@@ -294,9 +304,10 @@ export default function BracketDetailPage() {
           const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
           // Don't show eliminated styling for teams that won this specific game
           const isWinner = isCompleted && winnerBracketId === teamId;
+          const pickPct = gamePicks[pick.gameId]?.[teamId];
           return (
             <div key={`${teamId}-${i}`}>
-              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect, !isWinner)}
+              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect, !isWinner, pickPct)}
             </div>
           );
         })}

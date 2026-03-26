@@ -46,8 +46,9 @@ export async function GET() {
       return NextResponse.json({ championshipPicks: [], totalBrackets: 0 });
     }
 
-    // Aggregate championship picks (first choice in championship game)
-    // Championship game IDs start with "championship-"
+    // Aggregate all picks: per-game team counts + championship picks
+    // Key: "gameId:teamId" -> count
+    const gameTeamCounts = new Map<string, number>();
     const champCounts = new Map<string, number>();
 
     for (const bracket of brackets) {
@@ -59,18 +60,34 @@ export async function GET() {
           choices: string[];
         }[];
 
-        const champPick = picks.find((p) => p.gameId.startsWith("championship-"));
-        if (champPick && champPick.choices.length > 0) {
-          // Count the first choice as their primary championship pick
-          const firstChoice = champPick.choices[0];
-          champCounts.set(firstChoice, (champCounts.get(firstChoice) || 0) + 1);
+        for (const pick of picks) {
+          for (const teamId of pick.choices) {
+            const key = `${pick.gameId}:${teamId}`;
+            gameTeamCounts.set(key, (gameTeamCounts.get(key) || 0) + 1);
+          }
+
+          // Championship pick (first choice)
+          if (pick.gameId.startsWith("championship-") && pick.choices.length > 0) {
+            const firstChoice = pick.choices[0];
+            champCounts.set(firstChoice, (champCounts.get(firstChoice) || 0) + 1);
+          }
         }
       } catch {
         // Skip malformed picksData
       }
     }
 
-    // Sort by count descending
+    // Build per-game pick percentages: { gameId: { teamId: percentage } }
+    const gamePicks: Record<string, Record<string, number>> = {};
+    for (const [key, count] of gameTeamCounts) {
+      const sepIdx = key.lastIndexOf(":");
+      const gameId = key.substring(0, sepIdx);
+      const teamId = key.substring(sepIdx + 1);
+      if (!gamePicks[gameId]) gamePicks[gameId] = {};
+      gamePicks[gameId][teamId] = Math.round((count / totalBrackets) * 100);
+    }
+
+    // Sort championship picks by count descending
     const championshipPicks = Array.from(champCounts.entries())
       .map(([teamId, count]) => ({
         teamId,
@@ -79,7 +96,7 @@ export async function GET() {
       }))
       .sort((a, b) => b.count - a.count);
 
-    return NextResponse.json({ championshipPicks, totalBrackets });
+    return NextResponse.json({ championshipPicks, gamePicks, totalBrackets });
   } catch (error) {
     console.error("Error fetching pick stats:", error);
     return NextResponse.json(

@@ -157,6 +157,7 @@ export default function DashboardPage() {
   const bestScore = brackets.length > 0 ? Math.max(...brackets.map((b) => b.totalScore)) : 0;
   const hasPaidBracket = brackets.some((b) => b.paid);
   const currentPool = pools[0];
+  const deadlinePassed = currentPool?.deadline ? new Date() > new Date(currentPool.deadline) : false;
 
   return (
     <div className="space-y-8">
@@ -273,7 +274,7 @@ export default function DashboardPage() {
       )}
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2">
         <Card className="border-t-[3px] border-t-team-secondary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">My Brackets</CardTitle>
@@ -284,18 +285,16 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">
               {submittedCount} submitted, {draftCount} drafts
             </p>
-          </CardContent>
-        </Card>
-        <Card className="border-t-[3px] border-t-team-secondary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Best Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-team-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{bestScore}</div>
-            <p className="text-xs text-muted-foreground">
-              Max possible: 369
-            </p>
+            <div className="mt-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-600">Best Score</span>
+                <TrendingUp className="h-4 w-4 text-team-secondary" />
+              </div>
+              <div className="text-2xl font-bold mt-1">{bestScore}</div>
+              <p className="text-xs text-muted-foreground">
+                Max possible: 369
+              </p>
+            </div>
           </CardContent>
         </Card>
         <Card className="border-t-[3px] border-t-team-secondary">
@@ -310,25 +309,23 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">
               {currentPool ? `${currentPool.name}` : "Join a pool to compete"}
             </p>
-          </CardContent>
-        </Card>
-        <Card className="border-t-[3px] border-t-team-secondary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment</CardTitle>
-            <DollarSign className="h-4 w-4 text-team-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$5.00</div>
-            <div className="text-xs text-muted-foreground">
-              {hasPaidBracket ? (
-                <Badge className="bg-green-500">Paid</Badge>
-              ) : (
-                <Link href="/payment">
-                  <Badge variant="outline" className="text-primary border-primary hover:bg-primary/10 cursor-pointer">
-                    Unpaid - Click to Pay
-                  </Badge>
-                </Link>
-              )}
+            <div className="mt-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-600">Payment</span>
+                <DollarSign className="h-4 w-4 text-team-secondary" />
+              </div>
+              <div className="text-2xl font-bold mt-1">$5.00</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {hasPaidBracket ? (
+                  <Badge className="bg-green-500">Paid</Badge>
+                ) : (
+                  <Link href="/payment">
+                    <Badge variant="outline" className="text-primary border-primary hover:bg-primary/10 cursor-pointer">
+                      Unpaid - Click to Pay
+                    </Badge>
+                  </Link>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -396,23 +393,25 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Deadline Alert */}
-      <Card className="border-accent bg-secondary">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Submission Deadline</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-slate-700">
-            <span className="font-semibold">Thursday at 12:00 PM (Noon)</span> - Before the first tipoff
-          </p>
-          <p className="text-sm text-slate-600 mt-1">
-            Make sure your bracket is submitted and payment is complete before the deadline.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Deadline Alert - only show before deadline */}
+      {!deadlinePassed && (
+        <Card className="border-accent bg-secondary">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Submission Deadline</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-700">
+              <span className="font-semibold">Thursday at 12:00 PM (Noon)</span> - Before the first tipoff
+            </p>
+            <p className="text-sm text-slate-600 mt-1">
+              Make sure your bracket is submitted and payment is complete before the deadline.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* My Brackets & Pool Info */}
       <div className="grid gap-6 md:grid-cols-2">

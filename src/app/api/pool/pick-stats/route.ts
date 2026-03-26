@@ -46,8 +46,8 @@ export async function GET() {
       return NextResponse.json({ championshipPicks: [], totalBrackets: 0 });
     }
 
-    // Aggregate all picks: per-game team counts + championship picks
-    // Key: "gameId:teamId" -> count
+    // Aggregate all picks: position-aware per-game team counts + championship picks
+    // Key: "gameId:position:teamId" -> count (position is 0-indexed)
     const gameTeamCounts = new Map<string, number>();
     const champCounts = new Map<string, number>();
 
@@ -61,8 +61,9 @@ export async function GET() {
         }[];
 
         for (const pick of picks) {
-          for (const teamId of pick.choices) {
-            const key = `${pick.gameId}:${teamId}`;
+          for (let idx = 0; idx < pick.choices.length; idx++) {
+            const teamId = pick.choices[idx];
+            const key = `${pick.gameId}:${idx}:${teamId}`;
             gameTeamCounts.set(key, (gameTeamCounts.get(key) || 0) + 1);
           }
 
@@ -77,14 +78,16 @@ export async function GET() {
       }
     }
 
-    // Build per-game pick percentages: { gameId: { teamId: percentage } }
+    // Build per-game position-aware pick percentages:
+    // { gameId: { "position:teamId": percentage } }
     const gamePicks: Record<string, Record<string, number>> = {};
     for (const [key, count] of gameTeamCounts) {
-      const sepIdx = key.lastIndexOf(":");
-      const gameId = key.substring(0, sepIdx);
-      const teamId = key.substring(sepIdx + 1);
+      // key format: "gameId:position:teamId"
+      const firstColon = key.indexOf(":");
+      const gameId = key.substring(0, firstColon);
+      const posAndTeam = key.substring(firstColon + 1); // "position:teamId"
       if (!gamePicks[gameId]) gamePicks[gameId] = {};
-      gamePicks[gameId][teamId] = Math.round((count / totalBrackets) * 100);
+      gamePicks[gameId][posAndTeam] = Math.round((count / totalBrackets) * 100);
     }
 
     // Sort championship picks by count descending

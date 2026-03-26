@@ -304,7 +304,7 @@ export default function BracketDetailPage() {
           const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
           // Don't show eliminated styling for teams that won this specific game
           const isWinner = isCompleted && winnerBracketId === teamId;
-          const pickPct = gamePicks[pick.gameId]?.[teamId];
+          const pickPct = gamePicks[pick.gameId]?.[`${i}:${teamId}`];
           return (
             <div key={`${teamId}-${i}`}>
               {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect, !isWinner, pickPct)}
@@ -679,6 +679,14 @@ export default function BracketDetailPage() {
               : "No picks recorded yet"
             }
           </CardDescription>
+          {parsedPicks.length > 0 && Object.keys(gamePicks).length > 0 && (
+            <div className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-lg px-3 py-2 mt-2">
+              <Users className="h-4 w-4 text-primary/60 shrink-0" />
+              <span className="text-xs text-slate-600">
+                <span className="font-medium text-primary/80">%</span> = pool members who made the same pick at the same rank
+              </span>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {parsedPicks.length === 0 ? (

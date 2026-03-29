@@ -180,6 +180,7 @@ export async function POST() {
         try {
           const picksArray = JSON.parse(bracket.picksData);
           // picksData format: [{gameId, choices: [teamId1, teamId2, ...]}]
+          const picksDataFinalFour: { gameId: string; teamId: string }[] = [];
           for (const pickData of picksArray) {
             if (!pickData.gameId || !pickData.choices) continue;
 
@@ -191,6 +192,12 @@ export async function POST() {
             const rule = SCORING_RULES.find((r) => r.round === game.round);
             if (!rule) continue;
 
+            // Track 1st choice for Elite 8 games (bonus check)
+            if (game.round === FINAL_FOUR_ROUND && pickData.choices[0]) {
+              const firstChoiceId = teamIdMap.get(pickData.choices[0]) || pickData.choices[0];
+              picksDataFinalFour.push({ gameId: game.id, teamId: firstChoiceId });
+            }
+
             // Check each ranked choice — resolve "east-1" style IDs to TournamentTeam IDs
             for (let rank = 0; rank < pickData.choices.length; rank++) {
               if (rank >= rule.pointsPerChoice.length) break;
@@ -198,6 +205,23 @@ export async function POST() {
               if (pickedTeamId === game.winnerId) {
                 totalScore += rule.pointsPerChoice[rank];
               }
+            }
+          }
+
+          // Check Final Four bonus for picksData brackets
+          const pdFinalFourGames = games.filter(g => g.round === FINAL_FOUR_ROUND);
+          if (pdFinalFourGames.length === FINAL_FOUR_GAMES_COUNT && picksDataFinalFour.length === FINAL_FOUR_GAMES_COUNT) {
+            let allCorrect = true;
+            for (const ffGame of pdFinalFourGames) {
+              const pick = picksDataFinalFour.find(p => p.gameId === ffGame.id);
+              if (!pick || pick.teamId !== ffGame.winnerId) {
+                allCorrect = false;
+                break;
+              }
+            }
+            if (allCorrect) {
+              bonusScore = FINAL_FOUR_BONUS;
+              totalScore += bonusScore;
             }
           }
         } catch {

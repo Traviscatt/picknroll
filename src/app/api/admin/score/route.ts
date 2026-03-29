@@ -149,7 +149,7 @@ export async function POST() {
         totalScore += points;
         
         // Track Final Four picks for bonus
-        if (pick.game.round === FINAL_FOUR_ROUND) {
+        if (pick.game.round === FINAL_FOUR_ROUND && pick.choiceRank === 1) {
           finalFourPicks.push({
             gameId: pick.gameId,
             teamId: pick.teamId,

@@ -291,7 +291,7 @@ async function recalculateScores(tournamentId: string) {
 
       totalScore += points;
 
-      if (pick.game.round === FINAL_FOUR_ROUND) {
+      if (pick.game.round === FINAL_FOUR_ROUND && pick.choiceRank === 1) {
         finalFourPicks.push({ gameId: pick.gameId, teamId: pick.teamId, choiceRank: pick.choiceRank });
       }
     }

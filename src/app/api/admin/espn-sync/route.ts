@@ -308,7 +308,6 @@ async function recalculateScores(tournamentId: string) {
       }
       if (allCorrect) {
         bonusScore = FINAL_FOUR_BONUS;
-        totalScore += bonusScore;
       }
     }
 
@@ -352,7 +351,6 @@ async function recalculateScores(tournamentId: string) {
           }
           if (allCorrect) {
             bonusScore = FINAL_FOUR_BONUS;
-            totalScore += bonusScore;
           }
         }
       } catch {

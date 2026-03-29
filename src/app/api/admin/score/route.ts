@@ -171,7 +171,6 @@ export async function POST() {
         }
         if (allFirstChoiceCorrect) {
           bonusScore = FINAL_FOUR_BONUS;
-          totalScore += bonusScore;
         }
       }
 
@@ -221,7 +220,6 @@ export async function POST() {
             }
             if (allCorrect) {
               bonusScore = FINAL_FOUR_BONUS;
-              totalScore += bonusScore;
             }
           }
         } catch {

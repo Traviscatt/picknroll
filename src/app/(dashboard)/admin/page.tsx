@@ -35,6 +35,10 @@ import {
   Loader2,
   MessageSquare,
   Search,
+  Dices,
+  ChevronDown,
+  ChevronUp,
+  Medal,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +46,42 @@ interface UserForNotification {
   id: string;
   name: string;
   email: string;
+}
+
+interface ScenarioOutcome {
+  round: number;
+  region: string | null;
+  winner: string;
+}
+
+interface ScenarioEntry {
+  rank: number;
+  name: string;
+  entryName: string;
+  combined: number;
+  bonusScore: number;
+}
+
+interface Scenario {
+  scenarioIndex: number;
+  outcomes: ScenarioOutcome[];
+  top10: ScenarioEntry[];
+}
+
+interface RemainingGame {
+  id: string;
+  round: number;
+  gameNumber: number;
+  region: string | null;
+  team1: { name: string };
+  team2: { name: string };
+}
+
+interface ScenariosData {
+  remainingGames: RemainingGame[];
+  totalScenarios: number;
+  scenarios: Scenario[];
+  message?: string;
 }
 
 interface DashboardStats {
@@ -79,6 +119,12 @@ export default function AdminDashboardPage() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [sendingCustom, setSendingCustom] = useState(false);
   const [sendEmailWithCustom, setSendEmailWithCustom] = useState(true);
+
+  // Scenarios state
+  const [scenariosOpen, setScenariosOpen] = useState(false);
+  const [scenariosData, setScenariosData] = useState<ScenariosData | null>(null);
+  const [scenariosLoading, setScenariosLoading] = useState(false);
+  const [expandedScenario, setExpandedScenario] = useState<number | null>(null);
 
   const fetchUsers = async () => {
     if (allUsers.length > 0) return;
@@ -634,6 +680,161 @@ export default function AdminDashboardPage() {
             Notifications are sent via email and appear in the bell icon for each user.
           </p>
         </CardContent>
+      </Card>
+
+      {/* Outcome Scenarios */}
+      <Card>
+        <CardHeader
+          className="cursor-pointer"
+          onClick={async () => {
+            const opening = !scenariosOpen;
+            setScenariosOpen(opening);
+            if (opening && !scenariosData) {
+              setScenariosLoading(true);
+              try {
+                const res = await fetch("/api/admin/scenarios");
+                if (res.ok) {
+                  const data = await res.json();
+                  setScenariosData(data);
+                } else {
+                  toast.error("Failed to load scenarios");
+                }
+              } catch {
+                toast.error("Failed to load scenarios");
+              } finally {
+                setScenariosLoading(false);
+              }
+            }
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Dices className="h-5 w-5" />
+              <div>
+                <CardTitle>Outcome Scenarios</CardTitle>
+                <CardDescription>
+                  See the top 10 leaderboard for every possible remaining-game outcome
+                </CardDescription>
+              </div>
+            </div>
+            {scenariosOpen ? (
+              <ChevronUp className="h-5 w-5 text-slate-400" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-slate-400" />
+            )}
+          </div>
+        </CardHeader>
+        {scenariosOpen && (
+          <CardContent>
+            {scenariosLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                <span className="ml-2 text-sm text-slate-500">Computing all scenarios...</span>
+              </div>
+            ) : scenariosData?.message ? (
+              <p className="text-sm text-slate-500 py-4">{scenariosData.message}</p>
+            ) : scenariosData ? (
+              <div className="space-y-4">
+                {/* Remaining Games Summary */}
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <p className="text-sm font-medium text-slate-700 mb-2">
+                    {scenariosData.remainingGames.length} remaining game{scenariosData.remainingGames.length !== 1 ? "s" : ""} &middot; {scenariosData.totalScenarios} possible outcomes
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {scenariosData.remainingGames.map((g) => (
+                      <span key={g.id} className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
+                        R{g.round}: {g.team1.name} vs {g.team2.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Scenario Cards */}
+                <div className="space-y-2">
+                  {scenariosData.scenarios.map((scenario) => (
+                    <div key={scenario.scenarioIndex} className="border rounded-lg overflow-hidden">
+                      <button
+                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors text-left"
+                        onClick={() =>
+                          setExpandedScenario(
+                            expandedScenario === scenario.scenarioIndex ? null : scenario.scenarioIndex
+                          )
+                        }
+                      >
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-semibold bg-slate-200 text-slate-700 rounded px-2 py-0.5">
+                            #{scenario.scenarioIndex}
+                          </span>
+                          {scenario.outcomes.map((o, i) => (
+                            <span key={i} className="text-xs bg-primary/10 text-primary font-medium rounded-full px-2 py-0.5">
+                              {o.winner}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-xs text-slate-500">
+                            1st: {scenario.top10[0]?.entryName || "—"} ({scenario.top10[0]?.combined || 0}pts)
+                          </span>
+                          {expandedScenario === scenario.scenarioIndex ? (
+                            <ChevronUp className="h-4 w-4 text-slate-400" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-slate-400" />
+                          )}
+                        </div>
+                      </button>
+                      {expandedScenario === scenario.scenarioIndex && (
+                        <div className="border-t bg-white">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b bg-slate-50 text-slate-500">
+                                <th className="text-left px-3 py-2 font-medium w-12">#</th>
+                                <th className="text-left px-3 py-2 font-medium">Bracket</th>
+                                <th className="text-left px-3 py-2 font-medium">Entry</th>
+                                <th className="text-right px-3 py-2 font-medium">Score</th>
+                                <th className="text-right px-3 py-2 font-medium">Bonus</th>
+                                <th className="text-right px-3 py-2 font-medium">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {scenario.top10.map((entry) => (
+                                <tr key={entry.rank} className="border-b last:border-b-0 hover:bg-slate-50">
+                                  <td className="px-3 py-2">
+                                    <div className="flex items-center">
+                                      {entry.rank <= 3 ? (
+                                        <Medal className={`h-4 w-4 ${
+                                          entry.rank === 1 ? "text-yellow-500" :
+                                          entry.rank === 2 ? "text-slate-400" :
+                                          "text-amber-600"
+                                        }`} />
+                                      ) : (
+                                        <span className="text-slate-500">{entry.rank}</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-3 py-2 font-medium truncate max-w-[200px]">{entry.name}</td>
+                                  <td className="px-3 py-2 text-slate-600 truncate max-w-[150px]">{entry.entryName}</td>
+                                  <td className="px-3 py-2 text-right tabular-nums">{entry.combined - entry.bonusScore}</td>
+                                  <td className="px-3 py-2 text-right tabular-nums">
+                                    {entry.bonusScore > 0 ? (
+                                      <span className="text-green-600">+{entry.bonusScore}</span>
+                                    ) : (
+                                      <span className="text-slate-300">0</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-right font-bold tabular-nums">{entry.combined}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </CardContent>
+        )}
       </Card>
     </div>
   );

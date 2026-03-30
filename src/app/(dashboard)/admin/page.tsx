@@ -48,14 +48,6 @@ interface UserForNotification {
   email: string;
 }
 
-interface ScenarioOutcome {
-  round: number;
-  region: string | null;
-  team1: string;
-  team2: string;
-  winner: string;
-}
-
 interface ScenarioEntry {
   rank: number;
   name: string;
@@ -66,22 +58,20 @@ interface ScenarioEntry {
 
 interface Scenario {
   scenarioIndex: number;
+  championship: string;
   champion: string;
-  outcomes: ScenarioOutcome[];
+  semi1: string;
+  semi1Winner: string;
+  semi2: string;
+  semi2Winner: string;
   top10: ScenarioEntry[];
 }
 
-interface RemainingGame {
-  id: string;
-  round: number;
-  gameNumber: number;
-  region: string | null;
-  team1: { name: string };
-  team2: { name: string };
-}
-
 interface ScenariosData {
-  remainingGames: RemainingGame[];
+  finalFourTeams: {
+    semi1: { team1: string; team2: string };
+    semi2: { team1: string; team2: string };
+  };
   totalScenarios: number;
   scenarios: Scenario[];
   message?: string;
@@ -738,17 +728,18 @@ export default function AdminDashboardPage() {
               <p className="text-sm text-slate-500 py-4">{scenariosData.message}</p>
             ) : scenariosData ? (
               <div className="space-y-4">
-                {/* Remaining Games Summary */}
+                {/* Final Four Summary */}
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <p className="text-sm font-medium text-slate-700 mb-2">
-                    {scenariosData.remainingGames.length} remaining game{scenariosData.remainingGames.length !== 1 ? "s" : ""} &middot; {scenariosData.totalScenarios} possible outcomes
+                    Final Four &middot; {scenariosData.totalScenarios} championship scenarios
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {scenariosData.remainingGames.map((g) => (
-                      <span key={g.id} className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
-                        R{g.round}: {g.team1.name} vs {g.team2.name}
-                      </span>
-                    ))}
+                    <span className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
+                      Semi 1: {scenariosData.finalFourTeams.semi1.team1} vs {scenariosData.finalFourTeams.semi1.team2}
+                    </span>
+                    <span className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
+                      Semi 2: {scenariosData.finalFourTeams.semi2.team1} vs {scenariosData.finalFourTeams.semi2.team2}
+                    </span>
                   </div>
                 </div>
 
@@ -770,19 +761,12 @@ export default function AdminDashboardPage() {
                           </span>
                           <div className="flex items-center gap-1.5">
                             <Trophy className="h-4 w-4 text-yellow-500" />
-                            <span className="font-bold text-sm text-slate-900">{scenario.champion}</span>
+                            <span className="font-bold text-sm text-slate-900">{scenario.champion} wins</span>
                           </div>
                           <span className="text-xs text-slate-400">|</span>
-                          <div className="flex items-center gap-1 flex-wrap">
-                            {scenario.outcomes.map((o, i) => (
-                              <span key={i} className="text-xs text-slate-500">
-                                {i > 0 && <span className="mr-1">&rarr;</span>}
-                                <span className={o.winner === o.team1 ? "text-primary font-semibold" : "text-slate-400"}>{o.team1}</span>
-                                {" v "}
-                                <span className={o.winner === o.team2 ? "text-primary font-semibold" : "text-slate-400"}>{o.team2}</span>
-                              </span>
-                            ))}
-                          </div>
+                          <span className="text-xs text-slate-500">
+                            Championship: {scenario.championship}
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-xs text-slate-500">

@@ -66,6 +66,7 @@ interface ScenarioEntry {
 
 interface Scenario {
   scenarioIndex: number;
+  champion: string;
   outcomes: ScenarioOutcome[];
   top10: ScenarioEntry[];
 }
@@ -756,28 +757,36 @@ export default function AdminDashboardPage() {
                   {scenariosData.scenarios.map((scenario) => (
                     <div key={scenario.scenarioIndex} className="border rounded-lg overflow-hidden">
                       <button
-                        className="w-full flex items-center justify-between p-3 hover:bg-slate-50 transition-colors text-left"
+                        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
                         onClick={() =>
                           setExpandedScenario(
                             expandedScenario === scenario.scenarioIndex ? null : scenario.scenarioIndex
                           )
                         }
                       >
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-3">
                           <span className="text-xs font-semibold bg-slate-200 text-slate-700 rounded px-2 py-0.5">
                             #{scenario.scenarioIndex}
                           </span>
-                          {scenario.outcomes.map((o, i) => (
-                            <span key={i} className="text-xs bg-slate-100 text-slate-700 font-medium rounded-full px-2 py-0.5">
-                              <span className={o.winner === o.team1 ? "text-primary font-bold" : ""}>{o.team1}</span>
-                              {" vs "}
-                              <span className={o.winner === o.team2 ? "text-primary font-bold" : ""}>{o.team2}</span>
-                            </span>
-                          ))}
+                          <div className="flex items-center gap-1.5">
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                            <span className="font-bold text-sm text-slate-900">{scenario.champion}</span>
+                          </div>
+                          <span className="text-xs text-slate-400">|</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {scenario.outcomes.map((o, i) => (
+                              <span key={i} className="text-xs text-slate-500">
+                                {i > 0 && <span className="mr-1">&rarr;</span>}
+                                <span className={o.winner === o.team1 ? "text-primary font-semibold" : "text-slate-400"}>{o.team1}</span>
+                                {" v "}
+                                <span className={o.winner === o.team2 ? "text-primary font-semibold" : "text-slate-400"}>{o.team2}</span>
+                              </span>
+                            ))}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <span className="text-xs text-slate-500">
-                            1st: {scenario.top10[0]?.entryName || "—"} ({scenario.top10[0]?.combined || 0}pts)
+                            Pool Winner: <span className="font-semibold text-slate-700">{scenario.top10[0]?.entryName || "\u2014"}</span> ({scenario.top10[0]?.combined || 0}pts)
                           </span>
                           {expandedScenario === scenario.scenarioIndex ? (
                             <ChevronUp className="h-4 w-4 text-slate-400" />

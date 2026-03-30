@@ -412,8 +412,13 @@ export async function GET() {
           ...b,
         }));
 
+        // The champion is the winner of the highest-round game (R6)
+        const championOutcome = outcomeLabel.reduce((best, o) => o.round > best.round ? o : best, outcomeLabel[0]);
+        const champion = championOutcome?.winner || "Unknown";
+
         scenarios.push({
           scenarioIndex,
+          champion,
           outcomes: outcomeLabel,
           top10,
         });

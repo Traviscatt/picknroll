@@ -51,6 +51,8 @@ interface UserForNotification {
 interface ScenarioOutcome {
   round: number;
   region: string | null;
+  team1: string;
+  team2: string;
   winner: string;
 }
 
@@ -766,8 +768,10 @@ export default function AdminDashboardPage() {
                             #{scenario.scenarioIndex}
                           </span>
                           {scenario.outcomes.map((o, i) => (
-                            <span key={i} className="text-xs bg-primary/10 text-primary font-medium rounded-full px-2 py-0.5">
-                              {o.winner}
+                            <span key={i} className="text-xs bg-slate-100 text-slate-700 font-medium rounded-full px-2 py-0.5">
+                              <span className={o.winner === o.team1 ? "text-primary font-bold" : ""}>{o.team1}</span>
+                              {" vs "}
+                              <span className={o.winner === o.team2 ? "text-primary font-bold" : ""}>{o.team2}</span>
                             </span>
                           ))}
                         </div>

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X } from "lucide-react";
+import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { TEAMS, getTeamBySlug, generatePalette } from "@/lib/team-colors";
 
@@ -22,6 +22,12 @@ export default function SettingsPage() {
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
   const [teamSearch, setTeamSearch] = useState("");
   const [isSavingTeam, setIsSavingTeam] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -53,6 +59,41 @@ export default function SettingsPage() {
       toast.error("Failed to update profile");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const response = await fetch("/api/user/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to change password");
+      }
+
+      toast.success("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -108,15 +149,15 @@ export default function SettingsPage() {
           </CardHeader>
         </Card>
 
-        <Card className="opacity-50">
+        <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-slate-400">
+              <div className="p-2 rounded-lg bg-green-500">
                 <Shield className="h-5 w-5 text-white" />
               </div>
               <div>
                 <CardTitle className="text-base">Security</CardTitle>
-                <CardDescription className="text-xs">Coming soon</CardDescription>
+                <CardDescription className="text-xs">Change password below</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -284,6 +325,79 @@ export default function SettingsPage() {
                 );
               })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Password */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Change Password
+          </CardTitle>
+          <CardDescription>
+            Update your account password
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="currentPassword">Current Password</Label>
+            <div className="relative">
+              <Input
+                id="currentPassword"
+                type={showCurrentPassword ? "text" : "password"}
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">New Password</Label>
+            <div className="relative">
+              <Input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
+            />
+          </div>
+          <p className="text-xs text-slate-500">
+            Password must be at least 6 characters.
+          </p>
+          <Button
+            onClick={handleChangePassword}
+            disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+          >
+            <Key className="h-4 w-4 mr-2" />
+            {isChangingPassword ? "Changing..." : "Change Password"}
+          </Button>
         </CardContent>
       </Card>
 

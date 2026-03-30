@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import bcrypt from "bcryptjs";
 
 // PATCH /api/admin/users/[id] - Update a user (role, etc.)
 export async function PATCH(
@@ -13,7 +14,7 @@ export async function PATCH(
     const { id } = await params;
 
     const body = await request.json();
-    const { role } = body;
+    const { role, newPassword } = body;
 
     const updateData: Record<string, unknown> = {};
 
@@ -21,9 +22,26 @@ export async function PATCH(
       updateData.role = role;
     }
 
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        return NextResponse.json(
+          { error: "Password must be at least 6 characters" },
+          { status: 400 }
+        );
+      }
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
     const user = await db.user.update({
       where: { id },
       data: updateData,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
 
     return NextResponse.json(user);

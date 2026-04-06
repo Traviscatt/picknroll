@@ -37,10 +37,13 @@ export async function GET(
         tiebreaker: true,
         paid: true,
       },
-      orderBy: [
-        { totalScore: "desc" },
-        { bonusScore: "desc" },
-      ],
+    });
+
+    // Sort by combined score (totalScore + bonusScore) so bonus is reflected in rankings
+    brackets.sort((a, b) => {
+      const aTotal = a.totalScore + a.bonusScore;
+      const bTotal = b.totalScore + b.bonusScore;
+      return bTotal - aTotal;
     });
 
     // Build ranked entries

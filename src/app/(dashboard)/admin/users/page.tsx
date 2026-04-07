@@ -32,6 +32,7 @@ import {
   User,
   FileText,
   Key,
+  Download,
 } from "lucide-react";
 import {
   Dialog,
@@ -175,6 +176,31 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleExportUsers = () => {
+    const csvContent = [
+      ["Name", "Email", "Role", "Brackets", "Family Members", "Joined"],
+      ...filteredUsers.map(user => [
+        user.name,
+        user.email,
+        user.role,
+        user._count.brackets.toString(),
+        user._count.familyMembers.toString(),
+        new Date(user.createdAt).toLocaleDateString()
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `users-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Users list downloaded!");
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <div className="space-y-6">
@@ -213,18 +239,28 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/admin">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Manage Users</h1>
-          <p className="text-slate-600">
-            {users.length} registered users
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/admin">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Manage Users</h1>
+            <p className="text-slate-600">
+              {users.length} registered users
+            </p>
+          </div>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleExportUsers}
+          disabled={filteredUsers.length === 0}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Search */}

@@ -38,6 +38,7 @@ import {
   Crown,
   RefreshCw,
   Eye,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -242,6 +243,34 @@ export default function AdminPoolsPage() {
     toast.success("Invite link copied! Share it with your pool members.");
   };
 
+  const handleExportPoolMembers = (pool: Pool) => {
+    if (!pool.members || pool.members.length === 0) {
+      toast.error("No members to export");
+      return;
+    }
+
+    const csvContent = [
+      ["Name", "Email", "Role", "Pool Name"],
+      ...pool.members.map(member => [
+        member.user.name || "Unknown",
+        member.user.email || "No email",
+        member.role,
+        pool.name
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${pool.name.replace(/[^a-zA-Z0-9]/g, "_")}-members-${new Date().toISOString().split("T")[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`${pool.name} members downloaded!`);
+  };
+
   const handleDeletePool = async (poolId: string, poolName: string) => {
     if (!confirm(`Are you sure you want to delete "${poolName}"? This will also delete all brackets and picks in this pool. This action cannot be undone.`)) {
       return;
@@ -392,6 +421,17 @@ export default function AdminPoolsPage() {
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-slate-400" />
                       <span className="font-semibold">{pool.members?.length ?? 0}</span>
+                      {pool.members && pool.members.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 ml-1"
+                          onClick={() => handleExportPoolMembers(pool)}
+                          title="Export members list"
+                        >
+                          <Download className="h-3 w-3" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div>

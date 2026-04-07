@@ -371,6 +371,16 @@ export default function AdminPoolsPage() {
                     >
                       {pool.status}
                     </Badge>
+                    {pool.members && pool.members.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExportPoolMembers(pool)}
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Export Members
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
@@ -421,17 +431,6 @@ export default function AdminPoolsPage() {
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-slate-400" />
                       <span className="font-semibold">{pool.members?.length ?? 0}</span>
-                      {pool.members && pool.members.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 ml-1"
-                          onClick={() => handleExportPoolMembers(pool)}
-                          title="Export members list"
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      )}
                     </div>
                   </div>
                   <div>

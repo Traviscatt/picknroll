@@ -1,138 +1,177 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { SCORING_RULES, FINAL_FOUR_BONUS, FINAL_FOUR_ROUND, FINAL_FOUR_GAMES_COUNT } from "@/lib/scoring";
 
 const ESPN_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball";
 
-// GET /api/cron/espn-sync - Called by Vercel Cron every 2 minutes
-export async function GET() {
-  try {
-    const tournament = await db.tournament.findFirst({
-      orderBy: { year: "desc" },
-    });
+interface CompletedEvent {
+  id: string;
+  competitors: { espnTeamId: string; score: number; winner: boolean }[];
+}
 
-    if (!tournament) {
-      return NextResponse.json({ message: "No tournament found" });
-    }
+export type EspnSyncResult =
+  | { status: "no-tournament" }
+  | {
+      status: "ok";
+      gamesFound: number;
+      completedFound: number;
+      gamesUpdated: number;
+      bracketsUpdated: number;
+      gamesScored: number;
+    };
 
-    // Build ESPN ID -> TournamentTeam ID map
-    const tournamentTeams = await db.tournamentTeam.findMany({
-      where: { tournamentId: tournament.id },
-      include: { team: true },
-    });
+function formatDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}${m}${dd}`;
+}
 
-    const espnToTournamentTeam = new Map<string, string>();
-    for (const tt of tournamentTeams) {
-      if (tt.team.espnId) {
-        espnToTournamentTeam.set(tt.team.espnId, tt.id);
-      }
-    }
+// Date strings (YYYYMMDD) for today and the previous days (catches missed syncs and games spanning midnight)
+export function recentDates(days = 3): string[] {
+  const dates: string[] = [];
+  for (let daysAgo = 0; daysAgo < days; daysAgo++) {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    dates.push(formatDate(d));
+  }
+  return dates;
+}
 
-    // Fetch ESPN scoreboard for the last 3 days (catches missed syncs and games spanning midnight)
-    const datesToCheck: string[] = [];
-    for (let daysAgo = 0; daysAgo < 3; daysAgo++) {
-      const d = new Date();
-      d.setDate(d.getDate() - daysAgo);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
-      datesToCheck.push(`${y}${m}${dd}`);
-    }
+// Date strings (YYYYMMDD) for the tournament window, up to today
+export function tournamentDates(start: Date, end: Date): string[] {
+  const dates: string[] = [];
+  const current = new Date(start);
+  const today = new Date();
+  const limit = today < end ? today : end;
+  while (current <= limit) {
+    dates.push(formatDate(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
 
-    let gamesUpdated = 0;
+// Fetches completed NCAA tournament games from ESPN. Does not touch the database.
+async function fetchCompletedEvents(dates: string[]) {
+  const events: CompletedEvent[] = [];
+  let gamesFound = 0;
 
-    for (const dateStr of datesToCheck) {
-    const url = `${ESPN_BASE_URL}/scoreboard?dates=${dateStr}&limit=100&groups=100`;
-
+  for (const date of dates) {
     let espnData;
     try {
-      const espnResponse = await fetch(url, { cache: "no-store" });
-      if (!espnResponse.ok) continue;
-      espnData = await espnResponse.json();
+      const res = await fetch(`${ESPN_BASE_URL}/scoreboard?dates=${date}&limit=100&groups=100`, { cache: "no-store" });
+      if (!res.ok) continue;
+      espnData = await res.json();
     } catch {
+      console.error(`Failed to fetch ESPN data for date ${date}`);
       continue;
     }
 
-    const events = espnData.events || [];
-
-    for (const event of events) {
-      const competition = event.competitions?.[0];
-      if (!competition) continue;
-
-      const isComplete = event.status?.type?.completed === true;
-      if (!isComplete) continue;
-
-      const competitors = competition.competitors || [];
+    for (const event of espnData.events || []) {
+      gamesFound++;
+      if (event.status?.type?.completed !== true) continue;
+      const competitors = event.competitions?.[0]?.competitors || [];
       if (competitors.length !== 2) continue;
-
-      const espnTeam1Id = competitors[0]?.team?.id || competitors[0]?.id;
-      const espnTeam2Id = competitors[1]?.team?.id || competitors[1]?.id;
-
-      const tt1Id = espnToTournamentTeam.get(espnTeam1Id);
-      const tt2Id = espnToTournamentTeam.get(espnTeam2Id);
-
-      if (!tt1Id || !tt2Id) continue;
-
-      const winner1 = competitors[0]?.winner === true;
-      const winner2 = competitors[1]?.winner === true;
-      const winnerTtId = winner1 ? tt1Id : winner2 ? tt2Id : null;
-      if (!winnerTtId) continue;
-
-      const score1 = parseInt(competitors[0]?.score) || 0;
-      const score2 = parseInt(competitors[1]?.score) || 0;
-
-      const dbGame = await db.game.findFirst({
-        where: {
-          tournamentId: tournament.id,
-          OR: [
-            { team1Id: tt1Id, team2Id: tt2Id },
-            { team1Id: tt2Id, team2Id: tt1Id },
-          ],
-        },
+      events.push({
+        id: event.id,
+        competitors: competitors.map((c: { id?: string; team?: { id?: string }; score?: string; winner?: boolean }) => ({
+          espnTeamId: c.team?.id || c.id || "",
+          score: parseInt(c.score ?? "") || 0,
+          winner: c.winner === true,
+        })),
       });
-
-      if (dbGame) {
-        if (dbGame.status !== "FINAL" || !dbGame.winnerId) {
-          const t1Score = dbGame.team1Id === tt1Id ? score1 : score2;
-          const t2Score = dbGame.team1Id === tt1Id ? score2 : score1;
-
-          await db.game.update({
-            where: { id: dbGame.id },
-            data: {
-              winnerId: winnerTtId,
-              team1Score: t1Score,
-              team2Score: t2Score,
-              status: "FINAL",
-              espnGameId: event.id,
-            },
-          });
-          gamesUpdated++;
-        }
-      } else {
-        const filled = await fillLaterRoundGame(tournament.id, tt1Id, tt2Id, winnerTtId, score1, score2, event.id);
-        if (filled) gamesUpdated++;
-      }
     }
-    } // end for datesToCheck
-
-    // Auto-recalculate scores if any games were updated
-    let bracketsUpdated = 0;
-    if (gamesUpdated > 0) {
-      const result = await recalculateScores(tournament.id);
-      bracketsUpdated = result.bracketsUpdated;
-    }
-
-    return NextResponse.json({
-      message: `Cron sync: ${gamesUpdated} games updated, ${bracketsUpdated} brackets scored.`,
-      gamesUpdated,
-      bracketsUpdated,
-    });
-  } catch (error) {
-    console.error("Cron ESPN sync error:", error);
-    return NextResponse.json({ error: "Cron sync failed" }, { status: 500 });
   }
+
+  return { events, gamesFound };
 }
 
+/**
+ * Pull completed results from ESPN, write them to the current tournament's games, and rescore brackets.
+ * - `dates` omitted: syncs the full tournament window (admin "sync now").
+ * - `rescore: "ifChanged"`: skips the database entirely when ESPN reports no completed games,
+ *   and only rescores when at least one game was updated (scheduled job).
+ */
+export async function syncEspnResults({
+  dates,
+  rescore,
+}: {
+  dates?: string[];
+  rescore: "always" | "ifChanged";
+}): Promise<EspnSyncResult> {
+  let tournament = null;
+  if (!dates) {
+    tournament = await db.tournament.findFirst({ orderBy: { year: "desc" } });
+    if (!tournament) return { status: "no-tournament" };
+    dates = tournamentDates(tournament.startDate, tournament.endDate);
+  }
+
+  const { events, gamesFound } = await fetchCompletedEvents(dates);
+  const empty = { status: "ok" as const, gamesFound, completedFound: events.length, gamesUpdated: 0, bracketsUpdated: 0, gamesScored: 0 };
+  if (events.length === 0 && rescore === "ifChanged") return empty;
+
+  tournament ??= await db.tournament.findFirst({ orderBy: { year: "desc" } });
+  if (!tournament) return { status: "no-tournament" };
+
+  // Build ESPN ID -> TournamentTeam ID map
+  const tournamentTeams = await db.tournamentTeam.findMany({
+    where: { tournamentId: tournament.id },
+    include: { team: true },
+  });
+  const espnToTournamentTeam = new Map<string, string>();
+  for (const tt of tournamentTeams) {
+    if (tt.team.espnId) espnToTournamentTeam.set(tt.team.espnId, tt.id);
+  }
+
+  let gamesUpdated = 0;
+  for (const event of events) {
+    const [c1, c2] = event.competitors;
+    const tt1Id = espnToTournamentTeam.get(c1.espnTeamId);
+    const tt2Id = espnToTournamentTeam.get(c2.espnTeamId);
+    if (!tt1Id || !tt2Id) continue; // Teams not in our tournament
+
+    // Determine winner
+    const winnerTtId = c1.winner ? tt1Id : c2.winner ? tt2Id : null;
+    if (!winnerTtId) continue;
+
+    // Find the DB game that matches these two teams
+    const dbGame = await db.game.findFirst({
+      where: {
+        tournamentId: tournament.id,
+        OR: [
+          { team1Id: tt1Id, team2Id: tt2Id },
+          { team1Id: tt2Id, team2Id: tt1Id },
+        ],
+      },
+    });
+
+    if (dbGame) {
+      // Update the game if not already final
+      if (dbGame.status !== "FINAL" || !dbGame.winnerId) {
+        const t1Score = dbGame.team1Id === tt1Id ? c1.score : c2.score;
+        const t2Score = dbGame.team1Id === tt1Id ? c2.score : c1.score;
+        await db.game.update({
+          where: { id: dbGame.id },
+          data: { winnerId: winnerTtId, team1Score: t1Score, team2Score: t2Score, status: "FINAL", espnGameId: event.id },
+        });
+        gamesUpdated++;
+      }
+    } else {
+      // Later-round game — find an unfilled game slot and assign teams + result
+      const filled = await fillLaterRoundGame(tournament.id, tt1Id, tt2Id, winnerTtId, c1.score, c2.score, event.id);
+      if (filled) gamesUpdated++;
+    }
+  }
+
+  // Auto-recalculate scores after syncing
+  let scoreResult = { bracketsUpdated: 0, gamesScored: 0 };
+  if (rescore === "always" || gamesUpdated > 0) {
+    scoreResult = await recalculateScores(tournament.id);
+  }
+
+  return { ...empty, gamesUpdated, ...scoreResult };
+}
+
+// Find a later-round game without teams assigned, fill it in, and set the result
 async function fillLaterRoundGame(
   tournamentId: string,
   tt1Id: string,
@@ -180,6 +219,7 @@ async function fillLaterRoundGame(
   return true;
 }
 
+// Recalculate all bracket scores
 async function recalculateScores(tournamentId: string) {
   const allGames = await db.game.findMany({
     where: { tournamentId },
@@ -200,6 +240,7 @@ async function recalculateScores(tournamentId: string) {
     teamIdMap.set(`${tt.region.toLowerCase()}-${tt.seed}`, tt.id);
   }
 
+  // Build bracket gameId map
   const bracketGameMap = new Map<string, typeof allGames[0]>();
   const grouped = new Map<string, typeof allGames>();
   for (const g of allGames) {

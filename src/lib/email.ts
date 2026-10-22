@@ -1,6 +1,6 @@
-import { Resend } from "resend";
+import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 
-const FROM_EMAIL = process.env.FROM_EMAIL || "Pick N Roll <noreply@picknroll.net>";
+const FROM_EMAIL = process.env.FROM_EMAIL;
 
 interface SendEmailParams {
   to: string;
@@ -8,27 +8,30 @@ interface SendEmailParams {
   html: string;
 }
 
+let sesClient: SESv2Client | undefined;
+
 export async function sendEmail({ to, subject, html }: SendEmailParams) {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY not set, skipping email send to:", to);
+  if (!FROM_EMAIL) {
+    console.warn("FROM_EMAIL not set, skipping email send to:", to);
     return { success: false, error: "Email not configured" };
   }
 
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to,
-      subject,
-      html,
-    });
+    sesClient ??= new SESv2Client({});
+    const result = await sesClient.send(
+      new SendEmailCommand({
+        FromEmailAddress: FROM_EMAIL,
+        Destination: { ToAddresses: [to] },
+        Content: {
+          Simple: {
+            Subject: { Data: subject, Charset: "UTF-8" },
+            Body: { Html: { Data: html, Charset: "UTF-8" } },
+          },
+        },
+      })
+    );
 
-    if (error) {
-      console.error("Failed to send email:", error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, id: data?.id };
+    return { success: true, id: result.MessageId };
   } catch (error) {
     console.error("Email send error:", error);
     return { success: false, error: "Failed to send email" };

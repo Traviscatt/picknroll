@@ -1,0 +1,51 @@
+name: Deploy
+
+# Deploys to AWS with SST. Inactive until the repository variable AWS_DEPLOY_ROLE_ARN is set
+# (an IAM role in the Pick N Roll AWS account that trusts GitHub OIDC for this repo).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "SST stage to deploy"
+        required: true
+        default: staging
+        type: choice
+        options: [staging, production]
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event.inputs.stage || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: ${{ vars.AWS_DEPLOY_ROLE_ARN != '' }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.stage || 'production' }}
+    env:
+      STAGE: ${{ github.event.inputs.stage || 'production' }}
+      NEXT_PUBLIC_PAYPAL_LINK: ${{ vars.NEXT_PUBLIC_PAYPAL_LINK }}
+      NEXT_PUBLIC_VENMO_USERNAME: ${{ vars.NEXT_PUBLIC_VENMO_USERNAME }}
+      NEXT_PUBLIC_ENTRY_FEE: ${{ vars.NEXT_PUBLIC_ENTRY_FEE }}
+      NEXT_PUBLIC_DEADLINE_TIME: ${{ vars.NEXT_PUBLIC_DEADLINE_TIME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - run: npx sst deploy --stage "$STAGE"

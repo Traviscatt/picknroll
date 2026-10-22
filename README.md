@@ -25,13 +25,13 @@ NCAA Tournament bracket pool application with a unique multi-choice scoring syst
 | 5 | Final Four | 4 | 25/15/10/5 pts |
 | 6 | Championship | 5 | 35/25/15/10/5 pts |
 
-**Maximum Possible: 369 points**
+**Maximum Possible: 369 points** (+10 Final Four bonus)
 
-## Getting Started
+## Getting Started (local)
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - Docker Desktop
 - npm
 
@@ -49,15 +49,11 @@ npm install
 
 ### 3. Set Up Environment
 
-Copy `.env` and update with your settings:
-- `NEXT_PUBLIC_PAYPAL_LINK` - Your PayPal.me link
-- `NEXT_PUBLIC_VENMO_USERNAME` - Your Venmo username
-- `OPENAI_API_KEY` - (Optional) For AI bracket reading
+Copy `.env.example` to `.env` and fill in the values.
 
 ### 4. Initialize Database
 
 ```bash
-npx prisma generate
 npx prisma db push
 ```
 
@@ -69,13 +65,38 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+## Deployment (AWS via SST)
+
+Infrastructure is defined in `sst.config.ts`:
+
+- **Web**: Next.js on Lambda + CloudFront via SST/OpenNext
+- **Database**: Aurora Serverless v2 PostgreSQL (scales to zero when idle)
+- **ESPN sync**: EventBridge Scheduler → Lambda (`src/jobs/espn-sync.ts`), every 2 minutes in March–April
+- **Email**: Amazon SES (`src/lib/email.ts`)
+- **DNS**: Route 53 (`picknroll.net`; domain registered at GoDaddy)
+
+Stages: `staging` → https://staging.picknroll.net, `production` → https://picknroll.net
+
+```bash
+# one-time per stage
+npx sst secret set NextAuthSecret "$(openssl rand -base64 32)" --stage staging
+npx sst secret set GoogleApiKey "<key>" --stage staging   # optional
+
+# deploy
+AWS_PROFILE=picknroll npx sst deploy --stage staging
+```
+
+Pushes to `main` deploy to production via GitHub Actions (`.github/workflows/deploy.yml`)
+once the `AWS_DEPLOY_ROLE_ARN` repository variable is set.
+
 ## Tech Stack
 
-- **Framework**: Next.js 14 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **UI**: shadcn/ui + Tailwind CSS
-- **Database**: PostgreSQL (Docker)
+- **Database**: PostgreSQL (Aurora Serverless v2 on AWS, Docker locally)
 - **ORM**: Prisma
 - **Auth**: NextAuth.js
+- **Infra**: SST on AWS
 - **Sports Data**: ESPN API
 
 ## Project Structure
@@ -89,7 +110,8 @@ src/
 ├── components/
 │   ├── ui/              # shadcn components
 │   └── shared/          # Shared components
-└── lib/                 # Utilities, scoring, API clients
+├── jobs/                # Scheduled Lambda handlers
+└── lib/                 # Utilities, scoring, ESPN sync, email
 ```
 
 ## Configuration

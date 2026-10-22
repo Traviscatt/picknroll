@@ -151,11 +151,10 @@ export async function GET(
           totalScore: true,
           bonusScore: true,
         },
-        orderBy: [
-          { totalScore: "desc" },
-          { bonusScore: "desc" },
-        ],
       });
+
+      // Sort by combined score so bonus is reflected in rankings
+      poolBrackets.sort((a, b) => (b.totalScore + b.bonusScore) - (a.totalScore + a.bonusScore));
 
       totalInPool = poolBrackets.length;
       let currentRank = 0;

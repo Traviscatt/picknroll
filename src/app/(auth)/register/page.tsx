@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Trophy, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { TEAMS } from "@/lib/team-colors";
+import { safeCallbackUrl } from "@/lib/utils";
 
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
 
 // GET /api/brackets/[id] - Get a single bracket
 export async function GET(
@@ -196,7 +197,10 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const parsed = bracketInputSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
 
     // Verify ownership
     const existing = await db.bracket.findFirst({
@@ -210,30 +214,38 @@ export async function PATCH(
       return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
     }
 
-    const { name, entryName, status, tiebreaker, picks, poolId } = body;
+    // poolId in the body is ignored: the deadline always comes from the bracket's own pool
+    const { name, entryName, status, tiebreaker, picks } = parsed.data;
 
     // Check deadline for any update to a bracket in a pool
-    const bracketPoolId = poolId || existing.poolId;
-    if (bracketPoolId) {
+    if (existing.poolId) {
       const pool = await db.pool.findUnique({
-        where: { id: bracketPoolId },
+        where: { id: existing.poolId },
         select: { deadline: true, status: true },
       });
-
-      if (pool) {
-        if (pool.status !== "OPEN") {
-          return NextResponse.json(
-            { error: "This pool is no longer accepting changes." },
-            { status: 400 }
-          );
-        }
-        if (new Date() > pool.deadline) {
-          return NextResponse.json(
-            { error: "The deadline for this pool has passed. Brackets are locked." },
-            { status: 400 }
-          );
-        }
+      const lockedReason = pool ? poolLockedReason(pool) : "This bracket's pool no longer exists.";
+      if (lockedReason) {
+        return NextResponse.json({ error: lockedReason }, { status: 400 });
       }
+    }
+
+    // Resubmitting a bracket the admin marked PAID keeps it PAID
+    const nextStatus = status === "SUBMITTED" && existing.status === "PAID" ? "PAID" : status ?? existing.status;
+    const isSubmitted = nextStatus !== "DRAFT";
+
+    let picksData: string | undefined;
+    const picksValidation = validatePicks(
+      picks !== undefined ? picks : JSON.parse(existing.picksData || "[]"),
+      { requireComplete: isSubmitted }
+    );
+    if (!picksValidation.ok) {
+      return NextResponse.json({ error: picksValidation.error }, { status: 400 });
+    }
+    if (picks !== undefined) picksData = JSON.stringify(picksValidation.picks);
+
+    const nextTiebreaker = tiebreaker !== undefined ? tiebreaker : existing.tiebreaker;
+    if (isSubmitted && nextTiebreaker == null) {
+      return NextResponse.json({ error: "A tiebreaker is required to submit." }, { status: 400 });
     }
 
     const bracket = await db.bracket.update({
@@ -241,10 +253,10 @@ export async function PATCH(
       data: {
         ...(name && { name }),
         ...(entryName && { entryName }),
-        ...(status && { status }),
+        status: nextStatus,
         ...(tiebreaker !== undefined && { tiebreaker }),
-        ...(picks !== undefined && { picksData: JSON.stringify(picks) }),
-        ...(status === "SUBMITTED" && !existing.submittedAt && { submittedAt: new Date() }),
+        ...(picksData !== undefined && { picksData }),
+        ...(isSubmitted && !existing.submittedAt && { submittedAt: new Date() }),
       },
     });
 
@@ -282,6 +294,20 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json({ error: "Bracket not found" }, { status: 404 });
+    }
+
+    // Submitted brackets stay in the pool once it locks
+    if (existing.poolId && existing.status !== "DRAFT") {
+      const pool = await db.pool.findUnique({
+        where: { id: existing.poolId },
+        select: { deadline: true, status: true },
+      });
+      if (pool && poolLockedReason(pool)) {
+        return NextResponse.json(
+          { error: "Submitted brackets can't be deleted after the pool locks." },
+          { status: 400 }
+        );
+      }
     }
 
     await db.bracket.delete({

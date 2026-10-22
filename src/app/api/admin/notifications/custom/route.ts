@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
-import { sendEmail } from "@/lib/email";
+import { APP_URL, escapeHtml, sendEmail } from "@/lib/email";
 
 // POST /api/admin/notifications/custom - Send custom notification to selected users or all
 export async function POST(request: Request) {
@@ -60,11 +60,11 @@ export async function POST(request: Request) {
           html: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #ea580c;">Pick N Roll</h2>
-              <p>Hi ${user.name || "Participant"},</p>
-              <h3>${title}</h3>
-              <p>${message.replace(/\n/g, "<br />")}</p>
+              <p>Hi ${escapeHtml(user.name || "Participant")},</p>
+              <h3>${escapeHtml(title)}</h3>
+              <p>${escapeHtml(message).replace(/\n/g, "<br />")}</p>
               <p style="margin-top: 24px;">
-                <a href="${process.env.NEXTAUTH_URL || "https://picknroll.net"}/dashboard" 
+                <a href="${APP_URL}/dashboard" 
                    style="background-color: #ea580c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
                   Go to Dashboard
                 </a>

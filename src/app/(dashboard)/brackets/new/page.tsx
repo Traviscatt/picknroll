@@ -694,7 +694,8 @@ function NewBracketContent() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to save draft");
       }
 
       const bracket = await response.json();
@@ -704,8 +705,8 @@ function NewBracketContent() {
         router.replace(`/brackets/new?editId=${bracket.id}`);
       }
       toast.success("Draft saved!");
-    } catch {
-      toast.error("Failed to save draft");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to save draft");
     } finally {
       setIsSaving(false);
     }
@@ -731,7 +732,8 @@ function NewBracketContent() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to submit");
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit bracket");
       }
 
       const bracket = await response.json();
@@ -766,8 +768,8 @@ function NewBracketContent() {
       
       toast.success("🏆 Bracket submitted! Good luck!");
       setShowPaymentModal(true);
-    } catch {
-      toast.error("Failed to submit bracket");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit bracket");
     } finally {
       setIsSaving(false);
     }

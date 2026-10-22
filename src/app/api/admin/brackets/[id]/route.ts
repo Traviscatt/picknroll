@@ -71,6 +71,9 @@ export async function PATCH(
       updateData.bonusScore = bonusScore;
     }
     if (status) {
+      if (!["DRAFT", "SUBMITTED", "PAID"].includes(status)) {
+        return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+      }
       updateData.status = status;
     }
 

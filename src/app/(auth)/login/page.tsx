@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { safeCallbackUrl } from "@/lib/utils";
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");

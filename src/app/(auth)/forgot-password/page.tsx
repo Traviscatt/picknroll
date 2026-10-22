@@ -61,10 +61,10 @@ export default function ForgotPasswordPage() {
           <CardContent className="text-center space-y-4">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
             <p className="text-slate-600">
-              If an account with <strong>{email}</strong> exists, a password reset link has been generated.
+              If an account with <strong>{email}</strong> exists, we&apos;ve emailed a password reset link.
             </p>
             <p className="text-sm text-slate-500">
-              Check the server console for the reset link (email sending is not configured yet).
+              The link expires in 1 hour. Check your spam folder if you don&apos;t see it.
             </p>
           </CardContent>
         ) : (

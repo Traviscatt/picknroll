@@ -20,5 +20,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: string;
     favoriteTeam?: string | null;
+    // Epoch ms when role/favoriteTeam were last re-read from the database
+    refreshedAt?: number;
   }
 }

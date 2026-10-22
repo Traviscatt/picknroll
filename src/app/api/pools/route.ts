@@ -51,7 +51,18 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json(pools);
+    // Member emails are only visible to pool admins and site admins
+    const isSiteAdmin = session.user.role === "ADMIN";
+    const visiblePools = pools.map((pool) => {
+      const isPoolAdmin = pool.members.some((m) => m.userId === session.user.id && m.role === "ADMIN");
+      if (isSiteAdmin || isPoolAdmin) return pool;
+      return {
+        ...pool,
+        members: pool.members.map((m) => ({ ...m, user: { id: m.user.id, name: m.user.name } })),
+      };
+    });
+
+    return NextResponse.json(visiblePools);
   } catch (error) {
     console.error("Error fetching pools:", error);
     return NextResponse.json(

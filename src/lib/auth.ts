@@ -3,7 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { findUserByEmail } from "@/lib/user-email";
 import type { Adapter } from "next-auth/adapters";
+
+const ROLE_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db) as Adapter,
@@ -25,9 +28,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        const user = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
+        const user = await findUserByEmail(credentials.email);
 
         if (!user || !user.password) {
           throw new Error("Invalid credentials");
@@ -55,15 +56,18 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as { role: string }).role;
         token.favoriteTeam = (user as { favoriteTeam?: string | null }).favoriteTeam;
+        token.refreshedAt = Date.now();
       }
-      if (trigger === "update") {
+      // Re-read role periodically so admin promotions/demotions apply without signing out
+      const isStale = !token.refreshedAt || Date.now() - token.refreshedAt > ROLE_REFRESH_INTERVAL_MS;
+      if (token.id && (trigger === "update" || isStale)) {
         const freshUser = await db.user.findUnique({
           where: { id: token.id as string },
-          select: { favoriteTeam: true },
+          select: { role: true, favoriteTeam: true },
         });
-        if (freshUser) {
-          token.favoriteTeam = freshUser.favoriteTeam;
-        }
+        token.role = freshUser?.role ?? "USER";
+        token.favoriteTeam = freshUser?.favoriteTeam ?? null;
+        token.refreshedAt = Date.now();
       }
       return token;
     },

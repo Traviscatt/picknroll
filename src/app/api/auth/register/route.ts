@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { findUserByEmail, normalizeEmail } from "@/lib/user-email";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -13,11 +14,11 @@ const registerSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, password, favoriteTeam } = registerSchema.parse(body);
+    const parsed = registerSchema.parse(body);
+    const { name, password, favoriteTeam } = parsed;
+    const email = normalizeEmail(parsed.email);
 
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json(

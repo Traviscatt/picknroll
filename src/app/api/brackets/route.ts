@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
 
 // GET /api/brackets - Get all brackets for the current user
 export async function GET() {
@@ -45,8 +46,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { name, entryName, poolId, familyMemberId, tiebreaker, picks, status = "DRAFT" } = body;
+    const parsed = bracketInputSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+    }
+    const { name, entryName, poolId, familyMemberId, tiebreaker, picks, status = "DRAFT" } = parsed.data;
 
     if (!name) {
       return NextResponse.json(
@@ -72,27 +76,28 @@ export async function POST(request: Request) {
       }
     }
 
-    // Check deadline if submitting to a pool
-    if (status === "SUBMITTED" && poolId) {
-      const pool = await db.pool.findUnique({
-        where: { id: poolId },
-        select: { deadline: true, status: true },
+    // Brackets can only be added to a pool you belong to, while it's open and before the deadline
+    if (poolId) {
+      const membership = await db.poolMember.findFirst({
+        where: { poolId, userId: session.user.id },
+        select: { pool: { select: { deadline: true, status: true } } },
       });
-
-      if (pool) {
-        if (pool.status !== "OPEN") {
-          return NextResponse.json(
-            { error: "This pool is no longer accepting submissions." },
-            { status: 400 }
-          );
-        }
-        if (new Date() > pool.deadline) {
-          return NextResponse.json(
-            { error: "The submission deadline for this pool has passed." },
-            { status: 400 }
-          );
-        }
+      if (!membership) {
+        return NextResponse.json({ error: "You are not a member of this pool." }, { status: 403 });
       }
+      const lockedReason = poolLockedReason(membership.pool);
+      if (lockedReason) {
+        return NextResponse.json({ error: lockedReason }, { status: 400 });
+      }
+    }
+
+    const isSubmitted = status === "SUBMITTED";
+    const picksValidation = validatePicks(picks ?? [], { requireComplete: isSubmitted });
+    if (!picksValidation.ok) {
+      return NextResponse.json({ error: picksValidation.error }, { status: 400 });
+    }
+    if (isSubmitted && tiebreaker == null) {
+      return NextResponse.json({ error: "A tiebreaker is required to submit." }, { status: 400 });
     }
 
     // Create bracket with picks data
@@ -104,9 +109,9 @@ export async function POST(request: Request) {
         userId: session.user.id,
         poolId: poolId || null,
         familyMemberId: familyMemberId || null,
-        tiebreaker: tiebreaker || null,
-        picksData: picks ? JSON.stringify(picks) : null,
-        submittedAt: status === "SUBMITTED" ? new Date() : null,
+        tiebreaker: tiebreaker ?? null,
+        picksData: picks !== undefined ? JSON.stringify(picksValidation.picks) : null,
+        submittedAt: isSubmitted ? new Date() : null,
       },
     });
 

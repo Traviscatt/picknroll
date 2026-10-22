@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
-import { SCORING_RULES, FINAL_FOUR_BONUS, FINAL_FOUR_ROUND, FINAL_FOUR_GAMES_COUNT } from "@/lib/scoring";
+import { parsePicksData, rankEntries, scoreBracket } from "@/lib/scoring-engine";
+import { loadTournamentResults, SCORED_STATUSES } from "@/lib/scoring-service";
 
 // GET /api/admin/scenarios
 // Enumerates the 8 championship scenarios:
@@ -18,50 +19,16 @@ export async function GET() {
       return NextResponse.json({ error: "No tournament found" }, { status: 404 });
     }
 
-    // ── Fetch all games ──
-    const allGames = await db.game.findMany({
-      where: { tournamentId: tournament.id },
-      include: {
-        team1: { include: { team: true } },
-        team2: { include: { team: true } },
-        winner: { include: { team: true } },
-      },
-      orderBy: [{ round: "asc" }, { gameNumber: "asc" }],
-    });
+    // ── Games and final results in bracket ID space ──
+    const { games: allGames, idToKey, winners: baseWinners } = await loadTournamentResults(tournament.id);
 
-    // ── Build bracketGameMap (for picksData scoring) ──
-    const bracketGameMap = new Map<string, typeof allGames[0]>();
-    const grouped = new Map<string, typeof allGames>();
-    for (const g of allGames) {
-      const key = `${g.round}-${g.region || "none"}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(g);
-    }
-    for (const [, group] of grouped) {
-      group.sort((a, b) => a.gameNumber - b.gameNumber);
-      for (let i = 0; i < group.length; i++) {
-        const g = group[i];
-        let bracketId: string;
-        if (g.region && g.round <= 4) {
-          bracketId = `${g.region}-r${g.round}-g${i + 1}`;
-        } else if (g.round === 5) {
-          bracketId = `final-four-r5-g${g.gameNumber}`;
-        } else {
-          bracketId = `championship-r6-g${g.gameNumber}`;
-        }
-        bracketGameMap.set(bracketId, g);
-      }
-    }
-
-    // ── Build teamIdMap + teamNameMap ──
+    // ── Build teamNameMap ──
     const tournamentTeams = await db.tournamentTeam.findMany({
       where: { tournamentId: tournament.id },
-      select: { id: true, seed: true, region: true, team: { select: { name: true } } },
+      select: { id: true, team: { select: { name: true } } },
     });
-    const teamIdMap = new Map<string, string>();
     const teamNameMap = new Map<string, string>();
     for (const tt of tournamentTeams) {
-      teamIdMap.set(`${tt.region.toLowerCase()}-${tt.seed}`, tt.id);
       teamNameMap.set(tt.id, tt.team.name);
     }
 
@@ -80,15 +47,19 @@ export async function GET() {
       });
     }
 
-    // Semi 1 teams: winners of R4 G1 and R4 G2
-    const semi1TeamA = { id: r4Games[0].winnerId!, name: teamNameMap.get(r4Games[0].winnerId!) || r4Games[0].winner?.team?.name || "Team A" };
-    const semi1TeamB = { id: r4Games[1].winnerId!, name: teamNameMap.get(r4Games[1].winnerId!) || r4Games[1].winner?.team?.name || "Team B" };
+    // Semi 1 teams: winners of R4 G1 and R4 G2 (team keys like "east-1")
+    const finalist = (game: (typeof r4Games)[number], fallback: string) => ({
+      id: idToKey.get(game.winnerId!) ?? game.winnerId!,
+      name: teamNameMap.get(game.winnerId!) || fallback,
+    });
+    const semi1TeamA = finalist(r4Games[0], "Team A");
+    const semi1TeamB = finalist(r4Games[1], "Team B");
     // Semi 2 teams: winners of R4 G3 and R4 G4
-    const semi2TeamC = { id: r4Games[2].winnerId!, name: teamNameMap.get(r4Games[2].winnerId!) || r4Games[2].winner?.team?.name || "Team C" };
-    const semi2TeamD = { id: r4Games[3].winnerId!, name: teamNameMap.get(r4Games[3].winnerId!) || r4Games[3].winner?.team?.name || "Team D" };
+    const semi2TeamC = finalist(r4Games[2], "Team C");
+    const semi2TeamD = finalist(r4Games[3], "Team D");
 
-    // Find the R5 and R6 game DB records (needed to set scenarioWinners by game ID)
-    const r5Games = allGames.filter(g => g.round === 5).sort((a, b) => a.gameNumber - b.gameNumber);
+    // Make sure the Final Four / Championship game records exist
+    const r5Games = allGames.filter(g => g.round === 5);
     const r6Games = allGames.filter(g => g.round === 6);
     if (r5Games.length < 2 || r6Games.length < 1) {
       return NextResponse.json({
@@ -97,9 +68,6 @@ export async function GET() {
         totalScenarios: 0,
       });
     }
-    const r5g1 = r5Games[0]; // Semi 1: teamA vs teamB
-    const r5g2 = r5Games[1]; // Semi 2: teamC vs teamD
-    const r6g1 = r6Games[0]; // Championship
 
     // ── Build the 8 scenarios ──
     // 4 championship matchups × 2 championship winners
@@ -134,23 +102,12 @@ export async function GET() {
       }
     }
 
-    // ── Base winners from completed games ──
-    const baseWinners = new Map<string, string>();
-    for (const g of allGames) {
-      if (g.winnerId && g.status === "FINAL") baseWinners.set(g.id, g.winnerId);
-    }
-
-    // ── Fetch all submitted brackets ──
+    // ── Fetch all submitted brackets in this tournament's pools ──
     const brackets = await db.bracket.findMany({
-      where: { status: { in: ["SUBMITTED", "PAID"] } },
-      select: {
-        id: true,
-        name: true,
-        entryName: true,
-        picksData: true,
-        picks: { include: { game: true } },
-      },
+      where: { status: { in: SCORED_STATUSES }, pool: { tournamentId: tournament.id } },
+      select: { id: true, name: true, entryName: true, picksData: true, tiebreaker: true },
     });
+    const bracketPicks = brackets.map((b) => ({ ...b, picks: parsePicksData(b.picksData) }));
 
     // ── Score each scenario ──
     const scenarios = [];
@@ -160,119 +117,31 @@ export async function GET() {
 
       // Build scenarioWinners: start with all completed games, then add R5/R6 outcomes
       const scenarioWinners = new Map(baseWinners);
-      scenarioWinners.set(r5g1.id, cs.semi1Winner.id);
-      scenarioWinners.set(r5g2.id, cs.semi2Winner.id);
-      scenarioWinners.set(r6g1.id, cs.champion.id);
+      scenarioWinners.set("final-four-r5-g1", cs.semi1Winner.id);
+      scenarioWinners.set("final-four-r5-g2", cs.semi2Winner.id);
+      scenarioWinners.set("championship-r6-g1", cs.champion.id);
 
       // Score each bracket
-      const bracketScores: { id: string; name: string; entryName: string; totalScore: number; bonusScore: number; combined: number }[] = [];
-
-      for (const bracket of brackets) {
-        let totalScore = 0;
-        let bonusScore = 0;
-
-        // Score from formal Pick records
-        if (bracket.picks.length > 0) {
-          const finalFourPicks: { gameId: string; teamId: string; choiceRank: number }[] = [];
-
-          for (const pick of bracket.picks) {
-            const winnerId = scenarioWinners.get(pick.gameId);
-            if (!winnerId) continue;
-
-            const isCorrect = pick.teamId === winnerId;
-            const rule = SCORING_RULES.find(r => r.round === pick.game.round);
-            if (!rule) continue;
-
-            const choiceIndex = pick.choiceRank - 1;
-            const points = isCorrect && choiceIndex < rule.pointsPerChoice.length
-              ? rule.pointsPerChoice[choiceIndex] : 0;
-            totalScore += points;
-
-            if (pick.game.round === FINAL_FOUR_ROUND && pick.choiceRank === 1) {
-              finalFourPicks.push({ gameId: pick.gameId, teamId: pick.teamId, choiceRank: pick.choiceRank });
-            }
-          }
-
-          const finalFourGames = allGames.filter(g => g.round === FINAL_FOUR_ROUND);
-          if (finalFourGames.length === FINAL_FOUR_GAMES_COUNT && finalFourPicks.length === FINAL_FOUR_GAMES_COUNT) {
-            let allCorrect = true;
-            for (const ffGame of finalFourGames) {
-              const wId = scenarioWinners.get(ffGame.id) || ffGame.winnerId;
-              const pick = finalFourPicks.find(p => p.gameId === ffGame.id);
-              if (!pick || pick.choiceRank !== 1 || pick.teamId !== wId) {
-                allCorrect = false;
-                break;
-              }
-            }
-            if (allCorrect) bonusScore = FINAL_FOUR_BONUS;
-          }
-        }
-
-        // Score from picksData JSON
-        if (bracket.picks.length === 0 && bracket.picksData) {
-          try {
-            const picksArray = JSON.parse(bracket.picksData);
-            const picksDataFinalFour: { gameId: string; teamId: string }[] = [];
-
-            for (const pickData of picksArray) {
-              if (!pickData.gameId || !pickData.choices) continue;
-              const game = bracketGameMap.get(pickData.gameId);
-              if (!game) continue;
-
-              const winnerId = scenarioWinners.get(game.id);
-              if (!winnerId) continue;
-
-              const rule = SCORING_RULES.find(r => r.round === game.round);
-              if (!rule) continue;
-
-              if (game.round === FINAL_FOUR_ROUND && pickData.choices[0]) {
-                const firstChoiceId = teamIdMap.get(pickData.choices[0]) || pickData.choices[0];
-                picksDataFinalFour.push({ gameId: game.id, teamId: firstChoiceId });
-              }
-
-              for (let rank = 0; rank < pickData.choices.length; rank++) {
-                if (rank >= rule.pointsPerChoice.length) break;
-                const pickedTeamId = teamIdMap.get(pickData.choices[rank]) || pickData.choices[rank];
-                if (pickedTeamId === winnerId) {
-                  totalScore += rule.pointsPerChoice[rank];
-                }
-              }
-            }
-
-            const pdFinalFourGames = allGames.filter(g => g.round === FINAL_FOUR_ROUND);
-            if (pdFinalFourGames.length === FINAL_FOUR_GAMES_COUNT && picksDataFinalFour.length === FINAL_FOUR_GAMES_COUNT) {
-              let allCorrect = true;
-              for (const ffGame of pdFinalFourGames) {
-                const wId = scenarioWinners.get(ffGame.id) || ffGame.winnerId;
-                const pick = picksDataFinalFour.find(p => p.gameId === ffGame.id);
-                if (!pick || pick.teamId !== wId) {
-                  allCorrect = false;
-                  break;
-                }
-              }
-              if (allCorrect) bonusScore = FINAL_FOUR_BONUS;
-            }
-          } catch {
-            // skip malformed picksData
-          }
-        }
-
-        const combined = totalScore + bonusScore;
-        bracketScores.push({
+      const bracketScores = bracketPicks.map((bracket) => {
+        const { total, bonus } = scoreBracket(bracket.picks, scenarioWinners);
+        return {
           id: bracket.id,
           name: bracket.name || "",
           entryName: bracket.entryName || "",
-          totalScore,
-          bonusScore,
-          combined,
-        });
-      }
+          totalScore: total,
+          bonusScore: bonus,
+          combined: total + bonus,
+          score: total + bonus,
+          tiebreaker: bracket.tiebreaker,
+        };
+      });
 
-      bracketScores.sort((a, b) => b.combined - a.combined);
-      const top10 = bracketScores.slice(0, 10).map((b, idx) => ({
-        rank: idx + 1,
-        ...b,
-      }));
+      // The championship total isn't known in a hypothetical scenario, so equal scores share a rank
+      const top10 = rankEntries(bracketScores, null)
+        .slice(0, 10)
+        .map(({ rank, id, name, entryName, totalScore, bonusScore, combined }) => ({
+          rank, id, name, entryName, totalScore, bonusScore, combined,
+        }));
 
       scenarios.push({
         scenarioIndex: si + 1,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getActualTiebreaker, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
 
 // GET /api/share/leaderboard/[code] - Public leaderboard by viewCode (no auth)
 export async function GET(
@@ -15,6 +16,7 @@ export async function GET(
         id: true,
         name: true,
         entryFee: true,
+        tournamentId: true,
       },
     });
 
@@ -26,7 +28,7 @@ export async function GET(
     const brackets = await db.bracket.findMany({
       where: {
         poolId: pool.id,
-        status: { in: ["SUBMITTED", "PAID"] },
+        status: { in: SCORED_STATUSES },
       },
       select: {
         id: true,
@@ -39,32 +41,15 @@ export async function GET(
       },
     });
 
-    // Sort by combined score (totalScore + bonusScore) so bonus is reflected in rankings
-    brackets.sort((a, b) => {
-      const aTotal = a.totalScore + a.bonusScore;
-      const bTotal = b.totalScore + b.bonusScore;
-      return bTotal - aTotal;
-    });
-
-    // Build ranked entries
-    let currentRank = 0;
-    let lastScore = -1;
-
-    const entries = brackets.map((b, idx) => {
-      const totalWithBonus = b.totalScore + b.bonusScore;
-      if (totalWithBonus !== lastScore) {
-        currentRank = idx + 1;
-        lastScore = totalWithBonus;
-      }
-
-      return {
-        rank: currentRank,
-        name: b.entryName,
-        bracketName: b.name,
-        score: b.totalScore + b.bonusScore,
-        tiebreaker: b.tiebreaker,
-      };
-    });
+    // Rank by combined score (totalScore + bonusScore); ties broken by tiebreaker once the championship is final
+    const actualTiebreaker = await getActualTiebreaker(pool.tournamentId);
+    const entries = rankBrackets(brackets, actualTiebreaker).map((b) => ({
+      rank: b.rank,
+      name: b.entryName,
+      bracketName: b.name,
+      score: b.score,
+      tiebreaker: b.tiebreaker,
+    }));
 
     const paidCount = brackets.filter((b) => b.paid).length;
     const entryFee = parseFloat(pool.entryFee.toString());
@@ -75,6 +60,7 @@ export async function GET(
       entries,
       totalPrize,
       totalEntries: brackets.length,
+      actualTiebreaker,
     });
   } catch (error) {
     console.error("Error fetching shared leaderboard:", error);

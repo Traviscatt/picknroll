@@ -39,7 +39,18 @@ export async function GET() {
       orderBy: [{ round: "asc" }, { gameNumber: "asc" }],
     });
 
-    return NextResponse.json({ games, tournamentId: tournament.id });
+    const championship = games.find((g) => g.round === 6);
+    const championshipTotal =
+      championship?.status === "FINAL" && championship.team1Score != null && championship.team2Score != null
+        ? championship.team1Score + championship.team2Score
+        : null;
+
+    return NextResponse.json({
+      games,
+      tournamentId: tournament.id,
+      actualTiebreakerOverride: tournament.actualTiebreaker,
+      championshipTotal,
+    });
   } catch (error) {
     console.error("Error fetching results:", error);
     return NextResponse.json(
@@ -82,12 +93,21 @@ export async function POST(req: NextRequest) {
       updated++;
     }
 
-    // If actualTiebreaker is provided, we could store it somewhere
-    // For now we'll pass it back in the response
+    // Tiebreaker override for the current tournament (blank clears it, falling back to the championship score)
+    let override: number | null = null;
+    if (actualTiebreaker !== undefined) {
+      const parsed = actualTiebreaker === null || actualTiebreaker === "" ? null : parseInt(actualTiebreaker);
+      override = parsed != null && Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+      const tournament = await db.tournament.findFirst({ orderBy: { year: "desc" } });
+      if (tournament) {
+        await db.tournament.update({ where: { id: tournament.id }, data: { actualTiebreaker: override } });
+      }
+    }
+
     return NextResponse.json({
       message: `Updated ${updated} game results.`,
       updated,
-      actualTiebreaker: actualTiebreaker || null,
+      actualTiebreaker: override,
     });
   } catch (error) {
     console.error("Error saving results:", error);

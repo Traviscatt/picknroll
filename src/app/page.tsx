@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Navbar } from "@/components/shared/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MAX_POSSIBLE_SCORE } from "@/lib/scoring";
 import {
   Trophy,
   Users,
@@ -161,7 +162,10 @@ export default async function Home() {
           <div className="text-center mt-8">
             <p className="text-white/70">
               Maximum possible points:{" "}
-              <span className="text-[#b9bc91] font-bold text-2xl">369</span>
+              <span className="text-[#b9bc91] font-bold text-2xl">{MAX_POSSIBLE_SCORE}</span>
+              <span className="block text-sm text-white/50 mt-1">
+                Includes a +10 bonus for picking all four Final Four teams as your 1st choice
+              </span>
             </p>
           </div>
         </div>

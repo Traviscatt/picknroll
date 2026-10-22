@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getActualTiebreaker, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
 
 // GET /api/leaderboard - Get leaderboard data for user's pool
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
       where: { userId: session.user.id },
       select: {
         poolId: true,
-        pool: { select: { viewCode: true, entryFee: true } },
+        pool: { select: { viewCode: true, entryFee: true, tournamentId: true } },
       },
     });
 
@@ -29,7 +30,7 @@ export async function GET() {
     const brackets = await db.bracket.findMany({
       where: {
         poolId: poolMembership.poolId,
-        status: { in: ["SUBMITTED", "PAID"] },
+        status: { in: SCORED_STATUSES },
       },
       select: {
         id: true,
@@ -46,42 +47,24 @@ export async function GET() {
       },
     });
 
-    // Sort by combined score (totalScore + bonusScore) so bonus is reflected in rankings
-    brackets.sort((a, b) => {
-      const aTotal = a.totalScore + a.bonusScore;
-      const bTotal = b.totalScore + b.bonusScore;
-      return bTotal - aTotal;
-    });
+    // Rank by combined score (totalScore + bonusScore); ties broken by tiebreaker once the championship is final
+    const actualTiebreaker = await getActualTiebreaker(poolMembership.pool.tournamentId);
+    const ranked = rankBrackets(brackets, actualTiebreaker);
 
-    // Build ranked entries
-    let currentRank = 0;
-    let lastScore = -1;
-    let userRank: number | null = null;
-    let userScore: number | null = null;
+    const userEntry = ranked.find((b) => b.userId === session.user.id);
+    const userRank = userEntry?.rank ?? null;
+    const userScore = userEntry?.score ?? null;
 
-    const entries = brackets.map((b, idx) => {
-      const totalWithBonus = b.totalScore + b.bonusScore;
-      if (totalWithBonus !== lastScore) {
-        currentRank = idx + 1;
-        lastScore = totalWithBonus;
-      }
-
-      if (b.userId === session.user.id && userRank === null) {
-        userRank = currentRank;
-        userScore = totalWithBonus;
-      }
-
-      return {
-        rank: currentRank,
-        bracketId: b.id,
-        name: b.entryName,
-        bracketName: b.name,
-        score: b.totalScore + b.bonusScore,
-        tiebreaker: b.tiebreaker,
-        paid: b.paid,
-        isCurrentUser: b.userId === session.user.id,
-      };
-    });
+    const entries = ranked.map((b) => ({
+      rank: b.rank,
+      bracketId: b.id,
+      name: b.entryName,
+      bracketName: b.name,
+      score: b.score,
+      tiebreaker: b.tiebreaker,
+      paid: b.paid,
+      isCurrentUser: b.userId === session.user.id,
+    }));
 
     const paidCount = brackets.filter((b) => b.paid).length;
     const entryFee = poolMembership.pool?.entryFee 
@@ -97,6 +80,7 @@ export async function GET() {
       totalEntries: brackets.length,
       paidEntries: paidCount,
       viewCode: poolMembership.pool?.viewCode || null,
+      actualTiebreaker,
     });
   } catch (error) {
     console.error("Error fetching leaderboard:", error);

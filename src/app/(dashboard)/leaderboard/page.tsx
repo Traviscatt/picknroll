@@ -31,6 +31,7 @@ interface LeaderboardData {
   totalEntries: number;
   paidEntries: number;
   viewCode: string | null;
+  actualTiebreaker: number | null;
 }
 
 export default function LeaderboardPage() {
@@ -225,6 +226,9 @@ export default function LeaderboardPage() {
           <CardTitle>Standings</CardTitle>
           <CardDescription>
             Live rankings updated after each game
+            {data?.actualTiebreaker != null
+              ? ` · Ties broken by closest tiebreaker to the actual championship total (${data.actualTiebreaker})`
+              : " · Ties are broken by the tiebreaker once the championship is final"}
           </CardDescription>
         </CardHeader>
         <CardContent>

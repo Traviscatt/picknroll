@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { getTeamName, getTeamInfo, getTeamLogo } from "@/lib/bracket-teams";
+import { MAX_POSSIBLE_SCORE } from "@/lib/scoring";
 import {
   Trophy,
   Plus,
@@ -34,6 +35,7 @@ interface Bracket {
   entryName: string;
   status: "DRAFT" | "SUBMITTED" | "PAID";
   totalScore: number;
+  bonusScore: number;
   paid: boolean;
   updatedAt: string;
   familyMember?: { id: string; name: string } | null;
@@ -154,7 +156,7 @@ export default function DashboardPage() {
 
   const submittedCount = brackets.filter((b) => b.status === "SUBMITTED" || b.status === "PAID").length;
   const draftCount = brackets.filter((b) => b.status === "DRAFT").length;
-  const bestScore = brackets.length > 0 ? Math.max(...brackets.map((b) => b.totalScore)) : 0;
+  const bestScore = brackets.length > 0 ? Math.max(...brackets.map((b) => b.totalScore + b.bonusScore)) : 0;
   const hasPaidBracket = brackets.some((b) => b.paid);
   const currentPool = pools[0];
   const deadlinePassed = currentPool?.deadline ? new Date() > new Date(currentPool.deadline) : false;
@@ -292,7 +294,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-2xl font-bold mt-1">{bestScore}</div>
               <p className="text-xs text-muted-foreground">
-                Max possible: 369
+                Max possible: {MAX_POSSIBLE_SCORE}
               </p>
             </div>
           </CardContent>
@@ -448,7 +450,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-slate-500">{bracket.name}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-primary">{bracket.totalScore} pts</span>
+                        <span className="text-sm font-bold text-primary">{bracket.totalScore + bracket.bonusScore} pts</span>
                         <Badge
                           variant={bracket.status === "DRAFT" ? "outline" : "default"}
                           className={bracket.status === "SUBMITTED" ? "bg-blue-500" : bracket.status === "PAID" ? "bg-green-500" : ""}

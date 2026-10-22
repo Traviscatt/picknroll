@@ -28,6 +28,7 @@ interface Bracket {
   entryName: string;
   status: "DRAFT" | "SUBMITTED" | "PAID";
   totalScore: number;
+  bonusScore: number;
   paid: boolean;
   updatedAt: string;
   pool?: {
@@ -233,7 +234,7 @@ export default function BracketsPage() {
                     <div>
                       <p className="text-sm text-slate-600">Score</p>
                       <p className="text-2xl font-bold text-primary">
-                        {bracket.totalScore}
+                        {bracket.totalScore + bracket.bonusScore}
                       </p>
                     </div>
                   </div>

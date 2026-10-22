@@ -103,6 +103,9 @@ export const FINAL_FOUR_BONUS = 10;
 export const FINAL_FOUR_ROUND = 4;
 export const FINAL_FOUR_GAMES_COUNT = 4;
 
+// Best possible score: every 1st choice correct (369) plus the Final Four bonus
+export const MAX_POSSIBLE_SCORE = getTotalMaxPoints() + FINAL_FOUR_BONUS;
+
 // Scoring summary for display
 export const SCORING_SUMMARY = {
   round1: "2 pts per correct pick",

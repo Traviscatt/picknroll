@@ -64,7 +64,7 @@ describe("scoreBracket", () => {
     });
 
     it("no bonus until all four Elite 8 games are decided", () => {
-      const { "Midwest-r4-g1": _, ...three } = allFirstChoices;
+      const three = Object.fromEntries(Object.entries(allFirstChoices).filter(([gameId]) => gameId !== "Midwest-r4-g1"));
       expect(scoreBracket(eliteEight, winners(three)).bonus).toBe(0);
     });
   });

@@ -138,6 +138,9 @@ model Tournament {
   year      Int
   startDate DateTime
   endDate   DateTime
+  // Admin override for the championship combined score used to break ties
+  // (defaults to the final championship score when null)
+  actualTiebreaker Int?
 
   pools Pool[]
   games Game[]

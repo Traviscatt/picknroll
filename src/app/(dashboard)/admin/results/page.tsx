@@ -59,6 +59,7 @@ export default function AdminResultsPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [actualTiebreaker, setActualTiebreaker] = useState("");
+  const [autoTiebreaker, setAutoTiebreaker] = useState<number | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -75,6 +76,8 @@ export default function AdminResultsPage() {
         if (response.ok) {
           const data = await response.json();
           setGames(data.games || []);
+          setActualTiebreaker(data.actualTiebreakerOverride?.toString() ?? "");
+          setAutoTiebreaker(data.championshipTotal ?? null);
           // Initialize local results from existing data
           const map = new Map<string, LocalResult>();
           for (const game of data.games || []) {
@@ -391,23 +394,26 @@ export default function AdminResultsPage() {
           <CardHeader>
             <CardTitle>Championship Final Score</CardTitle>
             <CardDescription>
-              Enter the actual combined score to determine tiebreakers
+              Ties are broken by the bracket whose prediction is closest to the actual combined score.
+              It&apos;s taken from the championship result automatically; enter a value only to override it.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Actual Combined Score</label>
+                <label className="text-sm font-medium">Override Combined Score</label>
                 <Input
                   type="number"
-                  placeholder="e.g., 145"
+                  placeholder={autoTiebreaker != null ? `Auto: ${autoTiebreaker}` : "e.g., 145"}
                   className="w-32"
                   value={actualTiebreaker}
                   onChange={(e) => setActualTiebreaker(e.target.value)}
                 />
               </div>
               <p className="text-sm text-slate-500 mt-6">
-                This will be compared against each bracket&apos;s tiebreaker prediction.
+                {autoTiebreaker != null
+                  ? `Currently using ${actualTiebreaker || autoTiebreaker}. Leave blank to use the championship score.`
+                  : "The championship score will be used once the game is final."}
               </p>
             </div>
           </CardContent>

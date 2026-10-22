@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PDFDocument, rgb, StandardFonts, PDFPage, PDFFont, RGB } from "pdf-lib";
+import { SCORING_RULES } from "@/lib/scoring";
 
 // ── Team lookup ─────────────────────────────────────────────────
 const REGIONS = ["East", "South", "West", "Midwest"] as const;
@@ -44,14 +45,9 @@ interface PickData {
 }
 
 // ── Choices & points per round ───────────────────────────────────
-const ROUND_CONFIG: Record<number, { choices: number; points: number[] }> = {
-  1: { choices: 1, points: [2] },
-  2: { choices: 1, points: [5] },
-  3: { choices: 2, points: [10, 5] },
-  4: { choices: 3, points: [15, 10, 5] },
-  5: { choices: 4, points: [25, 15, 10, 5] },
-  6: { choices: 5, points: [35, 25, 15, 10, 5] },
-};
+const ROUND_CONFIG: Record<number, { choices: number; points: number[] }> = Object.fromEntries(
+  SCORING_RULES.map((rule) => [rule.round, { choices: rule.choices, points: rule.pointsPerChoice }])
+);
 
 // ── Colors ──────────────────────────────────────────────────────
 const CLR = {

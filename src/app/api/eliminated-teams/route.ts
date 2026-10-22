@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { buildTeamKeyMaps } from "@/lib/scoring-engine";
 
 // GET /api/eliminated-teams - Returns bracket-style team IDs (e.g. "east-1") of eliminated teams
 export async function GET() {
@@ -25,10 +26,7 @@ export async function GET() {
       select: { id: true, seed: true, region: true },
     });
 
-    const ttIdToBracketId = new Map<string, string>();
-    for (const tt of tournamentTeams) {
-      ttIdToBracketId.set(tt.id, `${tt.region.toLowerCase()}-${tt.seed}`);
-    }
+    const { idToKey: ttIdToBracketId } = buildTeamKeyMaps(tournamentTeams);
 
     // Get all completed games
     const games = await db.game.findMany({

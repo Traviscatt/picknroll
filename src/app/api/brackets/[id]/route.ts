@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
+import { getCurrentTournament, loadTournamentResults, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
 
 // GET /api/brackets/[id] - Get a single bracket
 export async function GET(
@@ -78,63 +79,19 @@ export async function GET(
     const bracketIsOwner = bracket.userId === session.user.id || isAdmin;
     const ownerName = !bracketIsOwner ? (bracket.user?.name || "Unknown") : null;
 
-    // Fetch completed games for this tournament to determine game status
-    const tournament = await db.tournament.findFirst({
-      orderBy: { year: "desc" },
-    });
-
-    // Build a map from bracket-style gameId (e.g. "East-r1-g1") to winner bracket ID
-    // Uses same grouping logic as scoring route: group by round+region, sort by gameNumber, assign per-region index
+    // Completed games in bracket ID space (e.g. "East-r1-g1" -> winner "east-1")
+    const tournamentId = bracket.pool?.tournamentId ?? (await getCurrentTournament())?.id;
     const completedGames: { bracketGameId: string; winnerBracketId: string | null }[] = [];
-    if (tournament) {
-      const tournamentTeams = await db.tournamentTeam.findMany({
-        where: { tournamentId: tournament.id },
-        select: { id: true, seed: true, region: true },
-      });
-      const ttIdToBracketId = new Map<string, string>();
-      for (const tt of tournamentTeams) {
-        ttIdToBracketId.set(tt.id, `${tt.region.toLowerCase()}-${tt.seed}`);
-      }
-
-      const allGames = await db.game.findMany({
-        where: { tournamentId: tournament.id },
-        select: {
-          round: true,
-          gameNumber: true,
-          region: true,
-          status: true,
-          winnerId: true,
-        },
-      });
-
-      // Group games by round+region, sort by gameNumber, assign per-region indices
-      const grouped = new Map<string, typeof allGames>();
-      for (const g of allGames) {
-        const key = `${g.round}-${g.region || "none"}`;
-        if (!grouped.has(key)) grouped.set(key, []);
-        grouped.get(key)!.push(g);
-      }
-
-      for (const [, group] of grouped) {
-        group.sort((a, b) => a.gameNumber - b.gameNumber);
-        for (let i = 0; i < group.length; i++) {
-          const g = group[i];
-          if (g.status !== "FINAL") continue;
-
-          let bracketGameId: string;
-          if (g.region && g.round <= 4) {
-            bracketGameId = `${g.region}-r${g.round}-g${i + 1}`;
-          } else if (g.round === 5) {
-            bracketGameId = `final-four-r5-g${g.gameNumber}`;
-          } else {
-            bracketGameId = `championship-r6-g${g.gameNumber}`;
-          }
-
-          completedGames.push({
-            bracketGameId,
-            winnerBracketId: g.winnerId ? ttIdToBracketId.get(g.winnerId) || null : null,
-          });
-        }
+    let actualTiebreaker: number | null = null;
+    if (tournamentId) {
+      const results = await loadTournamentResults(tournamentId);
+      actualTiebreaker = results.actualTiebreaker;
+      for (const [bracketGameId, game] of results.gameMap) {
+        if (game.status !== "FINAL") continue;
+        completedGames.push({
+          bracketGameId,
+          winnerBracketId: game.winnerId ? results.idToKey.get(game.winnerId) || null : null,
+        });
       }
     }
 
@@ -145,33 +102,19 @@ export async function GET(
       const poolBrackets = await db.bracket.findMany({
         where: {
           poolId: bracket.poolId,
-          status: { in: ["SUBMITTED", "PAID"] },
+          status: { in: SCORED_STATUSES },
         },
         select: {
           id: true,
           totalScore: true,
           bonusScore: true,
+          tiebreaker: true,
         },
       });
 
-      // Sort by combined score so bonus is reflected in rankings
-      poolBrackets.sort((a, b) => (b.totalScore + b.bonusScore) - (a.totalScore + a.bonusScore));
-
+      // Combined score, ties broken by tiebreaker once the championship is final (same as the leaderboard)
       totalInPool = poolBrackets.length;
-      let currentRank = 0;
-      let lastScore = -1;
-      for (let i = 0; i < poolBrackets.length; i++) {
-        const b = poolBrackets[i];
-        const score = b.totalScore + b.bonusScore;
-        if (score !== lastScore) {
-          currentRank = i + 1;
-          lastScore = score;
-        }
-        if (b.id === bracket.id) {
-          rank = currentRank;
-          break;
-        }
-      }
+      rank = rankBrackets(poolBrackets, actualTiebreaker).find((b) => b.id === bracket!.id)?.rank ?? null;
     }
 
     return NextResponse.json({ ...bracket, rank, totalInPool, completedGames, isOwner: bracketIsOwner, ownerName });

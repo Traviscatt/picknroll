@@ -60,18 +60,23 @@ export default $config({
       dns: sst.aws.dns({ override: isProduction }),
     });
 
+    // SKIP_DOMAIN=true deploys without attaching the custom domain (used to load data before a DNS cutover)
+    const attachDomain = process.env.SKIP_DOMAIN !== "true";
+
     const web = new sst.aws.Nextjs("Web", {
       openNextVersion: "4.1.10",
       // Next.js copies a local .env into the server bundle; all runtime config comes from `environment` below
       buildCommand: "npx --yes @opennextjs/aws@4.1.10 build && rm -f .open-next/server-functions/default/.env*",
       vpc,
       link: [database, email],
-      domain: {
-        name: siteDomain,
-        redirects: isProduction ? [`www.${rootDomain}`] : undefined,
-        // Production replaces the old Vercel A record during cutover
-        dns: sst.aws.dns({ override: isProduction }),
-      },
+      domain: attachDomain
+        ? {
+            name: siteDomain,
+            redirects: isProduction ? [`www.${rootDomain}`] : undefined,
+            // Production replaces the old Vercel A record during cutover
+            dns: sst.aws.dns({ override: isProduction }),
+          }
+        : undefined,
       environment: {
         ...databaseEnv,
         NEXTAUTH_URL: `https://${siteDomain}`,

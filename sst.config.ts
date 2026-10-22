@@ -14,7 +14,14 @@ export default $config({
       removal: input?.stage === "production" ? "retain" : "remove",
       protect: input?.stage === "production",
       home: "aws",
-      providers: { aws: { region: "us-east-1" } },
+      providers: {
+        aws: {
+          region: "us-east-1",
+          // Always use the personal Pick N Roll account locally (the default profile is a different account).
+          // GitHub Actions authenticates with its OIDC role instead.
+          profile: process.env.GITHUB_ACTIONS ? undefined : "picknroll",
+        },
+      },
     };
   },
   async run() {

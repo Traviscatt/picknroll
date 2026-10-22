@@ -29,10 +29,6 @@ jobs:
     environment: ${{ github.event.inputs.stage || 'production' }}
     env:
       STAGE: ${{ github.event.inputs.stage || 'production' }}
-      NEXT_PUBLIC_PAYPAL_LINK: ${{ vars.NEXT_PUBLIC_PAYPAL_LINK }}
-      NEXT_PUBLIC_VENMO_USERNAME: ${{ vars.NEXT_PUBLIC_VENMO_USERNAME }}
-      NEXT_PUBLIC_ENTRY_FEE: ${{ vars.NEXT_PUBLIC_ENTRY_FEE }}
-      NEXT_PUBLIC_DEADLINE_TIME: ${{ vars.NEXT_PUBLIC_DEADLINE_TIME }}
     steps:
       - uses: actions/checkout@v4
 

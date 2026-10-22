@@ -56,6 +56,8 @@ export default $config({
         ? "v=DMARC1; p=quarantine; adkim=r; aspf=r; rua=mailto:dmarc_rua@onsecureserver.net;"
         : "v=DMARC1; p=none;",
       mailFrom: { domain: `mail.${siteDomain}` },
+      // Production takes over the _dmarc record copied from GoDaddy
+      dns: sst.aws.dns({ override: isProduction }),
     });
 
     const web = new sst.aws.Nextjs("Web", {

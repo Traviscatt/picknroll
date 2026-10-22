@@ -62,6 +62,8 @@ export default $config({
 
     const web = new sst.aws.Nextjs("Web", {
       openNextVersion: "4.1.10",
+      // Next.js copies a local .env into the server bundle; all runtime config comes from `environment` below
+      buildCommand: "npx --yes @opennextjs/aws@4.1.10 build && rm -f .open-next/server-functions/default/.env*",
       vpc,
       link: [database, email],
       domain: {

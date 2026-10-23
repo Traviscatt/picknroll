@@ -5,8 +5,9 @@
 //   team keys: "<region>-<seed>", e.g. "east-1"
 // Database games/teams are mapped into that space once, then any set of winners (final results,
 // live leaders, or hypothetical outcomes) can be scored the same way.
-import type { BracketPick } from "@/lib/bracket-validation";
+import { R1_SEED_PAIRS, type BracketPick } from "@/lib/bracket-validation";
 import { FINAL_FOUR_BONUS, FINAL_FOUR_GAMES_COUNT, FINAL_FOUR_ROUND, SCORING_RULES } from "@/lib/scoring";
+import { finalFourPairs } from "@/lib/tournament-field";
 
 export interface EngineGame {
   id: string;
@@ -189,4 +190,100 @@ export function rankEntries<E extends RankableEntry>(entries: E[], actual: numbe
     if (!prev || prev.score !== entry.score || distance(prev) !== distance(entry)) rank = i + 1;
     return { ...entry, rank };
   });
+}
+
+const parseSlot = (slot: string) => {
+  const i = slot.lastIndexOf("-");
+  return { region: slot.slice(0, i), seed: Number(slot.slice(i + 1)) };
+};
+
+/**
+ * The bracket game where two slots meet (e.g. "east-1" vs "east-4" -> "East-r3-g1"), given the tournament's
+ * regions in bracket order. Null for First Four pairs (same slot) or unknown regions.
+ */
+export function bracketGameForSlots(a: string, b: string, regions: string[]): string | null {
+  const [sa, sb] = [parseSlot(a), parseSlot(b)];
+  const region = (lower: string) => regions.find((r) => r.toLowerCase() === lower);
+  const [ra, rb] = [region(sa.region), region(sb.region)];
+  if (!ra || !rb || a === b) return null;
+
+  if (ra === rb) {
+    const [ia, ib] = [sa.seed, sb.seed].map((seed) => R1_SEED_PAIRS.findIndex((pair) => pair.includes(seed)));
+    if (ia < 0 || ib < 0) return null;
+    for (let round = 1; round <= 4; round++) {
+      const size = 2 ** (round - 1);
+      if (Math.floor(ia / size) === Math.floor(ib / size)) return `${ra}-r${round}-g${Math.floor(ia / size) + 1}`;
+    }
+    return null;
+  }
+
+  const semi = finalFourPairs(regions).findIndex((pair) => pair.includes(ra) && pair.includes(rb));
+  return semi >= 0 ? `final-four-r5-g${semi + 1}` : "championship-r6-g1";
+}
+
+/** Copy of `winners` with one game decided */
+export const withWinner = (winners: Winners, gameId: string, team: string): Winners => new Map(winners).set(gameId, team);
+
+/** Copy of `winners` with one game undecided */
+export function withoutGame(winners: Winners, gameId: string): Winners {
+  const next = new Map(winners);
+  next.delete(gameId);
+  return next;
+}
+
+/** How a pool ranked two teams in one game: counts[team][rank index], last index = not ranked */
+export interface PoolSplit {
+  total: number;
+  counts: [number[], number[]];
+}
+
+export function poolSplit(brackets: BracketPick[][], gameId: string, round: number, teams: [string, string]): PoolSplit {
+  const slots = SCORING_RULES.find((r) => r.round === round)?.choices ?? 1;
+  const counts: [number[], number[]] = [Array(slots + 1).fill(0), Array(slots + 1).fill(0)];
+  for (const picks of brackets) {
+    const choices = picks.find((p) => p.gameId === gameId)?.choices.slice(0, slots) ?? [];
+    teams.forEach((team, t) => {
+      const rank = choices.indexOf(team);
+      counts[t][rank === -1 ? slots : rank]++;
+    });
+  }
+  return { total: brackets.length, counts };
+}
+
+/**
+ * Highest score a bracket can still reach: current score plus, for every undecided game, the points of its
+ * best-ranked choice that hasn't been eliminated (an optimistic bound, the usual "max possible").
+ */
+export function maxPossibleScore(picks: BracketPick[], winners: Winners, eliminated: Set<string>): number {
+  const current = scoreBracket(picks, winners);
+  let max = current.total + current.bonus;
+  let eliteEightBonusAlive = current.bonus === 0;
+
+  for (const pick of picks) {
+    const rule = SCORING_RULES.find((r) => r.round === pick.round);
+    if (!rule) continue;
+    const winner = winners.get(pick.gameId);
+    const choices = pick.choices.slice(0, rule.pointsPerChoice.length);
+    if (pick.round === FINAL_FOUR_ROUND) {
+      const firstChoiceAlive = winner ? winner === choices[0] : !!choices[0] && !eliminated.has(choices[0]);
+      if (!firstChoiceAlive) eliteEightBonusAlive = false;
+    }
+    if (winner) continue;
+    const best = choices.findIndex((team) => !eliminated.has(team));
+    if (best !== -1) max += rule.pointsPerChoice[best];
+  }
+
+  const eliteEightPicks = picks.filter((p) => p.round === FINAL_FOUR_ROUND).length;
+  if (current.bonus === 0 && eliteEightBonusAlive && eliteEightPicks === FINAL_FOUR_GAMES_COUNT) max += FINAL_FOUR_BONUS;
+  return max;
+}
+
+/** Teams (slot keys) that lost a decided game */
+export function losers(games: { team1: string | null; team2: string | null; winner: string | null }[]): Set<string> {
+  const out = new Set<string>();
+  for (const g of games) {
+    if (!g.winner) continue;
+    for (const team of [g.team1, g.team2]) if (team && team !== g.winner) out.add(team);
+  }
+  return out;
 }

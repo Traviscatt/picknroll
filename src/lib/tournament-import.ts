@@ -108,7 +108,8 @@ export async function publishField(input: PublishInput) {
       const tournament = existing
         ? await tx.tournament.update({
             where: { id: existing.id },
-            data: locked ? { name: input.name, regions: input.regions } : { name: input.name, regions: input.regions, startDate, endDate },
+            // Dates are schedule facts from ESPN and don't affect brackets, so they refresh even when locked
+            data: { name: input.name, regions: input.regions, startDate, endDate },
           })
         : await tx.tournament.create({ data: { name: input.name, year: input.year, regions: input.regions, startDate, endDate } });
 

@@ -15,10 +15,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Menu, Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { useAnyLive } from "@/hooks/use-live-data";
 
 export function Navbar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
+  const anyLive = useAnyLive(!!session);
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === href;
     return pathname.startsWith(href);
@@ -58,6 +60,13 @@ export function Navbar() {
                   className={`text-sm font-medium transition-colors ${isActive("/brackets") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                   My Brackets
+                </Link>
+                <Link
+                  href="/game-center"
+                  className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive("/game-center") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {anyLive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-600" aria-label="Games live" />}
+                  Game Center
                 </Link>
                 <Link
                   href="/leaderboard"
@@ -155,6 +164,13 @@ export function Navbar() {
                       className={`text-lg font-medium transition-colors ${isActive("/brackets") ? "text-primary" : "hover:text-primary"}`}
                     >
                       My Brackets
+                    </Link>
+                    <Link
+                      href="/game-center"
+                      className={`flex items-center gap-2 text-lg font-medium transition-colors ${isActive("/game-center") ? "text-primary" : "hover:text-primary"}`}
+                    >
+                      Game Center
+                      {anyLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" aria-label="Games live" />}
                     </Link>
                     <Link
                       href="/leaderboard"

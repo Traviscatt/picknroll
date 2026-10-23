@@ -11,6 +11,10 @@ import { Trophy, Medal, TrendingUp, Users, Share2, Search, Eye } from "lucide-re
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useStandingsMode } from "@/hooks/use-standings-mode";
+import { useAnyLive, useLiveData } from "@/hooks/use-live-data";
+import { Movement, StandingsToggle } from "@/components/game-center/parts";
+import { isLive } from "@/lib/live";
 
 interface LeaderboardEntry {
   rank: number;
@@ -24,6 +28,7 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardData {
+  poolId: string | null;
   entries: LeaderboardEntry[];
   userRank: number | null;
   userScore: number | null;
@@ -40,6 +45,10 @@ export default function LeaderboardPage() {
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [mode, setMode] = useStandingsMode();
+  const anyLive = useAnyLive(!!session);
+  const liveMode = mode === "live";
+  const live = useLiveData(data?.poolId ?? null, null, liveMode && !!data?.poolId);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -105,7 +114,30 @@ export default function LeaderboardPage() {
 
   if (!session) return null;
 
-  const leaderboard = data?.entries ?? [];
+  // Live mode: same rows ranked as if every in-progress game ended now
+  const myIds = new Set((data?.entries ?? []).filter((e) => e.isCurrentUser).map((e) => e.bracketId));
+  const officialById = new Map((data?.entries ?? []).map((e) => [e.bracketId, e]));
+  const liveStandings = live.data?.standings ?? [];
+  const leaderboard: (LeaderboardEntry & { move?: number; tonight?: number })[] =
+    liveMode && liveStandings.length
+      ? [...liveStandings]
+          .sort((a, b) => a.liveRank - b.liveRank || a.name.localeCompare(b.name))
+          .map((s) => ({
+            rank: s.liveRank,
+            bracketId: s.bracketId,
+            name: s.name,
+            bracketName: s.bracketName,
+            score: s.live,
+            tiebreaker: s.tiebreaker,
+            paid: officialById.get(s.bracketId)?.paid ?? false,
+            isCurrentUser: myIds.has(s.bracketId),
+            move: s.officialRank - s.liveRank,
+            tonight: s.live - s.official,
+          }))
+      : data?.entries ?? [];
+  const showLive = liveMode && liveStandings.length > 0;
+  const liveGames = (live.data?.games ?? []).filter(isLive);
+  const myLive = liveStandings.find((s) => myIds.has(s.bracketId));
   
   const filteredLeaderboard = searchQuery.trim()
     ? leaderboard.filter(
@@ -163,9 +195,23 @@ export default function LeaderboardPage() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
-            {data?.userScore !== null && data?.userScore !== undefined && (
-              <p className="text-sm text-muted-foreground">{data.userScore} pts</p>
+            {showLive && myLive ? (
+              <>
+                <div className="flex items-center gap-2 text-2xl font-bold">
+                  {myLive.liveRank}
+                  <Movement by={myLive.officialRank - myLive.liveRank} />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {myLive.live} live pts · {myLive.official} official
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{data?.userRank ?? "--"}</div>
+                {data?.userScore !== null && data?.userScore !== undefined && (
+                  <p className="text-sm text-muted-foreground">{data.userScore} pts</p>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
@@ -222,15 +268,30 @@ export default function LeaderboardPage() {
 
       {/* Leaderboard Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Standings</CardTitle>
-          <CardDescription>
-            Live rankings updated after each game
-            {data?.actualTiebreaker != null
-              ? ` · Ties broken by closest tiebreaker to the actual championship total (${data.actualTiebreaker})`
-              : " · Ties are broken by the tiebreaker once the championship is final"}
-          </CardDescription>
+        <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:space-y-0">
+          <div className="space-y-1.5">
+            <CardTitle>Standings</CardTitle>
+            <CardDescription>
+              {liveMode ? "Live projection: ranked as if every game in progress ended now" : "Final results only, updated after each game"}
+              {data?.actualTiebreaker != null
+                ? ` · Ties broken by closest tiebreaker to the actual championship total (${data.actualTiebreaker})`
+                : " · Ties are broken by the tiebreaker once the championship is final"}
+            </CardDescription>
+          </div>
+          <StandingsToggle mode={mode} onChange={setMode} liveAvailable={anyLive} className="w-full md:w-56" />
         </CardHeader>
+        {liveMode && (
+          <div className="mx-6 mb-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-red-600" />
+            <span>
+              {liveGames.length
+                ? `Live: ${liveGames.map((g) => `${g.teams[0].name}–${g.teams[1].name} (${g.state === "half" ? "Half" : g.detail})`).join(", ")}. Not official until games go final.`
+                : live.loading
+                  ? "Loading live scores…"
+                  : "No games in progress right now, so live matches the official standings."}
+            </span>
+          </div>
+        )}
         <CardContent>
           {leaderboard.length === 0 ? (
             <div className="text-center py-12">
@@ -260,10 +321,12 @@ export default function LeaderboardPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10 px-2">Rank</TableHead>
+                    {showLive && <TableHead className="w-12 px-1">Move</TableHead>}
                     <TableHead className="max-w-[140px] truncate">Name</TableHead>
                     <TableHead className="hidden md:table-cell">Bracket</TableHead>
                     <TableHead className="text-right hidden md:table-cell">Tiebreaker</TableHead>
-                    <TableHead className="text-right w-16 px-2">Score</TableHead>
+                    {showLive && <TableHead className="text-right hidden md:table-cell w-20">Tonight</TableHead>}
+                    <TableHead className="text-right w-16 px-2">{showLive ? "Live" : "Score"}</TableHead>
                     <TableHead className="w-8 px-1"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -283,6 +346,11 @@ export default function LeaderboardPage() {
                         {getRankIcon(entry.rank)}
                       </div>
                     </TableCell>
+                    {showLive && (
+                      <TableCell className="px-1">
+                        <Movement by={entry.move ?? 0} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium max-w-[140px]">
                       <div className="truncate">
                         <div className="flex items-center gap-1 truncate">
@@ -302,6 +370,11 @@ export default function LeaderboardPage() {
                     <TableCell className="text-right text-slate-500 hidden md:table-cell">
                       {entry.tiebreaker ?? "-"}
                     </TableCell>
+                    {showLive && (
+                      <TableCell className="text-right hidden md:table-cell">
+                        <span className={(entry.tonight ?? 0) >= 15 ? "font-semibold text-green-600" : "text-muted-foreground"}>+{entry.tonight ?? 0}</span>
+                      </TableCell>
+                    )}
                     <TableCell className="text-right px-2 w-16">
                       <span className="font-bold text-primary">
                         {entry.score}

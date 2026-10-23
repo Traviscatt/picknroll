@@ -73,6 +73,7 @@ export async function GET() {
     const totalPrize = paidCount * entryFee;
 
     return NextResponse.json({
+      poolId: poolMembership.poolId,
       entries,
       userRank,
       userScore,

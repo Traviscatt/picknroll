@@ -34,6 +34,17 @@
 - Entry fee, deadline, and PayPal/Venmo live on the Pool. Use `paymentDetails` (`src/lib/payment.ts`).
 - One-off TS scripts with the `@/` alias: `node scripts/run-ts.mjs <file.ts>`. Wrap in `npx sst shell --target Prisma --stage <stage> --` for DB access.
 
+## Game Center (live data)
+- `/game-center` reads `GET /api/live?poolId=&date=YYYYMMDD` (members only).
+  - `src/lib/live-service.ts` builds one shared payload per pool and day: ESPN scores mapped to bracket games (`bracketGameForSlots`), official + live standings, pool splits, and every bracket's total under each result of undecided games.
+  - It's memoized ~10 s per Lambda instance; ESPN days are cached in `src/lib/espn-live.ts`.
+- Personal numbers (verdicts, your rank, rooting, today's range) are computed in the browser with the pure helpers in `src/lib/live.ts`.
+- Clients poll every 15 s only while a game is live (`useLiveData`), and pause when the tab is hidden.
+- `/api/live/status` is public and CDN-cached (navbar dot).
+- Official standings still come from the 2-minute ESPN cron; Live = official + ESPN finals not yet recorded + current leaders.
+- The Official ⇄ Live choice is stored per device (`useStandingsMode`, localStorage `pnr.standingsMode`).
+- Status colors are fixed (never team-themed): LIVE red, halftime yellow, final gray. Result chips use neutral ink.
+
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).
 - Picks are stored as JSON in `Bracket.picksData` (team IDs like `east-1`, game IDs like `East-r1-g1`).

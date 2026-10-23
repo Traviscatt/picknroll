@@ -127,11 +127,6 @@ export default function AdminPoolsPage() {
       toast.error("Pool name is required");
       return;
     }
-    if (!newPoolDeadline) {
-      toast.error("Deadline is required");
-      return;
-    }
-
     setIsCreating(true);
     try {
       const response = await fetch("/api/pools", {
@@ -141,7 +136,7 @@ export default function AdminPoolsPage() {
           name: newPoolName,
           description: newPoolDescription || undefined,
           entryFee: parseFloat(newPoolFee) || 5,
-          deadline: new Date(newPoolDeadline).toISOString(),
+          deadline: newPoolDeadline ? new Date(newPoolDeadline).toISOString() : undefined,
           venmoHandle: newPoolVenmo || undefined,
           paypalLink: newPoolPaypal || undefined,
         }),
@@ -661,7 +656,7 @@ export default function AdminPoolsPage() {
                 id="pool-name"
                 value={newPoolName}
                 onChange={(e) => setNewPoolName(e.target.value)}
-                placeholder="March Madness 2026"
+                placeholder={`March Madness ${new Date().getMonth() >= 4 ? new Date().getFullYear() + 1 : new Date().getFullYear()}`}
               />
             </div>
             <div className="space-y-2">
@@ -687,13 +682,14 @@ export default function AdminPoolsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pool-deadline">Deadline *</Label>
+                <Label htmlFor="pool-deadline">Deadline</Label>
                 <Input
                   id="pool-deadline"
                   type="datetime-local"
                   value={newPoolDeadline}
                   onChange={(e) => setNewPoolDeadline(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">Leave blank to lock at the first Round 1 tip-off.</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

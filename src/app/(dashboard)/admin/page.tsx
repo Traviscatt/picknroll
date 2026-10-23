@@ -39,6 +39,7 @@ import {
   ChevronDown,
   ChevronUp,
   Medal,
+  GitBranch,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -272,6 +273,13 @@ export default function AdminDashboardPage() {
       icon: Users,
       href: "/admin/pools",
       color: "bg-green-500",
+    },
+    {
+      title: "Tournament",
+      description: "Import the bracket from ESPN, fix team names",
+      icon: GitBranch,
+      href: "/admin/tournament",
+      color: "bg-amber-500",
     },
     {
       title: "Enter Results",

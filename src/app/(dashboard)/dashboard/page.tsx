@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { getTeamName, getTeamInfo, getTeamLogo } from "@/lib/bracket-teams";
+import { useTournamentField } from "@/hooks/use-tournament-field";
+import { paymentDetails } from "@/lib/payment";
 import { MAX_POSSIBLE_SCORE } from "@/lib/scoring";
 import {
   Trophy,
@@ -46,6 +47,8 @@ interface Pool {
   name: string;
   inviteCode: string;
   entryFee: string;
+  paypalLink: string | null;
+  venmoHandle: string | null;
   deadline: string;
   _count: { brackets: number };
   members: { userId: string; role: string; user: { name: string } }[];
@@ -78,6 +81,7 @@ export default function DashboardPage() {
   const [pools, setPools] = useState<Pool[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [pickStats, setPickStats] = useState<PickStats | null>(null);
+  const { lookup } = useTournamentField();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -228,7 +232,7 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <p className="font-semibold text-sm">Pay Entry Fee</p>
-                    <p className="text-xs text-muted-foreground">$5.00 via PayPal or Venmo</p>
+                    <p className="text-xs text-muted-foreground">{paymentDetails(pools[0]).feeLabel} via PayPal or Venmo</p>
                   </div>
                   <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
                 </div>
@@ -316,7 +320,7 @@ export default function DashboardPage() {
                 <span className="text-sm font-medium text-slate-600">Payment</span>
                 <DollarSign className="h-4 w-4 text-team-secondary" />
               </div>
-              <div className="text-2xl font-bold mt-1">$5.00</div>
+              <div className="text-2xl font-bold mt-1">{paymentDetails(pools[0]).feeLabel}</div>
               <div className="text-xs text-muted-foreground mt-1">
                 {hasPaidBracket ? (
                   <Badge className="bg-green-500">Paid</Badge>
@@ -348,9 +352,9 @@ export default function DashboardPage() {
           <CardContent>
             <div className="space-y-3">
               {pickStats.championshipPicks.slice(0, 8).map((pick, i) => {
-                const name = getTeamName(pick.teamId);
-                const logo = getTeamLogo(pick.teamId);
-                const info = getTeamInfo(pick.teamId);
+                const name = lookup.name(pick.teamId);
+                const logo = lookup.logo(pick.teamId);
+                const info = lookup.get(pick.teamId);
                 const maxPct = pickStats.championshipPicks[0].percentage;
                 const barWidth = maxPct > 0 ? (pick.percentage / maxPct) * 100 : 0;
                 return (
@@ -580,7 +584,17 @@ export default function DashboardPage() {
                 </p>
                 <p className="text-lg font-bold text-yellow-800 mt-2">
                   <Clock className="h-4 w-4 inline mr-1" />
-                  Thursday, March 19, 2026 at 12:15 PM ET
+                  {pools[0]?.deadline
+                    ? new Date(pools[0].deadline).toLocaleString("en-US", {
+                        timeZone: "America/New_York",
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      }) + " ET"
+                    : "To be announced"}
                 </p>
               </div>
 

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
 import { getCurrentTournament, loadTournamentResults, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
+import { regionsForPool } from "@/lib/tournament-service";
 
 // GET /api/brackets/[id] - Get a single bracket
 export async function GET(
@@ -179,7 +180,7 @@ export async function PATCH(
     let picksData: string | undefined;
     const picksValidation = validatePicks(
       picks !== undefined ? picks : JSON.parse(existing.picksData || "[]"),
-      { requireComplete: isSubmitted }
+      { requireComplete: isSubmitted, regions: await regionsForPool(existing.poolId) }
     );
     if (!picksValidation.ok) {
       return NextResponse.json({ error: picksValidation.error }, { status: 400 });

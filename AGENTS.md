@@ -26,6 +26,14 @@
 - Bracket input is validated by `src/lib/bracket-validation.ts`; deadline checks always use the bracket's own pool.
 - Schema changes: `prisma db push` via `npx sst shell --target Prisma --stage <stage>` with `npx sst tunnel` running. Push to staging, then production, before deploying code that needs the change.
 
+## Tournament data
+- Teams come only from the DB. An admin imports the field from ESPN after Selection Sunday (Admin → Tournament: `src/lib/espn-field.ts` parses, `src/lib/tournament-import.ts` publishes).
+- Never hardcode teams, regions, years, fees, or deadlines. Read the field with `loadField` (server, `src/lib/tournament-service.ts`) or `useTournamentField` (client hook).
+- `Tournament.regions` is bracket order: the Final Four pairs regions[0] vs [1] and [2] vs [3]. Validation takes regions from the bracket's pool (`regionsForPool`).
+- A tournament locks once any bracket is submitted. Re-import then only updates names, logos, colors, records, and First Four results.
+- Entry fee, deadline, and PayPal/Venmo live on the Pool. Use `paymentDetails` (`src/lib/payment.ts`).
+- One-off TS scripts with the `@/` alias: `node scripts/run-ts.mjs <file.ts>`. Wrap in `npx sst shell --target Prisma --stage <stage> --` for DB access.
+
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).
 - Picks are stored as JSON in `Bracket.picksData` (team IDs like `east-1`, game IDs like `East-r1-g1`).

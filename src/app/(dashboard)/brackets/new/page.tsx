@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, useMemo, Suspense, useRef } from "react";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
@@ -47,10 +47,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { SCORING_RULES, getChoicesForRound } from "@/lib/scoring";
+import { useTournamentField } from "@/hooks/use-tournament-field";
+import { paymentDetails, type PoolPayment } from "@/lib/payment";
 
-// Sample teams for demonstration
-const REGIONS = ["East", "South", "West", "Midwest"] as const;
-type Region = (typeof REGIONS)[number];
+type Region = string;
 
 interface Team {
   id: string;
@@ -60,104 +60,6 @@ interface Team {
   logo: string;
   record?: string;
 }
-
-// 2026 NCAA Tournament Team Data with ESPN logo URLs
-// Regions: East, South, West, Midwest
-const TEAM_DATA: { name: string; logo: string; record: string }[] = [
-  // EAST REGION (seeds 1-16) — Washington, D.C.
-  { name: "Duke", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", record: "32-2" },
-  { name: "UConn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/41.png", record: "29-5" },
-  { name: "Michigan State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png", record: "25-7" },
-  { name: "Kansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png", record: "23-10" },
-  { name: "St. John's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2599.png", record: "28-6" },
-  { name: "Louisville", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png", record: "23-10" },
-  { name: "UCLA", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/26.png", record: "23-11" },
-  { name: "Ohio State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png", record: "21-12" },
-  { name: "TCU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png", record: "22-11" },
-  { name: "UCF", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2116.png", record: "21-11" },
-  { name: "South Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/58.png", record: "25-8" },
-  { name: "Northern Iowa", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2460.png", record: "23-12" },
-  { name: "Cal Baptist", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2856.png", record: "25-8" },
-  { name: "North Dakota State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2449.png", record: "27-7" },
-  { name: "Furman", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/231.png", record: "22-12" },
-  { name: "Siena", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2561.png", record: "23-11" },
-  // SOUTH REGION (seeds 1-16) — Houston
-  { name: "Florida", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png", record: "26-7" },
-  { name: "Houston", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/248.png", record: "28-6" },
-  { name: "Illinois", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png", record: "24-8" },
-  { name: "Nebraska", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/158.png", record: "26-6" },
-  { name: "Vanderbilt", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/238.png", record: "26-8" },
-  { name: "North Carolina", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png", record: "24-8" },
-  { name: "Saint Mary's", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2608.png", record: "27-5" },
-  { name: "Clemson", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/228.png", record: "24-10" },
-  { name: "Iowa", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2294.png", record: "21-12" },
-  { name: "Texas A&M", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png", record: "21-11" },
-  { name: "VCU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2670.png", record: "27-7" },
-  { name: "McNeese", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2377.png", record: "28-5" },
-  { name: "Troy", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2653.png", record: "22-11" },
-  { name: "Penn", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/219.png", record: "18-11" },
-  { name: "Idaho", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/70.png", record: "21-14" },
-  { name: "Prairie View A&M/Lehigh", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2504.png", record: "First Four" },
-  // WEST REGION (seeds 1-16) — San Jose
-  { name: "Arizona", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png", record: "32-2" },
-  { name: "Purdue", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2509.png", record: "27-8" },
-  { name: "Gonzaga", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2250.png", record: "30-3" },
-  { name: "Arkansas", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/8.png", record: "26-8" },
-  { name: "Wisconsin", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/275.png", record: "24-10" },
-  { name: "BYU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png", record: "23-11" },
-  { name: "Miami (FL)", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png", record: "25-8" },
-  { name: "Villanova", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/222.png", record: "24-8" },
-  { name: "Utah State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/328.png", record: "28-6" },
-  { name: "Missouri", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png", record: "20-12" },
-  { name: "Texas/NC State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png", record: "First Four" },
-  { name: "High Point", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2272.png", record: "30-4" },
-  { name: "Hawaii", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/62.png", record: "24-8" },
-  { name: "Kennesaw State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/338.png", record: "21-13" },
-  { name: "Queens", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/693.png", record: "21-13" },
-  { name: "LIU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2344.png", record: "24-10" },
-  // MIDWEST REGION (seeds 1-16) — Chicago
-  { name: "Michigan", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png", record: "31-3" },
-  { name: "Iowa State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png", record: "27-7" },
-  { name: "Virginia", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/258.png", record: "29-5" },
-  { name: "Alabama", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png", record: "23-9" },
-  { name: "Texas Tech", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png", record: "22-10" },
-  { name: "Tennessee", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png", record: "22-11" },
-  { name: "Kentucky", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/96.png", record: "21-13" },
-  { name: "Georgia", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png", record: "22-10" },
-  { name: "Saint Louis", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/139.png", record: "28-5" },
-  { name: "Santa Clara", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2541.png", record: "26-8" },
-  { name: "Miami (OH)/SMU", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/193.png", record: "First Four" },
-  { name: "Akron", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2006.png", record: "29-5" },
-  { name: "Hofstra", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2275.png", record: "24-10" },
-  { name: "Wright State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2750.png", record: "23-11" },
-  { name: "Tennessee State", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2634.png", record: "23-9" },
-  { name: "UMBC/Howard", logo: "https://a.espncdn.com/i/teamlogos/ncaa/500/2674.png", record: "First Four" },
-];
-
-// Generate sample teams for the bracket
-const generateSampleTeams = (): Team[] => {
-  const teams: Team[] = [];
-  let dataIndex = 0;
-
-  for (const region of REGIONS) {
-    for (let seed = 1; seed <= 16; seed++) {
-      const teamData = TEAM_DATA[dataIndex] || { name: `Team ${dataIndex + 1}`, logo: "", record: "0-0" };
-      teams.push({
-        id: `${region.toLowerCase()}-${seed}`,
-        name: teamData.name,
-        seed,
-        region,
-        logo: teamData.logo,
-        record: teamData.record,
-      });
-      dataIndex++;
-    }
-  }
-
-  return teams;
-};
-
-const SAMPLE_TEAMS = generateSampleTeams();
 
 interface GamePick {
   gameId: string;
@@ -177,7 +79,7 @@ function NewBracketContent() {
   const editId = searchParams.get("editId");
   const [bracketName, setBracketName] = useState("My Bracket");
   const [currentRound, setCurrentRound] = useState(1);
-  const [currentRegion, setCurrentRegion] = useState<Region>("South");
+  const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
   const [picks, setPicks] = useState<Map<string, GamePick>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
@@ -188,6 +90,16 @@ function NewBracketContent() {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [userPoolId, setUserPoolId] = useState<string | null>(null);
+  const [poolsLoaded, setPoolsLoaded] = useState(false);
+  const [poolPayment, setPoolPayment] = useState<PoolPayment | null>(null);
+  const payment = paymentDetails(poolPayment);
+  const { field, loading: fieldLoading, error: fieldError } = useTournamentField(userPoolId, poolsLoaded);
+  const REGIONS = useMemo(() => field?.tournament.regions ?? [], [field]);
+  const SAMPLE_TEAMS: Team[] = useMemo(
+    () => (field?.teams ?? []).map((t) => ({ id: t.id, name: t.name, seed: t.seed, region: t.region, logo: t.logo ?? "", record: t.record ?? undefined })),
+    [field]
+  );
+  const currentRegion: Region = selectedRegion ?? REGIONS[0] ?? "";
   const [viewMode, setViewMode] = useState<"card" | "bracket">("card");
   const [showSummary, setShowSummary] = useState(false);
   const slideDirection = useRef(0); // -1 = left, 1 = right
@@ -227,7 +139,7 @@ function NewBracketContent() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRound, currentRegion]);
+  }, [currentRound, currentRegion, REGIONS]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -250,10 +162,13 @@ function NewBracketContent() {
           const pools = await poolsRes.json();
           if (pools.length > 0) {
             setUserPoolId(pools[0].id);
+            setPoolPayment(pools[0]);
           }
         }
       } catch (error) {
         console.error("Failed to fetch initial data:", error);
+      } finally {
+        setPoolsLoaded(true);
       }
     };
 
@@ -265,7 +180,7 @@ function NewBracketContent() {
   // Load extracted bracket data from AI upload
   useEffect(() => {
     const fromUpload = searchParams.get("fromUpload");
-    if (fromUpload !== "true" || !session) return;
+    if (fromUpload !== "true" || !session || SAMPLE_TEAMS.length === 0) return;
 
     try {
       const stored = sessionStorage.getItem("extractedBracket");
@@ -274,7 +189,7 @@ function NewBracketContent() {
       const extracted = JSON.parse(stored);
       sessionStorage.removeItem("extractedBracket");
 
-      // Build a name->teamId lookup from SAMPLE_TEAMS
+      // Build a name->teamId lookup from the tournament field
       const teamLookup = new Map<string, string>();
       for (const t of SAMPLE_TEAMS) {
         teamLookup.set(t.name.toLowerCase(), t.id);
@@ -354,7 +269,7 @@ function NewBracketContent() {
     } catch (error) {
       console.error("Failed to load uploaded bracket data:", error);
     }
-  }, [session, searchParams]);
+  }, [session, searchParams, SAMPLE_TEAMS, REGIONS]);
 
   // Load existing bracket data when editing
   useEffect(() => {
@@ -405,6 +320,23 @@ function NewBracketContent() {
   }
 
   if (!session) return null;
+
+  if (!field) {
+    return fieldLoading || !poolsLoaded ? (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    ) : (
+      <Card className="max-w-lg mx-auto mt-12">
+        <CardHeader>
+          <CardTitle>The bracket isn&apos;t ready yet</CardTitle>
+          <CardDescription>
+            {fieldError ?? "Teams appear here once the tournament field is announced on Selection Sunday."}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   const getTeamsForRegion = (region: Region) => {
     return SAMPLE_TEAMS.filter((t) => t.region === region);
@@ -525,15 +457,11 @@ function NewBracketContent() {
         .filter((t): t is Team => t !== undefined);
     };
     
-    // Semifinal 1: East vs South - show all E8 picks from both regions
-    const semi1Teams = [...getE8Picks("East"), ...getE8Picks("South")];
-    
-    // Semifinal 2: West vs Midwest - show all E8 picks from both regions
-    const semi2Teams = [...getE8Picks("West"), ...getE8Picks("Midwest")];
-    
+    // Semifinals pair the tournament's regions in bracket order: [0] vs [1], [2] vs [3]
+    const [r1, r2, r3, r4] = REGIONS;
     return [
-      { game: 1, eligibleTeams: semi1Teams, label: "East vs South" },
-      { game: 2, eligibleTeams: semi2Teams, label: "West vs Midwest" },
+      { game: 1, eligibleTeams: [...getE8Picks(r1), ...getE8Picks(r2)], label: `${r1} vs ${r2}` },
+      { game: 2, eligibleTeams: [...getE8Picks(r3), ...getE8Picks(r4)], label: `${r3} vs ${r4}` },
     ];
   };
 
@@ -787,7 +715,7 @@ function NewBracketContent() {
     const oldIdx = REGIONS.indexOf(currentRegion);
     const newIdx = REGIONS.indexOf(region);
     slideDirection.current = newIdx > oldIdx ? 1 : -1;
-    setCurrentRegion(region);
+    setSelectedRegion(region);
     if (scrollTop) setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
   };
 
@@ -1177,8 +1105,8 @@ function NewBracketContent() {
           size="sm"
           onClick={() => {
             const link = document.createElement("a");
-            link.href = "/NCAA_Bracket2026.pdf";
-            link.download = "NCAA_Bracket2026.pdf";
+            link.href = `/api/tournament/blank-pdf${userPoolId ? `?poolId=${encodeURIComponent(userPoolId)}` : ""}`;
+            link.download = `${field.tournament.year}-bracket.pdf`;
             link.click();
           }}
         >
@@ -1193,7 +1121,7 @@ function NewBracketContent() {
           <Card>
             <CardContent className="pt-6">
               <DesktopBracketView
-                teams={SAMPLE_TEAMS}
+                regions={REGIONS}
                 picks={picks}
                 onPick={handlePick}
                 getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -1675,7 +1603,7 @@ function NewBracketContent() {
             <div className="bg-secondary border border-accent rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <DollarSign className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-foreground">Entry Fee: $5.00</span>
+                <span className="font-semibold text-foreground">Entry Fee: {payment.feeLabel}</span>
               </div>
               <p className="text-sm text-secondary-foreground">
                 Payment is required to be eligible for prizes.
@@ -1685,51 +1613,45 @@ function NewBracketContent() {
             <div className="space-y-3">
               <h4 className="font-medium">Payment Options:</h4>
               
-              {/* Venmo */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">V</span>
+              {payment.venmoUrl && (
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">V</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Venmo</p>
+                      <p className="text-sm text-slate-500">@{payment.venmoHandle}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">Venmo</p>
-                    <p className="text-sm text-slate-500">@Traviscatt</p>
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => window.open(payment.venmoUrl!, "_blank")}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Pay
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    window.open("https://www.venmo.com/u/Traviscatt", "_blank");
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Pay
-                </Button>
-              </div>
+              )}
 
-              {/* PayPal */}
-              <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-sm">P</span>
+              {payment.paypalUrl && (
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">P</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">PayPal</p>
+                      <p className="text-sm text-slate-500">{payment.paypalLabel}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">PayPal</p>
-                    <p className="text-sm text-slate-500">paypal.me/Traviscatt</p>
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => window.open(payment.paypalUrl!, "_blank")}>
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Pay
+                  </Button>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    window.open("https://paypal.me/Traviscatt/5", "_blank");
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Pay
-                </Button>
-              </div>
+              )}
+
+              {!payment.venmoUrl && !payment.paypalUrl && (
+                <p className="text-sm text-slate-500">Ask the pool admin how to pay.</p>
+              )}
             </div>
 
             <p className="text-xs text-slate-500 text-center">

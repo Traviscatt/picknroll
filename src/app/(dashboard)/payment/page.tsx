@@ -15,16 +15,23 @@ import {
   Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { paymentDetails, type PoolPayment } from "@/lib/payment";
 
 export default function PaymentPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [hasPaid, setHasPaid] = useState(false);
+  const [pool, setPool] = useState<PoolPayment | null | undefined>(undefined);
+  const payment = paymentDetails(pool);
 
-  // Get payment links from environment
-  const paypalLink = process.env.NEXT_PUBLIC_PAYPAL_LINK || "https://paypal.me/Traviscatt";
-  const venmoUsername = process.env.NEXT_PUBLIC_VENMO_USERNAME || "Traviscatt";
-  const entryFee = process.env.NEXT_PUBLIC_ENTRY_FEE || "5.00";
+  // Fee and payment links come from the user's pool
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/pools")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((pools: PoolPayment[]) => setPool(pools[0] ?? null))
+      .catch(() => setPool(null));
+  }, [session]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -33,7 +40,8 @@ export default function PaymentPage() {
   }, [status, router]);
 
   const handleCopyVenmo = () => {
-    navigator.clipboard.writeText(venmoUsername);
+    if (!payment.venmoHandle) return;
+    navigator.clipboard.writeText(payment.venmoHandle);
     toast.success("Venmo username copied!");
   };
 
@@ -43,7 +51,7 @@ export default function PaymentPage() {
     toast.success("Payment marked as pending! Admin will confirm shortly.");
   };
 
-  if (status === "loading") {
+  if (status === "loading" || (session && pool === undefined)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -75,12 +83,12 @@ export default function PaymentPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-slate-600">Entry Fee</span>
-              <span className="font-semibold">${entryFee}</span>
+              <span className="font-semibold">{payment.feeLabel}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-lg">
               <span className="font-semibold">Total Due</span>
-              <span className="font-bold text-primary">${entryFee}</span>
+              <span className="font-bold text-primary">{payment.feeLabel}</span>
             </div>
           </div>
 
@@ -98,6 +106,7 @@ export default function PaymentPage() {
       {/* Payment Options */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* PayPal */}
+        {payment.paypalUrl && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">PayPal</CardTitle>
@@ -115,7 +124,7 @@ export default function PaymentPage() {
               disabled={hasPaid}
             >
               <a
-                href={`${paypalLink}/${entryFee}`}
+                href={payment.paypalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -128,8 +137,10 @@ export default function PaymentPage() {
             </p>
           </CardContent>
         </Card>
+        )}
 
         {/* Venmo */}
+        {payment.venmoUrl && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Venmo</CardTitle>
@@ -143,7 +154,7 @@ export default function PaymentPage() {
             </div>
             <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
               <Smartphone className="h-4 w-4 text-slate-500" />
-              <span className="font-mono text-sm flex-1">@{venmoUsername}</span>
+              <span className="font-mono text-sm flex-1">@{payment.venmoHandle}</span>
               <Button variant="ghost" size="sm" onClick={handleCopyVenmo}>
                 <Copy className="h-4 w-4" />
               </Button>
@@ -155,7 +166,7 @@ export default function PaymentPage() {
               disabled={hasPaid}
             >
               <a
-                href={`https://www.venmo.com/u/${venmoUsername}?txn=pay&amount=${entryFee}&note=PickNRoll%20Entry%20Fee`}
+                href={payment.venmoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -168,6 +179,14 @@ export default function PaymentPage() {
             </p>
           </CardContent>
         </Card>
+        )}
+        {!payment.paypalUrl && !payment.venmoUrl && (
+          <Card className="md:col-span-2">
+            <CardContent className="pt-6 text-sm text-slate-600">
+              Payment options haven&apos;t been set up for this pool yet. Check with the pool admin.
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Confirm Payment */}

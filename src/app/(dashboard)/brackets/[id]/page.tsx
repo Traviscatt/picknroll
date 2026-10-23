@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { getTeamName, getTeamInfo, getTeamLogo, REGIONS } from "@/lib/bracket-teams";
+import { useTournamentField } from "@/hooks/use-tournament-field";
 
 interface PickData {
   gameId: string;
@@ -49,6 +49,7 @@ interface CompletedGame {
 
 interface Bracket {
   id: string;
+  poolId: string | null;
   name: string;
   entryName: string;
   status: "DRAFT" | "SUBMITTED" | "PAID";
@@ -86,10 +87,13 @@ export default function BracketDetailPage() {
   const [bracket, setBracket] = useState<Bracket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("East");
+  const [selectedTab, setActiveTab] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
   const [gamePicks, setGamePicks] = useState<Record<string, Record<string, number>>>({});
+  const { lookup, loading: fieldLoading } = useTournamentField(bracket?.poolId ?? null, !!bracket);
+  const REGIONS = lookup.regions;
+  const activeTab = selectedTab ?? REGIONS[0] ?? "Final Four";
 
   const handleDownloadPdf = async () => {
     setIsDownloading(true);
@@ -183,7 +187,7 @@ export default function BracketDetailPage() {
     }
   }, [session, bracketId, router]);
 
-  if (status === "loading" || isLoading) {
+  if (status === "loading" || isLoading || fieldLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -245,9 +249,9 @@ export default function BracketDetailPage() {
   };
 
   const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false, showEliminated: boolean = true, pickPct?: number) => {
-    const name = getTeamName(teamId);
-    const info = getTeamInfo(teamId);
-    const logo = getTeamLogo(teamId);
+    const name = lookup.name(teamId);
+    const info = lookup.get(teamId);
+    const logo = lookup.logo(teamId);
     const imgSize = size === "md" ? 24 : 18;
     const isEliminated = showEliminated && eliminatedTeams.has(teamId);
     return (

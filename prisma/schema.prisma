@@ -141,6 +141,8 @@ model Tournament {
   // Admin override for the championship combined score used to break ties
   // (defaults to the final championship score when null)
   actualTiebreaker Int?
+  // The four regions in bracket order. The Final Four pairs regions[0] vs [1] and [2] vs [3].
+  regions String[] @default([])
 
   pools Pool[]
   games Game[]
@@ -148,22 +150,31 @@ model Tournament {
 }
 
 model Team {
-  id        String  @id @default(cuid())
-  name      String
-  shortName String
-  espnId    String? @unique
-  logo      String?
+  id             String  @id @default(cuid())
+  name           String  // Full name, e.g. "Duke Blue Devils"
+  shortName      String  // Abbreviation, e.g. "DUKE"
+  school         String? // Name shown in brackets, e.g. "Duke", "Miami (FL)"
+  espnId         String? @unique
+  logo           String?
+  color          String? // Hex without "#", from ESPN
+  alternateColor String?
 
-  tournamentEntries TournamentTeam[]
+  tournamentEntries TournamentTeam[] @relation("EntryTeam")
+  playInEntries     TournamentTeam[] @relation("PlayInTeam")
 }
 
+// A bracket slot (region + seed) in one tournament
 model TournamentTeam {
-  id     String @id @default(cuid())
+  id     String  @id @default(cuid())
   seed   Int
   region String
+  record String? // Season record at selection, e.g. "32-2"
 
-  team         Team       @relation(fields: [teamId], references: [id])
+  team         Team       @relation("EntryTeam", fields: [teamId], references: [id])
   teamId       String
+  // First Four opponent while the play-in game is undecided; cleared once the winner is known
+  playInTeam   Team?      @relation("PlayInTeam", fields: [playInTeamId], references: [id])
+  playInTeamId String?
   tournament   Tournament @relation(fields: [tournamentId], references: [id])
   tournamentId String
 

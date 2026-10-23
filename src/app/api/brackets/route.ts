@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
+import { regionsForPool } from "@/lib/tournament-service";
 
 // GET /api/brackets - Get all brackets for the current user
 export async function GET() {
@@ -92,7 +93,7 @@ export async function POST(request: Request) {
     }
 
     const isSubmitted = status === "SUBMITTED";
-    const picksValidation = validatePicks(picks ?? [], { requireComplete: isSubmitted });
+    const picksValidation = validatePicks(picks ?? [], { requireComplete: isSubmitted, regions: await regionsForPool(poolId) });
     if (!picksValidation.ok) {
       return NextResponse.json({ error: picksValidation.error }, { status: 400 });
     }

@@ -4,12 +4,14 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { getCurrentTournament } from "@/lib/scoring-service";
 
 const createPoolSchema = z.object({
   name: z.string().min(2, "Pool name must be at least 2 characters"),
   description: z.string().optional(),
   entryFee: z.number().min(0).default(5),
-  deadline: z.string().datetime(),
+  // Defaults to the tournament's first Round 1 tip-off
+  deadline: z.string().datetime().optional(),
   paypalLink: z.string().optional(),
   venmoHandle: z.string().optional(),
 });
@@ -87,20 +89,13 @@ export async function POST(req: NextRequest) {
     // Generate unique invite code
     const inviteCode = nanoid(8).toUpperCase();
 
-    // Get or create a tournament (for now, create a default 2026 tournament)
-    let tournament = await db.tournament.findFirst({
-      where: { year: 2026 },
-    });
-
+    // Pools belong to the current tournament, which an admin imports from ESPN (Admin → Tournament)
+    const tournament = await getCurrentTournament();
     if (!tournament) {
-      tournament = await db.tournament.create({
-        data: {
-          name: "NCAA Tournament 2026",
-          year: 2026,
-          startDate: new Date("2026-03-19"),
-          endDate: new Date("2026-04-06"),
-        },
-      });
+      return NextResponse.json(
+        { error: "There's no tournament yet. Import it first under Admin → Tournament." },
+        { status: 400 }
+      );
     }
 
     const pool = await db.pool.create({
@@ -109,7 +104,7 @@ export async function POST(req: NextRequest) {
         description: data.description,
         entryFee: data.entryFee,
         inviteCode,
-        deadline: new Date(data.deadline),
+        deadline: data.deadline ? new Date(data.deadline) : tournament.startDate,
         paypalLink: data.paypalLink,
         venmoHandle: data.venmoHandle,
         tournamentId: tournament.id,

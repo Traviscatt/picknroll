@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { R1_SEED_PAIRS, REGIONS, TOTAL_BRACKET_GAMES, validatePicks, type BracketPick } from "@/lib/bracket-validation";
+import { R1_SEED_PAIRS, TOTAL_BRACKET_GAMES, validatePicks as validate, type BracketPick } from "@/lib/bracket-validation";
+
+const REGIONS = ["East", "South", "West", "Midwest"];
+const validatePicks = (input: unknown, opts: { requireComplete: boolean }) => validate(input, { ...opts, regions: REGIONS });
 
 // A complete, valid bracket where the higher seed always wins
 function chalkBracket(): BracketPick[] {
@@ -58,5 +61,19 @@ describe("validatePicks", () => {
   it("strips unknown fields", () => {
     const result = validatePicks([{ gameId: "East-r1-g1", round: 1, choices: ["east-1"], extra: "x" }], { requireComplete: false });
     expect(result.ok && result.picks[0]).toEqual({ gameId: "East-r1-g1", round: 1, choices: ["east-1"] });
+  });
+
+  it("uses the tournament's regions and Final Four pairing", () => {
+    // Same bracket, but this year East meets West and South meets Midwest
+    const picks = chalkBracket();
+    const regions = ["East", "West", "South", "Midwest"];
+    expect(validate(picks, { requireComplete: true, regions }).ok).toBe(false);
+    picks.find((p) => p.gameId === "final-four-r5-g1")!.choices = ["east-1", "west-1", "east-2", "west-2"];
+    picks.find((p) => p.gameId === "final-four-r5-g2")!.choices = ["south-1", "midwest-1", "south-2", "midwest-2"];
+    expect(validate(picks, { requireComplete: true, regions }).ok).toBe(true);
+  });
+
+  it("rejects picks when the tournament has no bracket yet", () => {
+    expect(validate([], { requireComplete: false, regions: [] }).ok).toBe(false);
   });
 });

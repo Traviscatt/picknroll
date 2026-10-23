@@ -83,11 +83,7 @@ export default $config({
         NEXTAUTH_SECRET: nextAuthSecret.value,
         GOOGLE_API_KEY: googleApiKey.value,
         FROM_EMAIL: `Pick N Roll <noreply@${siteDomain}>`,
-        // Public payment details shown on /payment (same values as the former Vercel production env).
-        // Set explicitly so a local .env can't override them at build time.
-        NEXT_PUBLIC_PAYPAL_LINK: "https://paypal.me/Traviscatt",
-        NEXT_PUBLIC_VENMO_USERNAME: "Traviscatt",
-        NEXT_PUBLIC_ENTRY_FEE: "5.00",
+        // Entry fee and PayPal/Venmo details live on each pool (Admin → Pools), not in the environment.
       },
     });
 

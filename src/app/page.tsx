@@ -23,6 +23,11 @@ export default async function Home() {
     redirect("/dashboard");
   }
 
+  // No database access here: the landing page must not wake the (auto-paused) database for anonymous visitors.
+  // The next tournament is in March; after the season ends (May onward) that's next year.
+  const now = new Date();
+  const tournamentYear = now.getMonth() >= 4 ? now.getFullYear() + 1 : now.getFullYear();
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       <Navbar />
@@ -34,7 +39,7 @@ export default async function Home() {
           <div className="mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-medium text-primary">
               <Trophy className="h-4 w-4" />
-              NCAA Tournament 2026
+              NCAA Tournament {tournamentYear}
             </div>
             <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
               Make Every Pick{" "}
@@ -259,8 +264,7 @@ export default async function Home() {
             Ready to Dominate Your Pool?
           </h2>
           <p className="text-primary-foreground/80 text-lg mb-8 max-w-xl mx-auto">
-            Entry fee: <span className="font-bold text-white">$5.00</span> •
-            Deadline: Thursday at Noon (Before Tipoff)
+            Entry fee and deadline are set by your pool admin. Picks lock at the first tip-off.
           </p>
           <div className="flex items-center justify-center">
             <Button

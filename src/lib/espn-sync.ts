@@ -112,17 +112,33 @@ export async function syncEspnResults({
   tournament ??= await db.tournament.findFirst({ orderBy: { year: "desc" } });
   if (!tournament) return { status: "no-tournament" };
 
-  // Build ESPN ID -> TournamentTeam ID map
   const tournamentTeams = await db.tournamentTeam.findMany({
     where: { tournamentId: tournament.id },
-    include: { team: true },
+    include: { team: true, playInTeam: true },
   });
+
+  // First Four: a completed play-in game puts its winner in the slot. Done first so Round 1 results
+  // in the same batch can be matched (scheduled runs fetch the newest dates first).
+  let gamesUpdated = 0;
+  for (const slot of tournamentTeams) {
+    if (!slot.playInTeam) continue;
+    const pair = [slot.team.espnId, slot.playInTeam.espnId];
+    const event = events.find((e) => e.competitors.every((c) => pair.includes(c.espnTeamId)));
+    const winner = event?.competitors.find((c) => c.winner)?.espnTeamId;
+    if (!winner) continue;
+    const winnerTeam = winner === slot.team.espnId ? slot.team : slot.playInTeam;
+    await db.tournamentTeam.update({ where: { id: slot.id }, data: { teamId: winnerTeam.id, playInTeamId: null } });
+    slot.team = winnerTeam;
+    slot.playInTeam = null;
+    gamesUpdated++;
+  }
+
+  // Build ESPN ID -> TournamentTeam ID map
   const espnToTournamentTeam = new Map<string, string>();
   for (const tt of tournamentTeams) {
     if (tt.team.espnId) espnToTournamentTeam.set(tt.team.espnId, tt.id);
   }
 
-  let gamesUpdated = 0;
   for (const event of events) {
     const [c1, c2] = event.competitors;
     const tt1Id = espnToTournamentTeam.get(c1.espnTeamId);

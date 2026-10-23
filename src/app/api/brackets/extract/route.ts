@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getCurrentTournament } from "@/lib/scoring-service";
+import { loadField } from "@/lib/tournament-service";
 
 export async function POST(request: Request) {
   try {
@@ -40,9 +42,22 @@ export async function POST(request: Request) {
       mimeType = file.type;
     }
 
+    const tournament = await getCurrentTournament();
+    const field = tournament ? await loadField(tournament.id) : null;
+    if (!field || field.tournament.regions.length !== 4) {
+      return NextResponse.json({ error: "The tournament bracket isn't set up yet." }, { status: 400 });
+    }
+    const { regions, year } = field.tournament;
+    const teamList = regions
+      .map((region) => `${region}: ${field.teams.filter((t) => t.region === region).map((t) => `(${t.seed}) ${t.name}`).join(", ")}`)
+      .join("\n");
+    const [firstRegion, ...otherRegions] = regions;
+
     const prompt = `You are analyzing an NCAA March Madness bracket. Extract all the picks from this bracket.
 
-The 2025 NCAA Tournament has 4 regions: South, West, East, and Midwest.
+The ${year} NCAA Tournament has 4 regions: ${regions.join(", ")}.
+Use these exact team names (seed in parentheses):
+${teamList}
 
 For each region, identify the teams that were picked to advance through each round:
 - Round of 64 (First Round): 8 games per region
@@ -59,15 +74,13 @@ Then identify:
 Return the data as JSON in this exact format:
 {
   "regions": {
-    "South": {
+    "${firstRegion}": {
       "round1": ["team1", "team2", ...8 winners],
       "round2": ["team1", "team2", ...4 winners],
       "sweet16": ["team1", "team2"],
       "elite8": ["regional champion"]
     },
-    "West": { ...same structure },
-    "East": { ...same structure },
-    "Midwest": { ...same structure }
+${otherRegions.map((r) => `    "${r}": { ...same structure }`).join(",\n")}
   },
   "finalFour": {
     "semifinal1": { "teams": ["team1", "team2"], "winner": "team" },

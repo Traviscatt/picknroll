@@ -20,10 +20,11 @@ interface GamePick {
   choices: string[];
 }
 
-type Region = "South" | "West" | "East" | "Midwest";
+type Region = string;
 
 interface DesktopBracketViewProps {
-  teams: Team[];
+  /** Regions in bracket order: [0] and [1] on the left (Final Four game 1), [2] and [3] on the right */
+  regions: string[];
   picks: Map<string, GamePick>;
   onPick: (gameId: string, teamId: string, choiceRank: number) => void;
   getEligibleTeamsForGame: (round: number, region: Region, gameNum: number) => Team[];
@@ -200,8 +201,7 @@ function RegionBracket({
 
 /* ── Main desktop bracket view ────────────────────── */
 export function DesktopBracketView({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  teams,
+  regions,
   picks,
   onPick,
   getEligibleTeamsForGame,
@@ -228,10 +228,10 @@ export function DesktopBracketView({
     <div className="w-full overflow-x-auto bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
       <div className="min-w-[1200px] p-4">
 
-        {/* Top half: East (L→R)  ·  West (R←L) → FF Game 1 */}
+        {/* Top half: regions[0] (L→R)  ·  regions[2] (R←L) */}
         <div className="flex justify-between items-start">
           <RegionBracket
-            region="East"
+            region={regions[0]}
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -239,7 +239,7 @@ export function DesktopBracketView({
           />
 
           <RegionBracket
-            region="West"
+            region={regions[2]}
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -247,12 +247,11 @@ export function DesktopBracketView({
           />
         </div>
 
-        {/* Center row: FF(East vs South) · Championship · FF(West vs Midwest) */}
+        {/* Center row: FF game 1 (left regions) · Championship · FF game 2 (right regions) */}
         <div className="flex items-center justify-center gap-6 py-4 -mt-14">
-          {/* FF Game 1: East vs South */}
           <div className="flex flex-col items-center">
             <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">East vs South</div>
+            <div className="text-[9px] text-slate-500 mb-1">{regions[0]} vs {regions[1]}</div>
             {renderCenterSlot("final-four-r5-g1", 5, getFinalFourTeams(1))}
           </div>
 
@@ -263,18 +262,17 @@ export function DesktopBracketView({
             {renderCenterSlot("championship-r6-g1", 6, getChampionshipTeams())}
           </div>
 
-          {/* FF Game 2: West vs Midwest */}
           <div className="flex flex-col items-center">
             <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">West vs Midwest</div>
+            <div className="text-[9px] text-slate-500 mb-1">{regions[2]} vs {regions[3]}</div>
             {renderCenterSlot("final-four-r5-g2", 5, getFinalFourTeams(2))}
           </div>
         </div>
 
-        {/* Bottom half: South (L→R)  ·  Midwest (R←L) → FF Game 2 */}
+        {/* Bottom half: regions[1] (L→R)  ·  regions[3] (R←L) */}
         <div className="flex justify-between items-start -mt-14">
           <RegionBracket
-            region="South"
+            region={regions[1]}
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}
@@ -282,7 +280,7 @@ export function DesktopBracketView({
           />
 
           <RegionBracket
-            region="Midwest"
+            region={regions[3]}
             picks={picks}
             onPick={onPick}
             getEligibleTeamsForGame={getEligibleTeamsForGame}

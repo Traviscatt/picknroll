@@ -1,0 +1,2416 @@
+{
+ "events": [
+  {
+   "id": "401856434",
+   "date": "2026-03-18T01:29Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - First Four"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": false,
+       "score": "66",
+       "records": [
+        {
+         "summary": "20-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "152",
+        "location": "NC State",
+        "shortDisplayName": "NC State",
+        "displayName": "NC State Wolfpack",
+        "abbreviation": "NCSU",
+        "color": "cc0000",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/152.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": true,
+       "score": "68",
+       "records": [
+        {
+         "summary": "19-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "251",
+        "location": "Texas",
+        "shortDisplayName": "Texas",
+        "displayName": "Texas Longhorns",
+        "abbreviation": "TEX",
+        "color": "af5c37",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856435",
+   "date": "2026-03-17T22:40Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - First Four"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": true,
+       "score": "86",
+       "records": [
+        {
+         "summary": "24-10",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "47",
+        "location": "Howard",
+        "shortDisplayName": "Howard",
+        "displayName": "Howard Bison",
+        "abbreviation": "HOW",
+        "color": "003a63",
+        "alternateColor": "e51937",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/47.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "83",
+       "records": [
+        {
+         "summary": "24-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2378",
+        "location": "UMBC",
+        "shortDisplayName": "UMBC",
+        "displayName": "UMBC Retrievers",
+        "abbreviation": "UMBC",
+        "color": "000000",
+        "alternateColor": "ad860a",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2378.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856436",
+   "date": "2026-03-19T01:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - First Four"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": false,
+       "score": "79",
+       "records": [
+        {
+         "summary": "20-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2567",
+        "location": "SMU",
+        "shortDisplayName": "SMU",
+        "displayName": "SMU Mustangs",
+        "abbreviation": "SMU",
+        "color": "a80000",
+        "alternateColor": "0033a1",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2567.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": true,
+       "score": "89",
+       "records": [
+        {
+         "summary": "32-1",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "193",
+        "location": "Miami (OH)",
+        "shortDisplayName": "Miami OH",
+        "displayName": "Miami (OH) RedHawks",
+        "abbreviation": "M-OH",
+        "color": "c41230",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/193.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856437",
+   "date": "2026-03-18T22:40Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - First Four"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "55",
+       "records": [
+        {
+         "summary": "18-17",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2329",
+        "location": "Lehigh",
+        "shortDisplayName": "Lehigh",
+        "displayName": "Lehigh Mountain Hawks",
+        "abbreviation": "LEH",
+        "color": "6c2b2a",
+        "alternateColor": "b69e70",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2329.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": true,
+       "score": "67",
+       "records": [
+        {
+         "summary": "19-17",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2504",
+        "location": "Prairie View A&M",
+        "shortDisplayName": "Prairie View",
+        "displayName": "Prairie View A&M Panthers",
+        "abbreviation": "PV",
+        "color": "582c83",
+        "alternateColor": "eaaa00",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2504.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856478",
+   "date": "2026-03-19T19:00Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 1
+       },
+       "winner": true,
+       "score": "71",
+       "records": [
+        {
+         "summary": "33-2",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "150",
+        "location": "Duke",
+        "shortDisplayName": "Duke",
+        "displayName": "Duke Blue Devils",
+        "abbreviation": "DUKE",
+        "color": "00539b",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "65",
+       "records": [
+        {
+         "summary": "23-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2561",
+        "location": "Siena",
+        "shortDisplayName": "Siena",
+        "displayName": "Siena Saints",
+        "abbreviation": "SIE",
+        "color": "037961",
+        "alternateColor": "eea60f",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2561.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856486",
+   "date": "2026-03-19T23:30Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 1
+       },
+       "winner": true,
+       "score": "101",
+       "records": [
+        {
+         "summary": "32-3",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "130",
+        "location": "Michigan",
+        "shortDisplayName": "Michigan",
+        "displayName": "Michigan Wolverines",
+        "abbreviation": "MICH",
+        "color": "00274c",
+        "alternateColor": "ffcb05",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "80",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "47",
+        "location": "Howard",
+        "shortDisplayName": "Howard",
+        "displayName": "Howard Bison",
+        "abbreviation": "HOW",
+        "color": "003a63",
+        "alternateColor": "e51937",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/47.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856493",
+   "date": "2026-03-20T02:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 2
+       },
+       "winner": true,
+       "score": "78",
+       "records": [
+        {
+         "summary": "29-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "248",
+        "location": "Houston",
+        "shortDisplayName": "Houston",
+        "displayName": "Houston Cougars",
+        "abbreviation": "HOU",
+        "color": "c8102e",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/248.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 15
+       },
+       "winner": false,
+       "score": "47",
+       "records": [
+        {
+         "summary": "21-15",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "70",
+        "location": "Idaho",
+        "shortDisplayName": "Idaho",
+        "displayName": "Idaho Vandals",
+        "abbreviation": "IDHO",
+        "color": "000000",
+        "alternateColor": "8c6e4a",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/70.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856483",
+   "date": "2026-03-19T20:27Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 3
+       },
+       "winner": true,
+       "score": "92",
+       "records": [
+        {
+         "summary": "26-7",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "127",
+        "location": "Michigan State",
+        "shortDisplayName": "Michigan St",
+        "displayName": "Michigan State Spartans",
+        "abbreviation": "MSU",
+        "color": "173f35",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/127.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 14
+       },
+       "winner": false,
+       "score": "67",
+       "records": [
+        {
+         "summary": "27-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2449",
+        "location": "North Dakota State",
+        "shortDisplayName": "N Dakota St",
+        "displayName": "North Dakota State Bison",
+        "abbreviation": "NDSU",
+        "color": "01402A",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2449.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856491",
+   "date": "2026-03-20T01:55Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 3
+       },
+       "winner": true,
+       "score": "105",
+       "records": [
+        {
+         "summary": "25-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "356",
+        "location": "Illinois",
+        "shortDisplayName": "Illinois",
+        "displayName": "Illinois Fighting Illini",
+        "abbreviation": "ILL",
+        "color": "ff5f05",
+        "alternateColor": "13294b",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/356.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 14
+       },
+       "winner": false,
+       "score": "70",
+       "records": [
+        {
+         "summary": "18-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "219",
+        "location": "Pennsylvania",
+        "shortDisplayName": "Penn",
+        "displayName": "Pennsylvania Quakers",
+        "abbreviation": "PENN",
+        "color": "082A74",
+        "alternateColor": "a6163d",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/219.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856485",
+   "date": "2026-03-20T02:24Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 3
+       },
+       "winner": true,
+       "score": "73",
+       "records": [
+        {
+         "summary": "31-3",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2250",
+        "location": "Gonzaga",
+        "shortDisplayName": "Gonzaga",
+        "displayName": "Gonzaga Bulldogs",
+        "abbreviation": "GONZ",
+        "color": "041e42",
+        "alternateColor": "c8102e",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2250.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 14
+       },
+       "winner": false,
+       "score": "64",
+       "records": [
+        {
+         "summary": "21-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "338",
+        "location": "Kennesaw State",
+        "shortDisplayName": "Kennesaw St",
+        "displayName": "Kennesaw State Owls",
+        "abbreviation": "KENN",
+        "color": "fdbb30",
+        "alternateColor": "0b1315",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/338.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856489",
+   "date": "2026-03-19T16:40Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 4
+       },
+       "winner": true,
+       "score": "76",
+       "records": [
+        {
+         "summary": "27-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "158",
+        "location": "Nebraska",
+        "shortDisplayName": "Nebraska",
+        "displayName": "Nebraska Cornhuskers",
+        "abbreviation": "NEB",
+        "color": "e31937",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/158.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 13
+       },
+       "winner": false,
+       "score": "47",
+       "records": [
+        {
+         "summary": "22-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2653",
+        "location": "Troy",
+        "shortDisplayName": "Troy",
+        "displayName": "Troy Trojans",
+        "abbreviation": "TROY",
+        "color": "862633",
+        "alternateColor": "b1b1b1",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2653.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856481",
+   "date": "2026-03-19T20:27Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 4
+       },
+       "winner": true,
+       "score": "97",
+       "records": [
+        {
+         "summary": "27-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "8",
+        "location": "Arkansas",
+        "shortDisplayName": "Arkansas",
+        "displayName": "Arkansas Razorbacks",
+        "abbreviation": "ARK",
+        "color": "a32136",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/8.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 13
+       },
+       "winner": false,
+       "score": "78",
+       "records": [
+        {
+         "summary": "24-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "62",
+        "location": "Hawai'i",
+        "shortDisplayName": "Hawai'i",
+        "displayName": "Hawai'i Rainbow Warriors",
+        "abbreviation": "HAW",
+        "color": "005737",
+        "alternateColor": "000000",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/62.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856480",
+   "date": "2026-03-19T17:50Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 5
+       },
+       "winner": false,
+       "score": "82",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "275",
+        "location": "Wisconsin",
+        "shortDisplayName": "Wisconsin",
+        "displayName": "Wisconsin Badgers",
+        "abbreviation": "WIS",
+        "color": "a00000",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/275.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 12
+       },
+       "winner": true,
+       "score": "83",
+       "records": [
+        {
+         "summary": "31-4",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2272",
+        "location": "High Point",
+        "shortDisplayName": "High Point",
+        "displayName": "High Point Panthers",
+        "abbreviation": "HPU",
+        "color": "330072",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2272.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856488",
+   "date": "2026-03-19T19:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 5
+       },
+       "winner": true,
+       "score": "78",
+       "records": [
+        {
+         "summary": "27-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "238",
+        "location": "Vanderbilt",
+        "shortDisplayName": "Vanderbilt",
+        "displayName": "Vanderbilt Commodores",
+        "abbreviation": "VAN",
+        "color": "000000",
+        "alternateColor": "cfae70",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/238.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 12
+       },
+       "winner": false,
+       "score": "68",
+       "records": [
+        {
+         "summary": "28-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2377",
+        "location": "McNeese",
+        "shortDisplayName": "McNeese",
+        "displayName": "McNeese Cowboys",
+        "abbreviation": "MCN",
+        "color": "00529C",
+        "alternateColor": "ffd204",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2377.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856482",
+   "date": "2026-03-19T17:30Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 6
+       },
+       "winner": true,
+       "score": "83",
+       "records": [
+        {
+         "summary": "24-10",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "97",
+        "location": "Louisville",
+        "shortDisplayName": "Louisville",
+        "displayName": "Louisville Cardinals",
+        "abbreviation": "LOU",
+        "color": "c9001f",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": false,
+       "score": "79",
+       "records": [
+        {
+         "summary": "25-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "58",
+        "location": "South Florida",
+        "shortDisplayName": "South Florida",
+        "displayName": "South Florida Bulls",
+        "abbreviation": "USF",
+        "color": "006747",
+        "alternateColor": "cfc493",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/58.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856490",
+   "date": "2026-03-19T22:50Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 6
+       },
+       "winner": false,
+       "score": "78",
+       "records": [
+        {
+         "summary": "24-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "153",
+        "location": "North Carolina",
+        "shortDisplayName": "North Carolina",
+        "displayName": "North Carolina Tar Heels",
+        "abbreviation": "UNC",
+        "color": "7bafd4",
+        "alternateColor": "13294b",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/153.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": true,
+       "score": "82",
+       "records": [
+        {
+         "summary": "28-7",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2670",
+        "location": "VCU",
+        "shortDisplayName": "VCU",
+        "displayName": "VCU Rams",
+        "abbreviation": "VCU",
+        "color": "ffaf00",
+        "alternateColor": "000000",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2670.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856484",
+   "date": "2026-03-19T23:35Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 6
+       },
+       "winner": false,
+       "score": "71",
+       "records": [
+        {
+         "summary": "23-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "252",
+        "location": "BYU",
+        "shortDisplayName": "BYU",
+        "displayName": "BYU Cougars",
+        "abbreviation": "BYU",
+        "color": "0047ba",
+        "alternateColor": "002e5d",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": true,
+       "score": "79",
+       "records": [
+        {
+         "summary": "20-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "251",
+        "location": "Texas",
+        "shortDisplayName": "Texas",
+        "displayName": "Texas Longhorns",
+        "abbreviation": "TEX",
+        "color": "af5c37",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856492",
+   "date": "2026-03-19T23:35Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 7
+       },
+       "winner": false,
+       "score": "50",
+       "records": [
+        {
+         "summary": "27-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2608",
+        "location": "Saint Mary's",
+        "shortDisplayName": "Saint Mary's",
+        "displayName": "Saint Mary's Gaels",
+        "abbreviation": "SMC",
+        "color": "d80024",
+        "alternateColor": "003057",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2608.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 10
+       },
+       "winner": true,
+       "score": "63",
+       "records": [
+        {
+         "summary": "22-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "245",
+        "location": "Texas A&M",
+        "shortDisplayName": "Texas A&M",
+        "displayName": "Texas A&M Aggies",
+        "abbreviation": "TA&M",
+        "color": "500000",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856479",
+   "date": "2026-03-19T16:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 8
+       },
+       "winner": false,
+       "score": "64",
+       "records": [
+        {
+         "summary": "21-13",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "194",
+        "location": "Ohio State",
+        "shortDisplayName": "Ohio State",
+        "displayName": "Ohio State Buckeyes",
+        "abbreviation": "OSU",
+        "color": "ba0c2f",
+        "alternateColor": "a8adb4",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 9
+       },
+       "winner": true,
+       "score": "66",
+       "records": [
+        {
+         "summary": "23-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2628",
+        "location": "TCU",
+        "shortDisplayName": "TCU",
+        "displayName": "TCU Horned Frogs",
+        "abbreviation": "TCU",
+        "color": "4d1979",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2628.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856487",
+   "date": "2026-03-20T02:10Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 8
+       },
+       "winner": false,
+       "score": "77",
+       "records": [
+        {
+         "summary": "22-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "61",
+        "location": "Georgia",
+        "shortDisplayName": "Georgia",
+        "displayName": "Georgia Bulldogs",
+        "abbreviation": "UGA",
+        "color": "ba0c2f",
+        "alternateColor": "2c2a29",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 9
+       },
+       "winner": true,
+       "score": "102",
+       "records": [
+        {
+         "summary": "29-5",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "139",
+        "location": "Saint Louis",
+        "shortDisplayName": "Saint Louis",
+        "displayName": "Saint Louis Billikens",
+        "abbreviation": "SLU",
+        "color": "00539C",
+        "alternateColor": "ebebeb",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/139.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856529",
+   "date": "2026-03-20T17:35Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 1
+       },
+       "winner": true,
+       "score": "92",
+       "records": [
+        {
+         "summary": "33-2",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "12",
+        "location": "Arizona",
+        "shortDisplayName": "Arizona",
+        "displayName": "Arizona Wildcats",
+        "abbreviation": "ARIZ",
+        "color": "cc0033",
+        "alternateColor": "003366",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/12.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "58",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "112358",
+        "location": "Long Island University",
+        "shortDisplayName": "Long Island",
+        "displayName": "Long Island University Sharks",
+        "abbreviation": "LIU",
+        "color": "50c9f7",
+        "alternateColor": "ffbf00",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/112358.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856523",
+   "date": "2026-03-21T01:25Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 1
+       },
+       "winner": true,
+       "score": "114",
+       "records": [
+        {
+         "summary": "27-7",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "57",
+        "location": "Florida",
+        "shortDisplayName": "Florida",
+        "displayName": "Florida Gators",
+        "abbreviation": "FLA",
+        "color": "0021a5",
+        "alternateColor": "fa4616",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 16
+       },
+       "winner": false,
+       "score": "55",
+       "records": [
+        {
+         "summary": "19-18",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2504",
+        "location": "Prairie View A&M",
+        "shortDisplayName": "Prairie View",
+        "displayName": "Prairie View A&M Panthers",
+        "abbreviation": "PV",
+        "color": "582c83",
+        "alternateColor": "eaaa00",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2504.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856524",
+   "date": "2026-03-20T19:07Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 2
+       },
+       "winner": true,
+       "score": "108",
+       "records": [
+        {
+         "summary": "28-7",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "66",
+        "location": "Iowa State",
+        "shortDisplayName": "Iowa State",
+        "displayName": "Iowa State Cyclones",
+        "abbreviation": "ISU",
+        "color": "ae192d",
+        "alternateColor": "ffc72a",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/66.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 15
+       },
+       "winner": false,
+       "score": "74",
+       "records": [
+        {
+         "summary": "23-10",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2634",
+        "location": "Tennessee State",
+        "shortDisplayName": "Tennessee St",
+        "displayName": "Tennessee State Tigers",
+        "abbreviation": "TNST",
+        "color": "171796",
+        "alternateColor": "f0f0f0",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2634.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856519",
+   "date": "2026-03-20T23:35Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 2
+       },
+       "winner": true,
+       "score": "104",
+       "records": [
+        {
+         "summary": "28-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2509",
+        "location": "Purdue",
+        "shortDisplayName": "Purdue",
+        "displayName": "Purdue Boilermakers",
+        "abbreviation": "PUR",
+        "color": "ceb888",
+        "alternateColor": "000000",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2509.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 15
+       },
+       "winner": false,
+       "score": "71",
+       "records": [
+        {
+         "summary": "21-14",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2511",
+        "location": "Queens University",
+        "shortDisplayName": "Queens",
+        "displayName": "Queens University Royals",
+        "abbreviation": "QUC",
+        "color": "192C66",
+        "alternateColor": "857040",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2511.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856497",
+   "date": "2026-03-21T02:31Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 2
+       },
+       "winner": true,
+       "score": "82",
+       "records": [
+        {
+         "summary": "30-5",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "41",
+        "location": "UConn",
+        "shortDisplayName": "UConn",
+        "displayName": "UConn Huskies",
+        "abbreviation": "CONN",
+        "color": "0c2340",
+        "alternateColor": "a2aaad",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/41.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 15
+       },
+       "winner": false,
+       "score": "71",
+       "records": [
+        {
+         "summary": "22-13",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "231",
+        "location": "Furman",
+        "shortDisplayName": "Furman",
+        "displayName": "Furman Paladins",
+        "abbreviation": "FUR",
+        "color": "582c83",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/231.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856526",
+   "date": "2026-03-20T17:50Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 3
+       },
+       "winner": true,
+       "score": "82",
+       "records": [
+        {
+         "summary": "30-5",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "258",
+        "location": "Virginia",
+        "shortDisplayName": "Virginia",
+        "displayName": "Virginia Cavaliers",
+        "abbreviation": "UVA",
+        "color": "232d4b",
+        "alternateColor": "f84c1e",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/258.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 14
+       },
+       "winner": false,
+       "score": "73",
+       "records": [
+        {
+         "summary": "23-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2750",
+        "location": "Wright State",
+        "shortDisplayName": "Wright St",
+        "displayName": "Wright State Raiders",
+        "abbreviation": "WRST",
+        "color": "cba052",
+        "alternateColor": "cba052",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2750.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856521",
+   "date": "2026-03-20T19:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 4
+       },
+       "winner": true,
+       "score": "90",
+       "records": [
+        {
+         "summary": "24-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "333",
+        "location": "Alabama",
+        "shortDisplayName": "Alabama",
+        "displayName": "Alabama Crimson Tide",
+        "abbreviation": "ALA",
+        "color": "9e1b32",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 13
+       },
+       "winner": false,
+       "score": "70",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2275",
+        "location": "Hofstra",
+        "shortDisplayName": "Hofstra",
+        "displayName": "Hofstra Pride",
+        "abbreviation": "HOF",
+        "color": "003594",
+        "alternateColor": "ffc72c",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2275.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856495",
+   "date": "2026-03-21T02:07Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 4
+       },
+       "winner": true,
+       "score": "68",
+       "records": [
+        {
+         "summary": "24-10",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2305",
+        "location": "Kansas",
+        "shortDisplayName": "Kansas",
+        "displayName": "Kansas Jayhawks",
+        "abbreviation": "KU",
+        "color": "0051ba",
+        "alternateColor": "e8000d",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2305.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 13
+       },
+       "winner": false,
+       "score": "60",
+       "records": [
+        {
+         "summary": "25-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2856",
+        "location": "California Baptist",
+        "shortDisplayName": "CA Baptist",
+        "displayName": "California Baptist Lancers",
+        "abbreviation": "CBU",
+        "color": "000080",
+        "alternateColor": null,
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2856.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856520",
+   "date": "2026-03-20T16:40Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 5
+       },
+       "winner": true,
+       "score": "91",
+       "records": [
+        {
+         "summary": "23-10",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2641",
+        "location": "Texas Tech",
+        "shortDisplayName": "Texas Tech",
+        "displayName": "Texas Tech Red Raiders",
+        "abbreviation": "TTU",
+        "color": "da291c",
+        "alternateColor": "000000",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 12
+       },
+       "winner": false,
+       "score": "71",
+       "records": [
+        {
+         "summary": "29-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2006",
+        "location": "Akron",
+        "shortDisplayName": "Akron",
+        "displayName": "Akron Zips",
+        "abbreviation": "AKR",
+        "color": "041e42",
+        "alternateColor": "c5b783",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2006.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856494",
+   "date": "2026-03-20T23:25Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 5
+       },
+       "winner": true,
+       "score": "79",
+       "records": [
+        {
+         "summary": "29-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2599",
+        "location": "St. John's",
+        "shortDisplayName": "St John's",
+        "displayName": "St. John's Red Storm",
+        "abbreviation": "SJU",
+        "color": "d10000",
+        "alternateColor": "101010",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2599.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 12
+       },
+       "winner": false,
+       "score": "53",
+       "records": [
+        {
+         "summary": "23-13",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2460",
+        "location": "Northern Iowa",
+        "shortDisplayName": "Northern Iowa",
+        "displayName": "Northern Iowa Panthers",
+        "abbreviation": "UNI",
+        "color": "473282",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2460.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856527",
+   "date": "2026-03-20T20:25Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 6
+       },
+       "winner": true,
+       "score": "78",
+       "records": [
+        {
+         "summary": "23-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2633",
+        "location": "Tennessee",
+        "shortDisplayName": "Tennessee",
+        "displayName": "Tennessee Volunteers",
+        "abbreviation": "TENN",
+        "color": "ff8200",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 11
+       },
+       "winner": false,
+       "score": "56",
+       "records": [
+        {
+         "summary": "32-2",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "193",
+        "location": "Miami (OH)",
+        "shortDisplayName": "Miami OH",
+        "displayName": "Miami (OH) RedHawks",
+        "abbreviation": "M-OH",
+        "color": "c41230",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/193.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856525",
+   "date": "2026-03-20T16:15Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - Midwest Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 7
+       },
+       "winner": true,
+       "score": "89",
+       "records": [
+        {
+         "summary": "22-13",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "96",
+        "location": "Kentucky",
+        "shortDisplayName": "Kentucky",
+        "displayName": "Kentucky Wildcats",
+        "abbreviation": "UK",
+        "color": "0033a0",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/96.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 10
+       },
+       "winner": false,
+       "score": "84",
+       "records": [
+        {
+         "summary": "26-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2541",
+        "location": "Santa Clara",
+        "shortDisplayName": "Santa Clara",
+        "displayName": "Santa Clara Broncos",
+        "abbreviation": "SCU",
+        "color": "690b0b",
+        "alternateColor": "101010",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2541.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856496",
+   "date": "2026-03-20T23:31Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - East Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 7
+       },
+       "winner": true,
+       "score": "75",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "26",
+        "location": "UCLA",
+        "shortDisplayName": "UCLA",
+        "displayName": "UCLA Bruins",
+        "abbreviation": "UCLA",
+        "color": "2774ae",
+        "alternateColor": "f2a900",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/26.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 10
+       },
+       "winner": false,
+       "score": "71",
+       "records": [
+        {
+         "summary": "21-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2116",
+        "location": "UCF",
+        "shortDisplayName": "UCF",
+        "displayName": "UCF Knights",
+        "abbreviation": "UCF",
+        "color": "000000",
+        "alternateColor": "b4a169",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2116.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856518",
+   "date": "2026-03-21T02:07Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 7
+       },
+       "winner": true,
+       "score": "80",
+       "records": [
+        {
+         "summary": "26-8",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2390",
+        "location": "Miami",
+        "shortDisplayName": "Miami",
+        "displayName": "Miami Hurricanes",
+        "abbreviation": "MIA",
+        "color": "f47423",
+        "alternateColor": "035131",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 10
+       },
+       "winner": false,
+       "score": "66",
+       "records": [
+        {
+         "summary": "20-13",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "142",
+        "location": "Missouri",
+        "shortDisplayName": "Missouri",
+        "displayName": "Missouri Tigers",
+        "abbreviation": "MIZ",
+        "color": "f1b82d",
+        "alternateColor": "000000",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856528",
+   "date": "2026-03-20T20:10Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - West Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 8
+       },
+       "winner": false,
+       "score": "76",
+       "records": [
+        {
+         "summary": "24-9",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "222",
+        "location": "Villanova",
+        "shortDisplayName": "Villanova",
+        "displayName": "Villanova Wildcats",
+        "abbreviation": "VILL",
+        "color": "00205b",
+        "alternateColor": "13b5ea",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/222.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 9
+       },
+       "winner": true,
+       "score": "86",
+       "records": [
+        {
+         "summary": "29-6",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "328",
+        "location": "Utah State",
+        "shortDisplayName": "Utah State",
+        "displayName": "Utah State Aggies",
+        "abbreviation": "USU",
+        "color": "0f2439",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/328.png"
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "401856522",
+   "date": "2026-03-20T22:50Z",
+   "status": {
+    "type": {
+     "completed": true,
+     "state": "post"
+    }
+   },
+   "competitions": [
+    {
+     "notes": [
+      {
+       "headline": "NCAA Men's Basketball Championship - South Region - 1st Round"
+      }
+     ],
+     "competitors": [
+      {
+       "curatedRank": {
+        "current": 8
+       },
+       "winner": false,
+       "score": "61",
+       "records": [
+        {
+         "summary": "24-11",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "228",
+        "location": "Clemson",
+        "shortDisplayName": "Clemson",
+        "displayName": "Clemson Tigers",
+        "abbreviation": "CLEM",
+        "color": "f56600",
+        "alternateColor": "ffffff",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/228.png"
+       }
+      },
+      {
+       "curatedRank": {
+        "current": 9
+       },
+       "winner": true,
+       "score": "67",
+       "records": [
+        {
+         "summary": "22-12",
+         "type": "total"
+        }
+       ],
+       "team": {
+        "id": "2294",
+        "location": "Iowa",
+        "shortDisplayName": "Iowa",
+        "displayName": "Iowa Hawkeyes",
+        "abbreviation": "IOWA",
+        "color": "231f20",
+        "alternateColor": "fcd116",
+        "logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2294.png"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

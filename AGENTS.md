@@ -10,6 +10,11 @@
   - Known: the react-hooks rules in eslint-config-next 16.4 flag ~13 pre-existing errors (setState in effects, refs during render). `next build` does not lint, so these don't block builds.
 - Typecheck SST config: `npx tsc --noEmit --skipLibCheck --target es2022 --module esnext --moduleResolution bundler --strict --types node sst.config.ts` (after `npx sst install`)
 
+## Local testing
+- The local `.env` / `.env.local` still point at the old Neon database (pre-AWS).
+- When testing against a throwaway Postgres, override BOTH `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. Prisma's `db push` uses `directUrl` (= `DATABASE_URL_UNPOOLED`), so overriding only `DATABASE_URL` pushes to Neon.
+- Also override `NEXTAUTH_URL` and `NEXTAUTH_SECRET` for `next dev`.
+
 ## Infrastructure (AWS, SST v4)
 - Everything is in `sst.config.ts`. The AWS account is a standalone personal account; use `AWS_PROFILE=picknroll`.
 - Stages: `staging` (staging.picknroll.net), `production` (picknroll.net).
@@ -56,6 +61,19 @@
   - Never theme text, gray text, borders, pick-rank colors, or status colors.
   - Team choices come from `/api/teams` (the current field, curated colors first).
 - Phones get a bottom tab bar (`src/components/shared/mobile-tab-bar.tsx`), hidden on picker routes.
+
+## Season features
+- Current pool: always use `currentMembership` / `NEWEST_POOL_FIRST` (`src/lib/pools.ts`), never an arbitrary first pool. Members belong to one pool per season.
+- Payments:
+  - Members report payments per entry (`POST /api/payments`, status PENDING); admins confirm/reject in Admin → Payments.
+  - Confirming marks the bracket paid. Marking paid by hand also settles pending reports.
+- Hall of Fame (`src/lib/hall-of-fame.ts`): podiums are computed for app seasons with a final championship. `HallOfFameEntry` rows (Admin → New Season) add earlier years and override a computed year.
+- New season (Admin → New Season): new pool for the newly imported tournament, settings and members copied, old pool optionally closed, members notified/emailed.
+- Reminders (`src/lib/reminders.ts`):
+  - `ReminderSetting` holds on/off + timing per type, all off by default. The `Reminders` cron runs every 10 min in March–April.
+  - Each send is claimed in `ReminderSend` first (at most once).
+  - Emails respect `User.reminderEmails` / `tipoffEmails` and carry a signed unsubscribe link (`src/lib/unsubscribe.ts`).
+- Share images: `src/app/opengraph-image.tsx` and `src/app/share/leaderboard/[code]/opengraph-image.tsx` (`next/og`).
 
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).

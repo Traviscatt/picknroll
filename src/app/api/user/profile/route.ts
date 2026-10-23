@@ -3,6 +3,17 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+// GET /api/user/profile - Current user's profile and email preferences
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, favoriteTeam: true, reminderEmails: true, tipoffEmails: true },
+  });
+  return NextResponse.json(user);
+}
+
 // PATCH /api/user/profile - Update current user's profile
 export async function PATCH(request: Request) {
   try {
@@ -13,7 +24,7 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { name, favoriteTeam } = body;
+    const { name, favoriteTeam, reminderEmails, tipoffEmails } = body;
 
     const updateData: Record<string, unknown> = {};
 
@@ -28,10 +39,13 @@ export async function PATCH(request: Request) {
       updateData.favoriteTeam = favoriteTeam || null;
     }
 
+    if (typeof reminderEmails === "boolean") updateData.reminderEmails = reminderEmails;
+    if (typeof tipoffEmails === "boolean") updateData.tipoffEmails = tipoffEmails;
+
     const user = await db.user.update({
       where: { id: session.user.id },
       data: updateData,
-      select: { id: true, name: true, email: true, favoriteTeam: true },
+      select: { id: true, name: true, email: true, favoriteTeam: true, reminderEmails: true, tipoffEmails: true },
     });
 
     return NextResponse.json(user);

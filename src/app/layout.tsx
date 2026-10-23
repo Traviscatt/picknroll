@@ -11,9 +11,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || "https://picknroll.net"),
   title: "Pick N Roll | NCAA Tournament Pool",
   description: "Make Every Pick Count. The ultimate NCAA Tournament bracket pool with multi-choice scoring.",
   keywords: ["NCAA", "March Madness", "bracket", "pool", "tournament"],
+  openGraph: { siteName: "Pick N Roll", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 // viewport-fit=cover lets the mobile tab bar pad itself for the iPhone home indicator

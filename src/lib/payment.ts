@@ -1,5 +1,10 @@
 // Entry fee and payment links come from the pool (Pool.entryFee, paypalLink, venmoHandle).
 
+/** How a member says they paid (Payment.method) */
+export const PAYMENT_METHODS = ["VENMO", "PAYPAL", "CASH", "OTHER"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = { VENMO: "Venmo", PAYPAL: "PayPal", CASH: "Cash", OTHER: "Other" };
+
 export interface PoolPayment {
   entryFee: string | number | null;
   paypalLink: string | null;

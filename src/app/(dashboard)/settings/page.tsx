@@ -13,6 +13,7 @@ import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X, Key, Eye, Eye
 import { toast } from "sonner";
 import { generatePalette } from "@/lib/team-colors";
 import { useTeamOptions } from "@/hooks/use-team-options";
+import { EmailPreferences } from "@/components/settings/email-preferences";
 
 export default function SettingsPage() {
   const { data: session, status, update } = useSession();
@@ -212,6 +213,8 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <EmailPreferences />
 
       {/* Favorite Team */}
       <Card>

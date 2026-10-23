@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getCurrentTournament } from "@/lib/scoring-service";
+import { NEWEST_POOL_FIRST } from "@/lib/pools";
 
 const createPoolSchema = z.object({
   name: z.string().min(2, "Pool name must be at least 2 characters"),
@@ -33,6 +34,7 @@ export async function GET() {
           },
         },
       },
+      orderBy: NEWEST_POOL_FIRST,
       include: {
         members: {
           include: {

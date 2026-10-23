@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/admin";
+import { currentMembership } from "@/lib/pools";
 
 // GET /api/admin/settings - Get the admin's pool settings
 export async function GET() {
@@ -10,15 +11,7 @@ export async function GET() {
     if (!authorized || !session) return response!;
 
     // Find the pool where this user is an admin
-    const membership = await db.poolMember.findFirst({
-      where: {
-        userId: session.user.id,
-        role: "ADMIN",
-      },
-      include: {
-        pool: true,
-      },
-    });
+    const membership = await currentMembership(session.user.id, { adminOnly: true });
 
     if (!membership) {
       return NextResponse.json({ error: "No pool found" }, { status: 404 });
@@ -56,13 +49,7 @@ export async function PATCH(req: NextRequest) {
     const { name, description, entryFee, deadline, venmoHandle, paypalLink, status } = body;
 
     // Find the pool where this user is an admin
-    const membership = await db.poolMember.findFirst({
-      where: {
-        userId: session.user.id,
-        role: "ADMIN",
-      },
-      select: { poolId: true },
-    });
+    const membership = await currentMembership(session.user.id, { adminOnly: true });
 
     if (!membership) {
       return NextResponse.json({ error: "No pool found" }, { status: 404 });

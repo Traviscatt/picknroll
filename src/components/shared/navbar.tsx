@@ -73,6 +73,12 @@ export function Navbar() {
                 >
                   Leaderboard
                 </Link>
+                <Link
+                  href="/hall-of-fame"
+                  className={`text-sm font-medium transition-colors ${isActive("/hall-of-fame") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  Hall of Fame
+                </Link>
                 {session.user?.role === "ADMIN" && (
                   <Link
                     href="/admin"

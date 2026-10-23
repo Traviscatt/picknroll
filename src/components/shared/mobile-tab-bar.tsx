@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { BookOpen, CreditCard, FileText, Home, LogOut, MoreHorizontal, Radio, Settings, Shield, Trophy, Users } from "lucide-react";
+import { BookOpen, CreditCard, Crown, FileText, Home, LogOut, MoreHorizontal, Radio, Settings, Shield, Trophy, Users } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAnyLive } from "@/hooks/use-live-data";
@@ -27,8 +27,9 @@ export function MobileTabBar() {
   const [moreOpen, setMoreOpen] = useState(false);
   if (!session || HIDDEN.some((r) => r.test(pathname))) return null;
 
-  const moreActive = ["/settings", "/payment", "/admin"].some((p) => pathname.startsWith(p));
+  const moreActive = ["/settings", "/payment", "/admin", "/hall-of-fame"].some((p) => pathname.startsWith(p));
   const moreLinks = [
+    { href: "/hall-of-fame", label: "Hall of Fame", icon: Crown },
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/settings/family", label: "Family members", icon: Users },
     { href: "/payment", label: "Pay entry fee", icon: CreditCard },

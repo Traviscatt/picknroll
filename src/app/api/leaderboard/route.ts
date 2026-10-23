@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { currentMembership } from "@/lib/pools";
 import { getActualTiebreaker, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
 
 // GET /api/leaderboard - Get leaderboard data for user's pool
@@ -14,13 +15,7 @@ export async function GET() {
     }
 
     // Find user's pool
-    const poolMembership = await db.poolMember.findFirst({
-      where: { userId: session.user.id },
-      select: {
-        poolId: true,
-        pool: { select: { viewCode: true, entryFee: true, tournamentId: true } },
-      },
-    });
+    const poolMembership = await currentMembership(session.user.id);
 
     if (!poolMembership) {
       return NextResponse.json({ entries: [], userRank: null, totalPrize: 0 });

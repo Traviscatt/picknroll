@@ -19,6 +19,9 @@ model User {
   image         String?
   role          String    @default("USER")
   favoriteTeam  String?
+  // Email preferences: deadline/unpaid/recap emails (on by default), "your team tips off" emails (opt-in)
+  reminderEmails Boolean  @default(true)
+  tipoffEmails   Boolean  @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -237,7 +240,8 @@ model Bracket {
   familyMember   FamilyMember? @relation(fields: [familyMemberId], references: [id])
   familyMemberId String?
 
-  picks Pick[]
+  picks    Pick[]
+  payments Payment[]
 }
 
 model Pick {
@@ -269,18 +273,53 @@ model Announcement {
   authorId String
 }
 
-// Payments
+// Payments: a member reports paying an entry (PENDING); an admin confirms or rejects it
 model Payment {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   amount        Decimal
-  method        String
-  status        String   @default("PENDING")
+  method        String    // VENMO | PAYPAL | CASH | OTHER
+  status        String    @default("PENDING") // PENDING | CONFIRMED | REJECTED
   transactionId String?
-  createdAt     DateTime @default(now())
+  note          String?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  createdAt     DateTime  @default(now())
 
-  user   User   @relation(fields: [userId], references: [id])
-  userId String
-  poolId String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  poolId    String
+  bracket   Bracket? @relation(fields: [bracketId], references: [id], onDelete: Cascade)
+  bracketId String?
+
+  @@index([status])
+  @@index([bracketId])
+}
+
+// Hall of Fame entries an admin adds for seasons played before the app (app seasons are computed)
+model HallOfFameEntry {
+  id        String   @id @default(cuid())
+  year      Int
+  place     Int      // 1–3
+  name      String
+  score     Int?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([year, place])
+}
+
+// Automatic reminders: which are on and when (type: DEADLINE | UNPAID | TIPOFF | DAILY_RECAP)
+model ReminderSetting {
+  type      String   @id
+  enabled   Boolean  @default(false)
+  config    Json
+  updatedAt DateTime @updatedAt
+}
+
+// One row per reminder sent, so each is sent once (key e.g. "DEADLINE:<pool>:48:<user>")
+model ReminderSend {
+  key    String   @id
+  sentAt DateTime @default(now())
 }
 
 // Notifications

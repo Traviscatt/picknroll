@@ -101,6 +101,25 @@ export default $config({
       },
     });
 
+    // Automatic reminders (deadline, unpaid, tip-off, daily recap): every 10 minutes, March and April only (UTC).
+    // Which ones send, and when, is set in Admin → Reminders; all are off until an admin turns them on.
+    new sst.aws.CronV2("Reminders", {
+      schedule: "cron(0/10 * * 3-4 ? *)",
+      function: {
+        handler: "src/jobs/reminders.handler",
+        timeout: "5 minutes",
+        vpc,
+        link: [database, email],
+        environment: {
+          ...databaseEnv,
+          NEXTAUTH_URL: `https://${siteDomain}`,
+          NEXTAUTH_SECRET: nextAuthSecret.value,
+          FROM_EMAIL: `Pick N Roll <noreply@${siteDomain}>`,
+        },
+        copyFiles: [{ from: "node_modules/.prisma/client/" }],
+      },
+    });
+
     // Gives `sst shell --target Prisma` the DATABASE_URL (prisma db push, pg_restore, studio). Needs `sst tunnel`.
     new sst.x.DevCommand("Prisma", {
       environment: databaseEnv,

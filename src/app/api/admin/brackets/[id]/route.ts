@@ -52,8 +52,8 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { authorized, response } = await requireAdmin();
-    if (!authorized) return response!;
+    const { authorized, response, session } = await requireAdmin();
+    if (!authorized || !session) return response!;
     const { id } = await params;
 
     const body = await request.json();
@@ -81,6 +81,14 @@ export async function PATCH(
       where: { id },
       data: updateData,
     });
+
+    // Marking an entry paid by hand settles any payment the member reported for it
+    if (paid === true) {
+      await db.payment.updateMany({
+        where: { bracketId: id, status: "PENDING" },
+        data: { status: "CONFIRMED", reviewedAt: new Date(), reviewedById: session.user.id },
+      });
+    }
 
     return NextResponse.json(bracket);
   } catch (error) {

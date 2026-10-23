@@ -40,6 +40,9 @@ import {
   ChevronUp,
   Medal,
   GitBranch,
+  CreditCard,
+  Bell as BellIcon,
+  CalendarPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -273,6 +276,27 @@ export default function AdminDashboardPage() {
       icon: Users,
       href: "/admin/pools",
       color: "bg-green-500",
+    },
+    {
+      title: "Payments",
+      description: "Confirm payments members report",
+      icon: CreditCard,
+      href: "/admin/payments",
+      color: "bg-emerald-600",
+    },
+    {
+      title: "Reminders",
+      description: "Automatic emails: on/off and timing",
+      icon: BellIcon,
+      href: "/admin/reminders",
+      color: "bg-sky-500",
+    },
+    {
+      title: "New Season",
+      description: "Start next year's pool, Hall of Fame",
+      icon: CalendarPlus,
+      href: "/admin/season",
+      color: "bg-indigo-500",
     },
     {
       title: "Tournament",

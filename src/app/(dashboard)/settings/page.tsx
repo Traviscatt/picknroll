@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X, Key, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { TEAMS, getTeamBySlug, generatePalette } from "@/lib/team-colors";
+import { generatePalette } from "@/lib/team-colors";
+import { useTeamOptions } from "@/hooks/use-team-options";
 
 export default function SettingsPage() {
   const { data: session, status, update } = useSession();
@@ -20,6 +21,7 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [favoriteTeam, setFavoriteTeam] = useState<string | null>(null);
+  const { teams: TEAMS } = useTeamOptions();
   const [teamSearch, setTeamSearch] = useState("");
   const [isSavingTeam, setIsSavingTeam] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -225,7 +227,7 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           {/* Current selection + preview */}
           {favoriteTeam && (() => {
-            const team = getTeamBySlug(favoriteTeam);
+            const team = TEAMS.find((t) => t.slug === favoriteTeam);
             if (!team) return null;
             const palette = generatePalette(team.primary, team.secondary);
             return (
@@ -236,8 +238,8 @@ export default function SettingsPage() {
                     <p className="font-semibold text-sm">{team.name}</p>
                     <div className="flex gap-1 mt-1">
                       <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: palette.primary }} />
+                      <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: palette["team-secondary"] }} />
                       <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: palette.accent }} />
-                      <span className="w-4 h-4 rounded-full border" style={{ backgroundColor: palette.muted }} />
                     </div>
                   </div>
                 </div>

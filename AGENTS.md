@@ -45,6 +45,18 @@
 - The Official ⇄ Live choice is stored per device (`useStandingsMode`, localStorage `pnr.standingsMode`).
 - Status colors are fixed (never team-themed): LIVE red, halftime yellow, final gray. Result chips use neutral ink.
 
+## Picker and theme
+- Picking rules live in `src/lib/picker.ts` (pure):
+  - eligibility per round, tap/rank/reorder, `pruneImpossible` (clears later picks an edit made impossible), phone flow steps (Round 1 pods).
+  - `validatePicks` uses it to reject submitted brackets whose later picks don't come from earlier ones. Drafts may be inconsistent mid-edit.
+- `/brackets/new` (`?editId=` to edit): desktop = full bracket tree with tap-to-rank popovers; phones = one card at a time with hybrid auto-advance (only after first filling a card, within a round).
+  - Drafts auto-save about 1.5 s after a change.
+  - Submitted brackets are never auto-saved (that would demote them to drafts); they save via "Save changes".
+- Favorite-team theme (`generatePalette`) sets only frame variables, contrast-checked (tests cover every curated team).
+  - Never theme text, gray text, borders, pick-rank colors, or status colors.
+  - Team choices come from `/api/teams` (the current field, curated colors first).
+- Phones get a bottom tab bar (`src/components/shared/mobile-tab-bar.tsx`), hidden on picker routes.
+
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).
 - Picks are stored as JSON in `Bracket.picksData` (team IDs like `east-1`, game IDs like `East-r1-g1`).

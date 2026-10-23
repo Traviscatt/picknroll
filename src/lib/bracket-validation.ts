@@ -1,14 +1,15 @@
 import { z } from "zod";
 import { SCORING_RULES } from "@/lib/scoring";
-import { finalFourPairs } from "@/lib/tournament-field";
+import { finalFourPairs, R1_SEED_PAIRS } from "@/lib/tournament-field";
+import { inconsistentChoices } from "@/lib/picker";
+
+export { R1_SEED_PAIRS };
 
 // Bracket structure shared by the API (validation) and scoring.
 // Game IDs: "<Region>-r1-g1" ... "<Region>-r4-g1", "final-four-r5-g1|2", "championship-r6-g1".
 // Team IDs: "<region>-<seed>", e.g. "east-1".
 // Regions come from the tournament, in bracket order: the Final Four pairs regions[0] vs [1] and [2] vs [3].
 
-// First-round seed matchups in bracket order (game 1 = 1 vs 16, game 2 = 8 vs 9, ...)
-export const R1_SEED_PAIRS = [[1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]];
 const GAMES_PER_REGION: Record<number, number> = { 1: 8, 2: 4, 3: 2, 4: 1 };
 
 const teamsInRegions = (regions: readonly string[]) =>
@@ -92,6 +93,12 @@ export function validatePicks(
 
   if (requireComplete && seen.size !== TOTAL_BRACKET_GAMES) {
     return { ok: false, error: `Bracket incomplete: ${TOTAL_BRACKET_GAMES - seen.size} game(s) missing` };
+  }
+
+  // Later picks must come from earlier ones (e.g. Sweet 16 choices from your Round 2 winners)
+  if (requireComplete) {
+    const conflict = inconsistentChoices(parsed.data, [...regions])[0];
+    if (conflict) return { ok: false, error: `${conflict.teamId} can't be picked in ${conflict.gameId}: it isn't one of your picks from the previous round` };
   }
 
   return { ok: true, picks: parsed.data };

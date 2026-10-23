@@ -1,1745 +1,549 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import confetti from "canvas-confetti";
-import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AlertTriangle, ArrowLeft, Check, CloudOff, Download, Loader2, Lock, Trash2, Trophy, Undo2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-// Tabs removed - using custom region buttons with AnimatePresence
-import {
-  ChevronLeft,
-  ChevronRight,
-  Save,
-  Send,
-  Info,
-  Users,
-  DollarSign,
-  CheckCircle,
-  ExternalLink,
-  LayoutGrid,
-  GitBranch,
-  Download,
-  Lock,
-  Trophy,
-  ClipboardList,
-} from "lucide-react";
-import { GameCard, DesktopBracketView } from "@/components/bracket";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { SCORING_RULES, getChoicesForRound } from "@/lib/scoring";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DesktopBracketView } from "@/components/bracket/DesktopBracketView";
+import { MobilePicker } from "@/components/picker/mobile-picker";
+import { PaymentDialog } from "@/components/picker/payment-dialog";
+import type { PickerTeam } from "@/components/picker/game-picker";
+import { useBracketEditor } from "@/hooks/use-bracket-editor";
 import { useTournamentField } from "@/hooks/use-tournament-field";
-import { paymentDetails, type PoolPayment } from "@/lib/payment";
-
-type Region = string;
-
-interface Team {
-  id: string;
-  name: string;
-  seed: number;
-  region: Region;
-  logo: string;
-  record?: string;
-}
-
-interface GamePick {
-  gameId: string;
-  round: number;
-  choices: string[]; // Team IDs in order of preference
-}
+import { cn } from "@/lib/utils";
+import type { PoolPayment } from "@/lib/payment";
+import { bracketGames, phoneSteps, progress, toPicks, type Picks } from "@/lib/picker";
+import { parsePicksData } from "@/lib/scoring-engine";
 
 interface FamilyMember {
   id: string;
   name: string;
 }
 
-function NewBracketContent() {
-  const { data: session, status } = useSession();
+interface Pool extends PoolPayment {
+  id: string;
+  deadline: string;
+}
+
+type BracketStatus = "DRAFT" | "SUBMITTED" | "PAID";
+
+const AUTOSAVE_DELAY = 1500;
+
+function celebrate() {
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ["#f97316", "#fb923c", "#fbbf24", "#22c55e", "#3b82f6"] });
+  setTimeout(() => {
+    confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 }, colors: ["#f97316", "#fb923c", "#fbbf24"] });
+    confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 }, colors: ["#f97316", "#fb923c", "#fbbf24"] });
+  }, 250);
+}
+
+/** Picks from a photo-upload extraction (team names) mapped onto the field */
+function picksFromUpload(extracted: { regions?: Record<string, Record<string, (string | null)[]>> }, regions: string[], teams: PickerTeam[]): Picks {
+  const byName = new Map(teams.map((t) => [t.name.toLowerCase(), t.id]));
+  const find = (name: string | null) => {
+    if (!name) return null;
+    const lower = name.toLowerCase().trim();
+    if (byName.has(lower)) return byName.get(lower)!;
+    for (const [key, id] of byName) if (key.includes(lower) || lower.includes(key)) return id;
+    return null;
+  };
+  const picks: Picks = new Map();
+  for (const region of regions) {
+    const data = extracted.regions?.[region];
+    if (!data) continue;
+    ([["round1", 1, 8], ["round2", 2, 4], ["sweet16", 3, 2], ["elite8", 4, 1]] as const).forEach(([key, round, count]) => {
+      (data[key] ?? []).slice(0, count).forEach((name, g) => {
+        const teamId = find(name);
+        const gameId = `${region}-r${round}-g${g + 1}`;
+        if (teamId) picks.set(gameId, { gameId, round, choices: [teamId] });
+      });
+    });
+  }
+  return picks;
+}
+
+function BracketEditorPage() {
+  const { data: session, status: authStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("editId");
-  const [bracketName, setBracketName] = useState("My Bracket");
-  const [currentRound, setCurrentRound] = useState(1);
-  const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
-  const [picks, setPicks] = useState<Map<string, GamePick>>(new Map());
-  const [isSaving, setIsSaving] = useState(false);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [selectedPerson, setSelectedPerson] = useState<string>("self"); // "self" or family member ID
-  const [tiebreaker, setTiebreaker] = useState<number | "">("");
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [submittedBracketId, setSubmittedBracketId] = useState<string | null>(null);
-  const [showClearDialog, setShowClearDialog] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [userPoolId, setUserPoolId] = useState<string | null>(null);
+
+  const [pool, setPool] = useState<Pool | null>(null);
   const [poolsLoaded, setPoolsLoaded] = useState(false);
-  const [poolPayment, setPoolPayment] = useState<PoolPayment | null>(null);
-  const payment = paymentDetails(poolPayment);
-  const { field, loading: fieldLoading, error: fieldError } = useTournamentField(userPoolId, poolsLoaded);
-  const REGIONS = useMemo(() => field?.tournament.regions ?? [], [field]);
-  const SAMPLE_TEAMS: Team[] = useMemo(
-    () => (field?.teams ?? []).map((t) => ({ id: t.id, name: t.name, seed: t.seed, region: t.region, logo: t.logo ?? "", record: t.record ?? undefined })),
+  const [family, setFamily] = useState<FamilyMember[]>([]);
+  const [bracketId, setBracketId] = useState<string | null>(editId);
+  const [bracketStatus, setBracketStatus] = useState<BracketStatus | null>(null);
+  const [loaded, setLoaded] = useState(!editId);
+  const [name, setName] = useState("My Bracket");
+  const [person, setPerson] = useState("self");
+  const [tiebreaker, setTiebreaker] = useState<number | "">("");
+  const [metaVersion, setMetaVersion] = useState(0);
+  const [savedVersion, setSavedVersion] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showClear, setShowClear] = useState(false);
+  const [showLeave, setShowLeave] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+
+  const bracketIdRef = useRef<string | null>(editId);
+  const loadedFor = useRef<string | null>(null);
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve());
+
+  const { field, loading: fieldLoading, error: fieldError } = useTournamentField(pool?.id ?? null, poolsLoaded);
+  const regions = useMemo(() => field?.tournament.regions ?? [], [field]);
+  const games = useMemo(() => (regions.length === 4 ? bracketGames(regions) : []), [regions]);
+  const byId = useMemo(() => new Map(games.map((g) => [g.gameId, g])), [games]);
+  const steps = useMemo(() => phoneSteps(games), [games]);
+  const teams = useMemo(
+    () => new Map((field?.teams ?? []).map((t) => [t.id, { id: t.id, name: t.name, seed: t.seed, logo: t.logo, record: t.record }] as const)),
     [field]
   );
-  const currentRegion: Region = selectedRegion ?? REGIONS[0] ?? "";
-  const [viewMode, setViewMode] = useState<"card" | "bracket">("card");
-  const [showSummary, setShowSummary] = useState(false);
-  const slideDirection = useRef(0); // -1 = left, 1 = right
+  const team = useCallback((id: string): PickerTeam => teams.get(id) ?? { id, name: id, seed: 0, logo: null, record: null }, [teams]);
 
-  // Keyboard navigation: arrow keys for rounds/regions
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't capture if user is typing in an input/textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          // Shift+Right: next region
-          if (currentRound <= 4) {
-            const idx = REGIONS.indexOf(currentRegion);
-            if (idx < REGIONS.length - 1) goToRegion(REGIONS[idx + 1]);
-          }
-        } else {
-          // Right: next round
-          if (currentRound < 6) goToRound(currentRound + 1);
-        }
-      } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        if (e.shiftKey) {
-          // Shift+Left: previous region
-          if (currentRound <= 4) {
-            const idx = REGIONS.indexOf(currentRegion);
-            if (idx > 0) goToRegion(REGIONS[idx - 1]);
-          }
-        } else {
-          // Left: previous round
-          if (currentRound > 1) goToRound(currentRound - 1);
-        }
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRound, currentRegion, REGIONS]);
+  const editor = useBracketEditor(games);
+  const { picks, load } = editor;
+  const editVersion = editor.version + metaVersion;
+  const unsaved = editVersion !== savedVersion;
+  const isSubmitted = bracketStatus === "SUBMITTED" || bracketStatus === "PAID";
+  const locked = !!pool && new Date() > new Date(pool.deadline);
+  const prog = progress(picks, games);
+  const complete = games.length > 0 && prog.done === prog.total && tiebreaker !== "";
+  const entryName = person === "self" ? session?.user?.name || "My Bracket" : family.find((m) => m.id === person)?.name || "Unknown";
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
+    if (authStatus === "unauthenticated") router.push("/login");
+  }, [authStatus, router]);
 
+  // Pool (deadline, payment) and family members
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        const [familyRes, poolsRes] = await Promise.all([
-          fetch("/api/family-members"),
-          fetch("/api/pools"),
-        ]);
-        if (familyRes.ok) {
-          const data = await familyRes.json();
-          setFamilyMembers(data);
-        }
-        if (poolsRes.ok) {
-          const pools = await poolsRes.json();
-          if (pools.length > 0) {
-            setUserPoolId(pools[0].id);
-            setPoolPayment(pools[0]);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch initial data:", error);
-      } finally {
-        setPoolsLoaded(true);
-      }
-    };
-
-    if (session) {
-      fetchInitialData();
-    }
+    if (!session) return;
+    Promise.all([fetch("/api/pools").then((r) => (r.ok ? r.json() : [])), fetch("/api/family-members").then((r) => (r.ok ? r.json() : []))])
+      .then(([pools, members]: [Pool[], FamilyMember[]]) => {
+        setPool(pools[0] ?? null);
+        setFamily(members);
+      })
+      .catch(() => undefined)
+      .finally(() => setPoolsLoaded(true));
   }, [session]);
 
-  // Load extracted bracket data from AI upload
+  // Existing bracket
   useEffect(() => {
-    const fromUpload = searchParams.get("fromUpload");
-    if (fromUpload !== "true" || !session || SAMPLE_TEAMS.length === 0) return;
+    if (!session || !editId || loadedFor.current === editId) return;
+    loadedFor.current = editId;
+    fetch(`/api/brackets/${editId}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((b) => {
+        bracketIdRef.current = b.id;
+        setBracketId(b.id);
+        setBracketStatus(b.status);
+        setName(b.name);
+        if (b.tiebreaker != null) setTiebreaker(b.tiebreaker);
+        if (b.familyMemberId) setPerson(b.familyMemberId);
+        load(toPicks(parsePicksData(b.picksData)));
+      })
+      .catch(() => toast.error("Couldn't load that bracket"))
+      .finally(() => setLoaded(true));
+  }, [session, editId, load]);
 
+  // Picks read from an uploaded bracket photo
+  useEffect(() => {
+    if (searchParams.get("fromUpload") !== "true" || !teams.size || regions.length !== 4) return;
+    const stored = sessionStorage.getItem("extractedBracket");
+    if (!stored) return;
+    sessionStorage.removeItem("extractedBracket");
     try {
-      const stored = sessionStorage.getItem("extractedBracket");
-      if (!stored) return;
-
       const extracted = JSON.parse(stored);
-      sessionStorage.removeItem("extractedBracket");
-
-      // Build a name->teamId lookup from the tournament field
-      const teamLookup = new Map<string, string>();
-      for (const t of SAMPLE_TEAMS) {
-        teamLookup.set(t.name.toLowerCase(), t.id);
-      }
-
-      const findTeamId = (name: string | null): string | null => {
-        if (!name) return null;
-        const lower = name.toLowerCase().trim();
-        // Direct match
-        if (teamLookup.has(lower)) return teamLookup.get(lower)!;
-        // Partial match
-        for (const [key, id] of teamLookup.entries()) {
-          if (key.includes(lower) || lower.includes(key)) return id;
-        }
-        return null;
-      };
-
-      const newPicks = new Map<string, GamePick>();
-
-      // Process each region's round picks
-      if (extracted.regions) {
-        for (const region of REGIONS) {
-          const regionData = extracted.regions[region];
-          if (!regionData) continue;
-
-          // Round 1: 8 winners
-          const r1Picks = regionData.round1 || [];
-          for (let g = 0; g < r1Picks.length && g < 8; g++) {
-            const teamId = findTeamId(r1Picks[g]);
-            if (teamId) {
-              const gameId = `${region}-r1-g${g + 1}`;
-              newPicks.set(gameId, { gameId, round: 1, choices: [teamId] });
-            }
-          }
-
-          // Round 2: 4 winners
-          const r2Picks = regionData.round2 || [];
-          for (let g = 0; g < r2Picks.length && g < 4; g++) {
-            const teamId = findTeamId(r2Picks[g]);
-            if (teamId) {
-              const gameId = `${region}-r2-g${g + 1}`;
-              newPicks.set(gameId, { gameId, round: 2, choices: [teamId] });
-            }
-          }
-
-          // Sweet 16: 2 winners
-          const s16Picks = regionData.sweet16 || [];
-          for (let g = 0; g < s16Picks.length && g < 2; g++) {
-            const teamId = findTeamId(s16Picks[g]);
-            if (teamId) {
-              const gameId = `${region}-r3-g${g + 1}`;
-              newPicks.set(gameId, { gameId, round: 3, choices: [teamId] });
-            }
-          }
-
-          // Elite 8: 1 winner
-          const e8Picks = regionData.elite8 || [];
-          if (e8Picks[0]) {
-            const teamId = findTeamId(e8Picks[0]);
-            if (teamId) {
-              const gameId = `${region}-r4-g1`;
-              newPicks.set(gameId, { gameId, round: 4, choices: [teamId] });
-            }
-          }
-        }
-      }
-
-      // Tiebreaker
-      if (extracted.tiebreaker !== null && extracted.tiebreaker !== undefined) {
-        setTiebreaker(extracted.tiebreaker);
-      }
-
-      if (newPicks.size > 0) {
-        setPicks(newPicks);
-        toast.success(`Loaded ${newPicks.size} picks from uploaded bracket`);
-      }
-    } catch (error) {
-      console.error("Failed to load uploaded bracket data:", error);
+      load(picksFromUpload(extracted, regions, [...teams.values()]));
+      if (extracted.tiebreaker != null) setTiebreaker(extracted.tiebreaker);
+      setMetaVersion((n) => n + 1); // treat imported picks as an edit so they're saved
+      toast.success("Picks loaded from your photo. Check them before submitting.");
+    } catch {
+      toast.error("Couldn't read the uploaded bracket");
     }
-  }, [session, searchParams, SAMPLE_TEAMS, REGIONS]);
+  }, [searchParams, teams, regions, load]);
 
-  // Load existing bracket data when editing
-  useEffect(() => {
-    const loadBracket = async () => {
-      if (!editId || !session) return;
-      try {
-        const response = await fetch(`/api/brackets/${editId}`);
-        if (response.ok) {
-          const bracket = await response.json();
-          setBracketName(bracket.name);
-          setIsEditing(true);
-          setSubmittedBracketId(bracket.id);
-          if (bracket.tiebreaker !== null && bracket.tiebreaker !== undefined) {
-            setTiebreaker(bracket.tiebreaker);
+  const save = useCallback(
+    (target: "DRAFT" | "SUBMITTED") => {
+      const version = editVersion;
+      const body = {
+        name,
+        entryName,
+        poolId: pool?.id,
+        familyMemberId: person === "self" ? null : person,
+        tiebreaker: tiebreaker === "" ? null : tiebreaker,
+        picks: [...picks.values()],
+      };
+      // Saves run one at a time so the first auto-save's new bracket ID is used by the next one
+      const run = saveQueue.current.then(async () => {
+        setSaving(true);
+        try {
+          const id = bracketIdRef.current;
+          const res = await fetch(id ? `/api/brackets/${id}` : "/api/brackets", {
+            method: id ? "PATCH" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...body, ...(target === "SUBMITTED" || !id ? { status: target } : {}) }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || "Couldn't save");
+          if (!id) {
+            bracketIdRef.current = data.id;
+            loadedFor.current = data.id;
+            setBracketId(data.id);
+            window.history.replaceState(null, "", `/brackets/new?editId=${data.id}`);
           }
-          if (bracket.familyMemberId) {
-            setSelectedPerson(bracket.familyMemberId);
-          }
-          // Restore picks from picksData JSON
-          if (bracket.picksData) {
-            try {
-              const picksArray = JSON.parse(bracket.picksData);
-              const picksMap = new Map<string, GamePick>();
-              for (const pick of picksArray) {
-                if (pick.gameId) {
-                  picksMap.set(pick.gameId, pick);
-                }
-              }
-              setPicks(picksMap);
-            } catch {
-              console.error("Failed to parse picks data");
-            }
-          }
+          setBracketStatus(data.status);
+          setSavedVersion(version);
+          setSaveError(null);
+          return true;
+        } catch (e) {
+          setSaveError(e instanceof Error ? e.message : "Couldn't save");
+          if (target === "SUBMITTED") toast.error(e instanceof Error ? e.message : "Couldn't submit");
+          return false;
+        } finally {
+          setSaving(false);
         }
-      } catch (error) {
-        console.error("Failed to load bracket:", error);
-      }
-    };
-    loadBracket();
-  }, [editId, session]);
+      });
+      saveQueue.current = run;
+      return run;
+    },
+    [editVersion, name, entryName, pool?.id, person, tiebreaker, picks]
+  );
 
-  if (status === "loading") {
+  // Auto-save drafts shortly after each change. Submitted brackets save only via "Save changes"
+  // (an incomplete edit can't be submitted, and auto-saving must never turn them back into drafts).
+  useEffect(() => {
+    if (!loaded || !unsaved || locked || isSubmitted || !pool) return;
+    const timer = setTimeout(() => save("DRAFT"), AUTOSAVE_DELAY);
+    return () => clearTimeout(timer);
+  }, [loaded, unsaved, locked, isSubmitted, pool, save]);
+
+  // Warn before closing the tab with unsaved changes; flush drafts when the page is hidden
+  useEffect(() => {
+    if (!unsaved && !saving) return;
+    const beforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onHide = () => document.hidden && !isSubmitted && !locked && pool && save("DRAFT");
+    window.addEventListener("beforeunload", beforeUnload);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+  }, [unsaved, saving, isSubmitted, locked, pool, save]);
+
+  const submit = async () => {
+    if (!complete) return;
+    const firstSubmit = !isSubmitted;
+    if (!(await save("SUBMITTED"))) return;
+    if (!firstSubmit) {
+      toast.success("Changes saved");
+      return;
+    }
+    celebrate();
+    toast.success("Bracket submitted! Good luck!");
+    setShowPayment(true);
+  };
+
+  const leave = () => {
+    if (unsaved || saving) setShowLeave(true);
+    else router.push("/brackets");
+  };
+
+  const editMeta = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setMetaVersion((n) => n + 1);
+  };
+
+  if (authStatus === "loading" || !poolsLoaded || !loaded || (pool && fieldLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
   }
-
   if (!session) return null;
-
-  if (!field) {
-    return fieldLoading || !poolsLoaded ? (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    ) : (
-      <Card className="max-w-lg mx-auto mt-12">
+  if (!pool || !field || games.length === 0) {
+    return (
+      <Card className="mx-auto mt-12 max-w-lg">
         <CardHeader>
-          <CardTitle>The bracket isn&apos;t ready yet</CardTitle>
+          <CardTitle>{pool ? "The bracket isn't ready yet" : "Join a pool first"}</CardTitle>
           <CardDescription>
-            {fieldError ?? "Teams appear here once the tournament field is announced on Selection Sunday."}
+            {pool ? fieldError ?? "Teams appear here once the tournament field is announced on Selection Sunday." : "You need to be in a pool to fill out a bracket."}
           </CardDescription>
         </CardHeader>
       </Card>
     );
   }
+  if (locked) {
+    return (
+      <Card className="mx-auto mt-12 max-w-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" /> Brackets are locked
+          </CardTitle>
+          <CardDescription>Picks closed at tip-off. {bracketId ? "You can still view your bracket." : ""}</CardDescription>
+        </CardHeader>
+        <div className="flex gap-2 px-6 pb-6">
+          {bracketId && (
+            <Button asChild>
+              <Link href={`/brackets/${bracketId}`}>View bracket</Link>
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link href="/game-center">Game Center</Link>
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
-  const getTeamsForRegion = (region: Region) => {
-    return SAMPLE_TEAMS.filter((t) => t.region === region);
-  };
+  const saveLabel = saving ? (
+    <span className="flex items-center gap-1 text-muted-foreground">
+      <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+    </span>
+  ) : saveError ? (
+    <span className="flex items-center gap-1 text-red-600" title={saveError}>
+      <CloudOff className="h-3 w-3" /> Not saved
+    </span>
+  ) : unsaved ? (
+    <span className="text-amber-600">{isSubmitted ? "Unsaved changes" : "Saving soon…"}</span>
+  ) : bracketId ? (
+    <span className="flex items-center gap-1 text-muted-foreground">
+      <Check className="h-3 w-3" /> {isSubmitted ? "Submitted" : "Draft saved"}
+    </span>
+  ) : null;
 
-  // Check if previous round is complete for a region
-  const isPreviousRoundComplete = (round: number, region: Region): boolean => {
-    if (round <= 1) return true;
-    
-    const prevRound = round - 1;
-    const gamesInPrevRound = prevRound === 1 ? 8 : prevRound === 2 ? 4 : prevRound === 3 ? 2 : 1;
-    
-    for (let g = 1; g <= gamesInPrevRound; g++) {
-      const gameId = `${region}-r${prevRound}-g${g}`;
-      const pick = picks.get(gameId);
-      if (!pick?.choices[0]) return false;
-    }
-    return true;
-  };
-
-  // Get eligible teams for a game (all teams that could advance to this matchup)
-  // For rounds 1-2: shows all possible teams
-  // For rounds 3-6: only shows teams the user has picked to advance
-  const getEligibleTeamsForGame = (round: number, region: Region, gameNum: number): Team[] => {
-    const teams = getTeamsForRegion(region);
-    
-    if (round === 1) {
-      // First round - fixed matchups
-      const seeds = [
-        [1, 16], [8, 9], [5, 12], [4, 13],
-        [6, 11], [3, 14], [7, 10], [2, 15],
-      ];
-      const pair = seeds[gameNum - 1];
-      return [
-        teams.find((t) => t.seed === pair[0])!,
-        teams.find((t) => t.seed === pair[1])!,
-      ];
-    } else if (round === 2) {
-      // Second round - teams from two R1 games
-      const gamePairs = [[1, 2], [3, 4], [5, 6], [7, 8]];
-      const pair = gamePairs[gameNum - 1];
-      const r1Teams1 = getEligibleTeamsForGame(1, region, pair[0]);
-      const r1Teams2 = getEligibleTeamsForGame(1, region, pair[1]);
-      return [...r1Teams1, ...r1Teams2];
-    } else if (round === 3) {
-      // Sweet 16 - ONLY show teams user picked to win in Round 2 (2 teams max)
-      // Game 1: R2 winners from games 1 & 2
-      // Game 2: R2 winners from games 3 & 4
-      const gamePairs = [[1, 2], [3, 4]];
-      const pair = gamePairs[gameNum - 1];
-      const eligibleTeams: Team[] = [];
-      
-      for (const g of pair) {
-        const gameId = `${region}-r2-g${g}`;
-        const pick = picks.get(gameId);
-        if (pick?.choices[0]) {
-          const team = SAMPLE_TEAMS.find((t) => t.id === pick.choices[0]);
-          if (team) eligibleTeams.push(team);
-        }
-        // No fallback - user must complete previous rounds
-      }
-      return eligibleTeams;
-    } else if (round === 4) {
-      // Elite 8 - Show ALL teams user picked in Sweet 16 (up to 4 teams: 2 picks per S16 game × 2 games)
-      // User has 3 choices (15/10/5 pts) so they need 4 teams to pick from
-      const eligibleTeams: Team[] = [];
-      
-      for (let g = 1; g <= 2; g++) {
-        const gameId = `${region}-r3-g${g}`;
-        const pick = picks.get(gameId);
-        if (pick?.choices.length) {
-          // Add ALL S16 picks (up to 2 per game)
-          pick.choices.forEach((id) => {
-            const team = SAMPLE_TEAMS.find((t) => t.id === id);
-            if (team) eligibleTeams.push(team);
-          });
-        }
-      }
-      return eligibleTeams;
-    }
-    
-    return [];
-  };
-
-  const getMatchupsForRound = (round: number, region: Region) => {
-    const matchups: { game: number; eligibleTeams: Team[] }[] = [];
-
-    if (round === 1) {
-      for (let g = 1; g <= 8; g++) {
-        matchups.push({ game: g, eligibleTeams: getEligibleTeamsForGame(1, region, g) });
-      }
-    } else if (round === 2) {
-      for (let g = 1; g <= 4; g++) {
-        matchups.push({ game: g, eligibleTeams: getEligibleTeamsForGame(2, region, g) });
-      }
-    } else if (round === 3) {
-      for (let g = 1; g <= 2; g++) {
-        matchups.push({ game: g, eligibleTeams: getEligibleTeamsForGame(3, region, g) });
-      }
-    } else if (round === 4) {
-      matchups.push({ game: 1, eligibleTeams: getEligibleTeamsForGame(4, region, 1) });
-    }
-
-    return matchups;
-  };
-
-  // Get Final Four eligible teams - ALL teams user picked in Elite 8 for both regions
-  // This gives up to 6 teams per semifinal (3 E8 picks per region × 2 regions)
-  const getFinalFourMatchups = () => {
-    // Get ALL Elite 8 picks (not just winners) for each region
-    const getE8Picks = (region: Region): Team[] => {
-      const gameId = `${region}-r4-g1`;
-      const pick = picks.get(gameId);
-      if (!pick?.choices.length) return [];
-      // Return all picked teams (up to 3 for E8)
-      return pick.choices
-        .map((id) => SAMPLE_TEAMS.find((t) => t.id === id))
-        .filter((t): t is Team => t !== undefined);
-    };
-    
-    // Semifinals pair the tournament's regions in bracket order: [0] vs [1], [2] vs [3]
-    const [r1, r2, r3, r4] = REGIONS;
-    return [
-      { game: 1, eligibleTeams: [...getE8Picks(r1), ...getE8Picks(r2)], label: `${r1} vs ${r2}` },
-      { game: 2, eligibleTeams: [...getE8Picks(r3), ...getE8Picks(r4)], label: `${r3} vs ${r4}` },
-    ];
-  };
-
-  // Get Championship eligible teams - ALL teams user picked in both Final Four games
-  // This gives up to 8 teams (4 FF picks per game × 2 games)
-  const getChampionshipMatchup = () => {
-    const ff1Pick = picks.get("final-four-r5-g1");
-    const ff2Pick = picks.get("final-four-r5-g2");
-    
-    const championshipTeams: Team[] = [];
-    
-    // Add all picks from Final Four Game 1
-    if (ff1Pick?.choices.length) {
-      ff1Pick.choices.forEach((id) => {
-        const team = SAMPLE_TEAMS.find((t) => t.id === id);
-        if (team) championshipTeams.push(team);
-      });
-    }
-    
-    // Add all picks from Final Four Game 2
-    if (ff2Pick?.choices.length) {
-      ff2Pick.choices.forEach((id) => {
-        const team = SAMPLE_TEAMS.find((t) => t.id === id);
-        if (team) championshipTeams.push(team);
-      });
-    }
-    
-    return { game: 1, eligibleTeams: championshipTeams };
-  };
-
-  // Wrapper for desktop bracket view - get Final Four teams by semifinal number
-  const getFinalFourTeams = (semi: 1 | 2): Team[] => {
-    const matchups = getFinalFourMatchups();
-    return matchups[semi - 1]?.eligibleTeams || [];
-  };
-
-  // Wrapper for desktop bracket view - get Championship teams
-  const getChampionshipTeamsForDesktop = (): Team[] => {
-    return getChampionshipMatchup().eligibleTeams;
-  };
-
-  // Clear picks - full bracket or current round
-  const handleClearPicks = (mode: "full" | "round") => {
-    if (mode === "full") {
-      setPicks(new Map());
-      setTiebreaker("");
-      toast.success("All bracket picks cleared");
-    } else {
-      // Clear only current round picks
-      const newPicks = new Map(picks);
-      const keysToDelete: string[] = [];
-      
-      newPicks.forEach((pick, key) => {
-        if (pick.round === currentRound) {
-          keysToDelete.push(key);
-        }
-      });
-      
-      keysToDelete.forEach((key) => newPicks.delete(key));
-      setPicks(newPicks);
-      toast.success(`Round ${currentRound} picks cleared`);
-    }
-    setShowClearDialog(false);
-  };
-
-  // Parse round number from gameId string
-  const getRoundFromGameId = (gameId: string): number => {
-    const match = gameId.match(/-r(\d+)-/);
-    return match ? parseInt(match[1]) : currentRound;
-  };
-
-  const handlePick = (gameId: string, teamId: string, choiceRank: number) => {
-    const currentPick = picks.get(gameId);
-    const round = getRoundFromGameId(gameId);
-    const maxChoices = getChoicesForRound(round);
-    
-    let newChoices: string[] = currentPick?.choices || [];
-    
-    // Remove the team if it's already in choices
-    newChoices = newChoices.filter((id) => id !== teamId);
-    
-    // If choiceRank > 0, insert at the correct position (otherwise just remove)
-    if (choiceRank > 0 && choiceRank <= maxChoices) {
-      newChoices.splice(choiceRank - 1, 0, teamId);
-      // Trim to max choices
-      newChoices = newChoices.slice(0, maxChoices);
-    }
-
-    setPicks(new Map(picks.set(gameId, {
-      gameId,
-      round,
-      choices: newChoices,
-    })));
-  };
-
-  const getProgress = () => {
-    // Count fully completed games (all required choices made)
-    let completed = 0;
-    const totalGames = 63;
-
-    // R1: 32 games, 1 pick each
-    for (const region of REGIONS) {
-      for (let g = 1; g <= 8; g++) {
-        const p = picks.get(`${region}-r1-g${g}`);
-        if (p?.choices?.[0]) completed++;
-      }
-      // R2: 4 games per region, 1 pick
-      for (let g = 1; g <= 4; g++) {
-        const p = picks.get(`${region}-r2-g${g}`);
-        if (p?.choices?.[0]) completed++;
-      }
-      // R3: 2 games per region, 2 picks each
-      for (let g = 1; g <= 2; g++) {
-        const p = picks.get(`${region}-r3-g${g}`);
-        if (p?.choices && p.choices.length >= 2) completed++;
-      }
-      // R4: 1 game per region, 3 picks
-      const e8 = picks.get(`${region}-r4-g1`);
-      if (e8?.choices && e8.choices.length >= 3) completed++;
-    }
-    // R5: 2 Final Four games, 4 picks each
-    for (let g = 1; g <= 2; g++) {
-      const p = picks.get(`final-four-r5-g${g}`);
-      if (p?.choices && p.choices.length >= 4) completed++;
-    }
-    // R6: Championship, 5 picks
-    const champ = picks.get("championship-r6-g1");
-    if (champ?.choices && champ.choices.length >= 5) completed++;
-
-    return { completed, totalGames, percent: (completed / totalGames) * 100 };
-  };
-
-  const getEntryName = () => {
-    if (selectedPerson === "self") {
-      return session?.user?.name || "My Bracket";
-    }
-    const member = familyMembers.find((m) => m.id === selectedPerson);
-    return member?.name || "Unknown";
-  };
-
-  const handleSaveDraft = async () => {
-    setIsSaving(true);
-    try {
-      const url = isEditing ? `/api/brackets/${editId}` : "/api/brackets";
-      const method = isEditing ? "PATCH" : "POST";
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: bracketName,
-          entryName: getEntryName(),
-          status: "DRAFT",
-          poolId: userPoolId,
-          familyMemberId: selectedPerson === "self" ? null : selectedPerson,
-          tiebreaker: tiebreaker === "" ? null : tiebreaker,
-          picks: Array.from(picks.values()),
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to save draft");
-      }
-
-      const bracket = await response.json();
-      if (!isEditing) {
-        setIsEditing(true);
-        setSubmittedBracketId(bracket.id);
-        router.replace(`/brackets/new?editId=${bracket.id}`);
-      }
-      toast.success("Draft saved!");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to save draft");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    setIsSaving(true);
-    try {
-      const url = isEditing ? `/api/brackets/${editId}` : "/api/brackets";
-      const method = isEditing ? "PATCH" : "POST";
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: bracketName,
-          entryName: getEntryName(),
-          status: "SUBMITTED",
-          poolId: userPoolId,
-          familyMemberId: selectedPerson === "self" ? null : selectedPerson,
-          tiebreaker: tiebreaker === "" ? null : tiebreaker,
-          picks: Array.from(picks.values()),
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to submit bracket");
-      }
-
-      const bracket = await response.json();
-      setSubmittedBracketId(bracket.id);
-      
-      // 🎉 Confetti celebration!
-      const fireConfetti = () => {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#f97316", "#fb923c", "#fbbf24", "#22c55e", "#3b82f6"],
-        });
-        setTimeout(() => {
-          confetti({
-            particleCount: 50,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ["#f97316", "#fb923c", "#fbbf24"],
-          });
-          confetti({
-            particleCount: 50,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ["#f97316", "#fb923c", "#fbbf24"],
-          });
-        }, 250);
-      };
-      fireConfetti();
-      
-      toast.success("🏆 Bracket submitted! Good luck!");
-      setShowPaymentModal(true);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to submit bracket");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const scoringRule = SCORING_RULES.find((r) => r.round === currentRound);
-
-  // Navigation helpers that track direction for animations
-  const goToRound = (round: number, scrollTop = false) => {
-    slideDirection.current = round > currentRound ? 1 : -1;
-    setCurrentRound(round);
-    if (scrollTop) setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-  };
-  const goToRegion = (region: Region, scrollTop = false) => {
-    const oldIdx = REGIONS.indexOf(currentRegion);
-    const newIdx = REGIONS.indexOf(region);
-    slideDirection.current = newIdx > oldIdx ? 1 : -1;
-    setSelectedRegion(region);
-    if (scrollTop) setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
-  };
-
-  // Animation variants for slide transitions
-  const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
-  };
-
-  // Validate bracket completion
-  const getBracketValidation = () => {
-    const errors: string[] = [];
-    
-    // Check all rounds have required picks
-    for (const region of REGIONS) {
-      // Round 1: 8 games
-      for (let g = 1; g <= 8; g++) {
-        const pick = picks.get(`${region}-r1-g${g}`);
-        if (!pick?.choices[0]) {
-          errors.push(`${region} Round 1 Game ${g}`);
-        }
-      }
-      // Round 2: 4 games
-      for (let g = 1; g <= 4; g++) {
-        const pick = picks.get(`${region}-r2-g${g}`);
-        if (!pick?.choices[0]) {
-          errors.push(`${region} Round 2 Game ${g}`);
-        }
-      }
-      // Round 3 (Sweet 16): 2 games, 2 picks each
-      for (let g = 1; g <= 2; g++) {
-        const pick = picks.get(`${region}-r3-g${g}`);
-        if (!pick?.choices || pick.choices.length < 2) {
-          errors.push(`${region} Sweet 16 Game ${g}`);
-        }
-      }
-      // Round 4 (Elite 8): 1 game, 3 picks
-      const e8Pick = picks.get(`${region}-r4-g1`);
-      if (!e8Pick?.choices || e8Pick.choices.length < 3) {
-        errors.push(`${region} Elite 8`);
-      }
-    }
-    
-    // Final Four: 2 games, 4 picks each
-    for (let g = 1; g <= 2; g++) {
-      const pick = picks.get(`final-four-r5-g${g}`);
-      if (!pick?.choices || pick.choices.length < 4) {
-        errors.push(`Final Four Game ${g}`);
-      }
-    }
-    
-    // Championship: 1 game, 5 picks
-    const champPick = picks.get("championship-r6-g1");
-    if (!champPick?.choices || champPick.choices.length < 5) {
-      errors.push("Championship");
-    }
-    
-    // Tiebreaker
-    if (tiebreaker === "" || tiebreaker === null) {
-      errors.push("Tiebreaker");
-    }
-    
-    return {
-      isComplete: errors.length === 0,
-      missingCount: errors.length,
-      errors,
-    };
-  };
-
-  const validation = getBracketValidation();
+  const submitPanel = (
+    <div className="space-y-3">
+      <div>
+        <Label htmlFor="tiebreaker" className="text-sm font-medium">
+          Tiebreaker: total points in the championship game
+        </Label>
+        <Input
+          id="tiebreaker"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={400}
+          placeholder="e.g. 145"
+          value={tiebreaker}
+          onChange={(e) => editMeta(setTiebreaker)(e.target.value === "" ? "" : Number(e.target.value))}
+          className="mt-1.5"
+        />
+      </div>
+      {!complete && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          {prog.total - prog.done > 0 ? `${prog.total - prog.done} game${prog.total - prog.done === 1 ? "" : "s"} left to pick` : "Add your tiebreaker to submit"}
+        </p>
+      )}
+      <Button className="w-full" size="lg" disabled={!complete || saving} onClick={submit}>
+        <Trophy className="mr-2 h-4 w-4" />
+        {isSubmitted ? (unsaved ? "Save changes" : "Submitted") : "Submit bracket"}
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Create Bracket</h1>
-          <p className="text-muted-foreground mt-1">
-            Fill out your picks for each round
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={showSummary ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowSummary(!showSummary)}
-            className={showSummary ? "bg-primary hover:bg-primary/90" : ""}
-          >
-            <ClipboardList className="mr-2 h-4 w-4" />
-            Review Picks
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSaveDraft} disabled={isSaving}>
-            <Save className="mr-2 h-4 w-4" />
-            Save
-          </Button>
-          <Button
-            size="sm"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => {
-              if (!validation.isComplete) {
-                toast.error(`Bracket incomplete: ${validation.missingCount} items missing`);
-                return;
-              }
-              handleSubmit();
-            }}
-            disabled={isSaving}
-          >
-            <Send className="mr-2 h-4 w-4" />
-            Submit {!validation.isComplete && `(${validation.missingCount} missing)`}
-          </Button>
-        </div>
-      </div>
-
-      {/* Progress */}
-      <Card>
-        <CardContent className="pt-6">
-          {(() => {
-            const progress = getProgress();
-            return (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">
-                    Bracket Progress
-                  </span>
-                  <span className="text-sm font-semibold">
-                    {progress.completed === progress.totalGames ? (
-                      <span className="text-green-600 flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4" />
-                        Complete!
-                      </span>
-                    ) : (
-                      <span className="text-slate-600">
-                        {progress.completed} / {progress.totalGames} games
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <Progress value={progress.percent} className="h-2.5" />
-                <div className="flex justify-between mt-2 text-[10px] text-slate-400">
-                  {SCORING_RULES.map((rule) => {
-                    let done = 0;
-                    const total = rule.gamesInRound;
-                    if (rule.round <= 4) {
-                      for (const region of REGIONS) {
-                        const gamesPerRegion = rule.round === 1 ? 8 : rule.round === 2 ? 4 : rule.round === 3 ? 2 : 1;
-                        for (let g = 1; g <= gamesPerRegion; g++) {
-                          const p = picks.get(`${region}-r${rule.round}-g${g}`);
-                          if (p?.choices && p.choices.length >= rule.choices) done++;
-                        }
-                      }
-                    } else if (rule.round === 5) {
-                      for (let g = 1; g <= 2; g++) {
-                        const p = picks.get(`final-four-r5-g${g}`);
-                        if (p?.choices && p.choices.length >= rule.choices) done++;
-                      }
-                    } else {
-                      const p = picks.get("championship-r6-g1");
-                      if (p?.choices && p.choices.length >= rule.choices) done++;
-                    }
-                    const isDone = done === total;
-                    return (
-                      <span key={rule.round} className={isDone ? "text-green-500 font-medium" : ""}>
-                        R{rule.round}: {done}/{total}
-                      </span>
-                    );
-                  })}
-                </div>
-              </>
-            );
-          })()}
-        </CardContent>
-      </Card>
-
-      {/* Review Picks Summary */}
-      {showSummary && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              Your Picks Summary
-            </CardTitle>
-            <CardDescription>Review all your picks before submitting</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Rounds 1-4: Per region */}
-              {SCORING_RULES.filter((r) => r.round <= 4).map((rule) => {
-                const gamesPerRegion = rule.round === 1 ? 8 : rule.round === 2 ? 4 : rule.round === 3 ? 2 : 1;
-                return (
-                  <div key={rule.round}>
-                    <h3 className="text-sm font-bold mb-2 text-primary">
-                      Round {rule.round}: {rule.roundName}
-                      <span className="text-muted-foreground font-normal ml-2">
-                        ({rule.choices === 1 ? `${rule.pointsPerChoice[0]} pts` : `${rule.pointsPerChoice.join("/")} pts`})
-                      </span>
-                    </h3>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {REGIONS.map((region) => (
-                        <div key={region} className="rounded-lg border p-2.5">
-                          <p className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">{region}</p>
-                          <div className="space-y-1">
-                            {Array.from({ length: gamesPerRegion }, (_, i) => i + 1).map((g) => {
-                              const gameId = `${region}-r${rule.round}-g${g}`;
-                              const pick = picks.get(gameId);
-                              const hasMinPicks = pick?.choices && pick.choices.length >= rule.choices;
-                              return (
-                                <div key={g} className="flex items-center gap-1.5 text-xs">
-                                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasMinPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
-                                    {hasMinPicks ? "✓" : "!"}
-                                  </span>
-                                  <span className="text-muted-foreground">G{g}:</span>
-                                  {pick?.choices?.length ? (
-                                    <span className="font-medium truncate">
-                                      {pick.choices.map((id, idx) => {
-                                        const team = SAMPLE_TEAMS.find((t) => t.id === id);
-                                        return team ? (idx > 0 ? `, ${team.name}` : team.name) : "";
-                                      }).join("")}
-                                    </span>
-                                  ) : (
-                                    <span className="text-muted-foreground italic">No pick</span>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Final Four */}
-              <div>
-                <h3 className="text-sm font-bold mb-2 text-primary">
-                  Round 5: Final Four
-                  <span className="text-muted-foreground font-normal ml-2">(25/15/10/5 pts)</span>
-                </h3>
-                <div className="grid md:grid-cols-2 gap-3">
-                  {[1, 2].map((g) => {
-                    const gameId = `final-four-r5-g${g}`;
-                    const pick = picks.get(gameId);
-                    const hasPicks = pick?.choices && pick.choices.length >= 4;
-                    return (
-                      <div key={g} className="rounded-lg border p-2.5">
-                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">Game {g}</p>
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
-                            {hasPicks ? "✓" : "!"}
-                          </span>
-                          {pick?.choices?.length ? (
-                            <span className="font-medium">
-                              {pick.choices.map((id, idx) => {
-                                const team = SAMPLE_TEAMS.find((t) => t.id === id);
-                                return team ? `${idx + 1}. ${team.name}` : "";
-                              }).join(", ")}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground italic">No picks yet</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Championship */}
-              <div>
-                <h3 className="text-sm font-bold mb-2 text-primary">
-                  Round 6: Championship
-                  <span className="text-muted-foreground font-normal ml-2">(35/25/15/10/5 pts)</span>
-                </h3>
-                <div className="rounded-lg border p-2.5 max-w-md">
-                  {(() => {
-                    const pick = picks.get("championship-r6-g1");
-                    const hasPicks = pick?.choices && pick.choices.length >= 5;
-                    return (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${hasPicks ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-500 dark:bg-red-900 dark:text-red-300"}`}>
-                          {hasPicks ? "✓" : "!"}
-                        </span>
-                        {pick?.choices?.length ? (
-                          <span className="font-medium">
-                            {pick.choices.map((id, idx) => {
-                              const team = SAMPLE_TEAMS.find((t) => t.id === id);
-                              return team ? `${idx + 1}. ${team.name}` : "";
-                            }).join(", ")}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground italic">No picks yet</span>
-                        )}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Tiebreaker */}
-              <div>
-                <h3 className="text-sm font-bold mb-1 text-primary">Tiebreaker</h3>
-                <p className="text-xs">
-                  {tiebreaker !== "" ? (
-                    <span className="font-medium">Total combined score: {tiebreaker}</span>
-                  ) : (
-                    <span className="text-muted-foreground italic">Not set</span>
-                  )}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bracket Name & Person Selection */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="bracketName">Bracket Name</Label>
-              <Input
-                id="bracketName"
-                value={bracketName}
-                onChange={(e) => setBracketName(e.target.value)}
-                placeholder="Enter a name for your bracket"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bracketFor">Creating Bracket For</Label>
-              <Select value={selectedPerson} onValueChange={setSelectedPerson}>
-                <SelectTrigger id="bracketFor">
-                  <SelectValue placeholder="Select person" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="self">
-                    <span className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Myself ({session?.user?.name})
-                    </span>
-                  </SelectItem>
-                  {familyMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      <span className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        {member.name}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {familyMembers.length === 0 && (
-                <p className="text-xs text-slate-500">
-                  <a href="/settings/family" className="text-primary hover:underline">
-                    Add family members
-                  </a>{" "}
-                  to create brackets for them
-                </p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* View Mode Toggle + Download (desktop only) */}
-      <div className="hidden lg:flex justify-end gap-1">
-        <Button
-          variant={viewMode === "card" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("card")}
-          className={viewMode === "card" ? "bg-primary hover:bg-primary/90" : ""}
-        >
-          <LayoutGrid className="mr-1.5 h-4 w-4" />
-          Card View
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={leave} aria-label="Back to my brackets">
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <Button
-          variant={viewMode === "bracket" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("bracket")}
-          className={viewMode === "bracket" ? "bg-primary hover:bg-primary/90" : ""}
-        >
-          <GitBranch className="mr-1.5 h-4 w-4" />
-          Bracket View
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const link = document.createElement("a");
-            link.href = `/api/tournament/blank-pdf${userPoolId ? `?poolId=${encodeURIComponent(userPoolId)}` : ""}`;
-            link.download = `${field.tournament.year}-bracket.pdf`;
-            link.click();
-          }}
-        >
-          <Download className="mr-1.5 h-4 w-4" />
-          Download PDF
-        </Button>
-      </div>
-
-      {/* Desktop Bracket View */}
-      {viewMode === "bracket" && (
-        <div className="hidden lg:block">
-          <Card>
-            <CardContent className="pt-6">
-              <DesktopBracketView
-                regions={REGIONS}
-                picks={picks}
-                onPick={handlePick}
-                getEligibleTeamsForGame={getEligibleTeamsForGame}
-                getFinalFourTeams={getFinalFourTeams}
-                getChampionshipTeams={getChampionshipTeamsForDesktop}
-              />
-              {/* Tiebreaker in desktop view */}
-              <div className="max-w-md mx-auto mt-6">
-                <Label htmlFor="tiebreaker-desktop" className="text-sm font-medium">
-                  Tiebreaker: Total Combined Score
-                </Label>
-                <p className="text-xs text-slate-500 mt-1 mb-2">
-                  Predict the total combined points of both teams in the championship game
-                </p>
-                <Input
-                  id="tiebreaker-desktop"
-                  type="number"
-                  min="0"
-                  max="300"
-                  placeholder="Enter total points (e.g., 145)"
-                  value={tiebreaker}
-                  onChange={(e) => setTiebreaker(e.target.value === "" ? "" : parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-2xl font-bold md:text-3xl">{bracketId ? name : "New bracket"}</h1>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-muted-foreground">
+              {prog.done} of {prog.total} games picked
+            </span>
+            {saveLabel}
+          </div>
         </div>
-      )}
-
-      {/* Card-based Round Selection (mobile + card mode on desktop) */}
-      <Card className={viewMode === "bracket" ? "lg:hidden" : ""}>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>
-                Round {currentRound}: {scoringRule?.roundName}
-              </CardTitle>
-              <CardDescription>
-                {scoringRule?.choices === 1 ? (
-                  `Pick the winner of each game (${scoringRule.pointsPerChoice[0]} pts per correct pick)`
-                ) : (
-                  `Rank your top ${scoringRule?.choices} choices (${scoringRule?.pointsPerChoice.join("/")} pts)`
-                )}
-              </CardDescription>
-            </div>
-            <Badge variant="outline" className="text-primary border-primary">
-              <Info className="mr-1 h-3 w-3" />
-              {scoringRule?.choices === 1
-                ? `${scoringRule.pointsPerChoice[0]} pts`
-                : `${scoringRule?.pointsPerChoice.join("/")} pts`}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Round Navigation */}
-          <div className="flex flex-col gap-3 mb-4">
-            {/* Mobile: compact pill row + round name label */}
-            <div className="sm:hidden flex flex-col items-center gap-1.5">
-              <div className="flex justify-center gap-2">
-                {SCORING_RULES.map((rule) => (
-                  <button
-                    key={rule.round}
-                    onClick={() => goToRound(rule.round)}
-                    className={`w-9 h-9 rounded-full text-sm font-bold transition-colors ${
-                      currentRound === rule.round
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "bg-muted text-muted-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {rule.round}
-                  </button>
-                ))}
-              </div>
-              <span className="text-xs font-medium text-muted-foreground">
-                {scoringRule?.roundName}
-              </span>
-            </div>
-            {/* Desktop: full round buttons with labels */}
-            <div className="hidden sm:flex justify-center gap-1.5">
-              {SCORING_RULES.map((rule) => (
-                <Button
-                  key={rule.round}
-                  variant={currentRound === rule.round ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => goToRound(rule.round)}
-                  className={`flex flex-col items-center h-auto py-1.5 px-3 ${
-                    currentRound === rule.round
-                      ? "bg-primary hover:bg-primary/90"
-                      : ""
-                  }`}
-                >
-                  <span className="text-xs font-bold">R{rule.round}</span>
-                  <span className="text-[10px] font-normal leading-tight">{rule.roundName}</span>
-                </Button>
-              ))}
-            </div>
-            {/* Prev/Next Buttons + Clear Picks */}
-            <div className="flex justify-between items-center">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentRound === 1}
-                onClick={() => goToRound(currentRound - 1)}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                <span className="hidden sm:inline">Previous</span>
-                <span className="sm:hidden">Prev</span>
-              </Button>
-              
-              {picks.size > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={() => setShowClearDialog(true)}
-                >
-                  Clear Picks
-                </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentRound === 6}
-                onClick={() => goToRound(currentRound + 1)}
-              >
-                <span className="hidden sm:inline">Next Round</span>
-                <span className="sm:hidden">Next</span>
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Region Tabs (for rounds 1-4) */}
-          {currentRound <= 4 && (
-            <>
-              <div className="mb-4">
-                <p className="text-xs text-center text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Region</p>
-                <div className="grid w-full grid-cols-4 gap-1 rounded-lg bg-muted p-1">
-                  {REGIONS.map((region) => (
-                    <button
-                      key={region}
-                      onClick={() => goToRegion(region)}
-                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                        currentRegion === region
-                          ? "bg-background shadow text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {region}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <AnimatePresence mode="wait" custom={slideDirection.current}>
-                <motion.div
-                  key={`${currentRound}-${currentRegion}`}
-                  custom={slideDirection.current}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                >
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {!isPreviousRoundComplete(currentRound, currentRegion) ? (
-                      <div className="col-span-full p-8 text-center bg-muted/50 rounded-lg border border-dashed">
-                        <div className="mx-auto w-12 h-12 rounded-full bg-accent flex items-center justify-center mb-3">
-                          <Lock className="h-6 w-6 text-primary" />
-                        </div>
-                        <p className="font-medium">Complete Round {currentRound - 1} first</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          You need to make picks in the previous round before selecting teams here.
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => goToRound(currentRound - 1)}
-                        >
-                          Go to Round {currentRound - 1}
-                        </Button>
-                      </div>
-                    ) : (
-                      getMatchupsForRound(currentRound, currentRegion).map((matchup) => {
-                        const gameId = `${currentRegion}-r${currentRound}-g${matchup.game}`;
-                        const pick = picks.get(gameId);
-                        const maxChoices = scoringRule?.choices || 1;
-                        
-                        return (
-                          <GameCard
-                            key={matchup.game}
-                            gameNumber={matchup.game}
-                            round={currentRound}
-                            region={currentRegion}
-                            eligibleTeams={matchup.eligibleTeams}
-                            picks={pick?.choices || []}
-                            maxChoices={maxChoices}
-                            pointsPerChoice={scoringRule?.pointsPerChoice || [1]}
-                            onPick={(teamId, rank) => handlePick(gameId, teamId, rank)}
-                          />
-                        );
-                      })
-                    )}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </>
-          )}
-
-          {/* Final Four */}
-          {currentRound === 5 && (() => {
-            const matchups = getFinalFourMatchups();
-            const hasTeams = matchups.some((m) => m.eligibleTeams.length > 0);
-            
-            if (!hasTeams) {
-              return (
-                <div className="p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-accent flex items-center justify-center mb-3">
-                    <Lock className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-slate-600 font-medium">Complete Elite 8 first</p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Make your Elite 8 picks in all regions to see Final Four teams.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => setCurrentRound(4)}
-                  >
-                    Go to Elite 8
-                  </Button>
-                </div>
-              );
-            }
-            
-            return (
-              <div className="grid gap-4 md:grid-cols-2">
-                {matchups.map((matchup) => {
-                  const gameId = `final-four-r5-g${matchup.game}`;
-                  const pick = picks.get(gameId);
-                  const maxChoices = scoringRule?.choices || 4;
-                  
-                  return (
-                    <GameCard
-                      key={matchup.game}
-                      gameNumber={matchup.game}
-                      round={5}
-                      region={matchup.label}
-                      eligibleTeams={matchup.eligibleTeams}
-                      picks={pick?.choices || []}
-                      maxChoices={maxChoices}
-                      pointsPerChoice={scoringRule?.pointsPerChoice || [1]}
-                      onPick={(teamId, rank) => handlePick(gameId, teamId, rank)}
-                    />
-                  );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* Championship */}
-          {currentRound === 6 && (() => {
-            const matchup = getChampionshipMatchup();
-            const gameId = "championship-r6-g1";
-            const pick = picks.get(gameId);
-            const maxChoices = scoringRule?.choices || 5;
-            
-            if (matchup.eligibleTeams.length === 0) {
-              return (
-                <div className="max-w-md mx-auto p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-accent flex items-center justify-center mb-3">
-                    <Trophy className="h-7 w-7 text-primary" />
-                  </div>
-                  <p className="text-slate-600 font-medium">Complete Final Four first</p>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Make your Final Four picks to see Championship teams.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => setCurrentRound(5)}
-                  >
-                    Go to Final Four
-                  </Button>
-                </div>
-              );
-            }
-            
-            return (
-              <div className="max-w-md mx-auto space-y-4">
-                <GameCard
-                  gameNumber={1}
-                  round={6}
-                  region="Championship"
-                  eligibleTeams={matchup.eligibleTeams}
-                  picks={pick?.choices || []}
-                  maxChoices={maxChoices}
-                  pointsPerChoice={scoringRule?.pointsPerChoice || [1]}
-                  onPick={(teamId, rank) => handlePick(gameId, teamId, rank)}
-                />
-                
-                {/* Tiebreaker */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <Label htmlFor="tiebreaker" className="text-sm font-medium">
-                      Tiebreaker: Total Combined Score
-                    </Label>
-                    <p className="text-xs text-slate-500 mt-1 mb-2">
-                      Predict the total combined points of both teams in the championship game 
-                      (e.g., Team A = 45 + Team B = 50 = 95 total)
-                    </p>
-                    <Input
-                      id="tiebreaker"
-                      type="number"
-                      min="0"
-                      max="300"
-                      placeholder="Enter total points (e.g., 145)"
-                      value={tiebreaker}
-                      onChange={(e) => setTiebreaker(e.target.value === "" ? "" : parseInt(e.target.value))}
-                      className="w-full"
-                    />
-                  </CardContent>
-                </Card>
-              </div>
-            );
-          })()}
-        </CardContent>
-      </Card>
-
-      {/* Bottom Round Navigation — Desktop only (mobile uses sticky bar below) */}
-      <Card className={`hidden sm:block ${viewMode === "bracket" ? "lg:hidden" : ""}`}>
-        <CardContent className="py-4 space-y-4">
-          {/* Region Tabs (for rounds 1-4) */}
-          {currentRound <= 4 && (
-            <div className="flex flex-col items-center">
-              <p className="text-xs text-muted-foreground mb-1.5 font-medium uppercase tracking-wide">Region</p>
-              <div className="inline-flex rounded-lg border p-1 bg-muted">
-                {REGIONS.map((region) => (
-                  <Button
-                    key={region}
-                    variant={currentRegion === region ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => goToRegion(region, true)}
-                    className={
-                      currentRegion === region
-                        ? "bg-primary hover:bg-primary/90"
-                        : ""
-                    }
-                  >
-                    {region}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Round Navigation */}
-          <div className="flex flex-col gap-3">
-            <div className="flex justify-center gap-1.5">
-              {SCORING_RULES.map((rule) => (
-                <Button
-                  key={rule.round}
-                  variant={currentRound === rule.round ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => goToRound(rule.round, true)}
-                  className={`flex flex-col items-center h-auto py-1.5 px-3 ${
-                    currentRound === rule.round
-                      ? "bg-primary hover:bg-primary/90"
-                      : ""
-                  }`}
-                >
-                  <span className="text-xs font-bold">R{rule.round}</span>
-                  <span className="text-[10px] font-normal leading-tight">{rule.roundName}</span>
-                </Button>
-              ))}
-            </div>
-            <div className="flex justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentRound === 1}
-                onClick={() => goToRound(currentRound - 1, true)}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentRound === 6}
-                onClick={() => goToRound(currentRound + 1, true)}
-              >
-                Next Round
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Mobile bottom spacer (prevents sticky bar from covering content) */}
-      <div className="sm:hidden h-28" />
-
-      {/* Sticky Mobile Bottom Nav */}
-      <div className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2.5 space-y-2 ${viewMode === "bracket" ? "lg:hidden" : ""}`}>
-        {/* Region tabs (rounds 1-4 only) */}
-        {currentRound <= 4 && (
-          <div className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-0.5">
-            {REGIONS.map((region) => (
-              <button
-                key={region}
-                onClick={() => goToRegion(region, true)}
-                className={`rounded-md py-1 text-xs font-medium transition-colors ${
-                  currentRegion === region
-                    ? "bg-background shadow text-foreground"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {region}
-              </button>
-            ))}
-          </div>
+        {isSubmitted && unsaved && (
+          <Button size="sm" onClick={submit} disabled={!complete || saving} title={complete ? undefined : "Finish every game to save"}>
+            {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Check className="mr-1.5 h-4 w-4" />}
+            {complete ? "Save changes" : "Finish to save"}
+          </Button>
         )}
-        {/* Round pills + prev/next */}
-        <div className="flex items-center justify-between gap-2">
-          <button
-            aria-label="Previous round"
-            disabled={currentRound === 1}
-            onClick={() => goToRound(currentRound - 1, true)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="flex gap-1.5">
-            {SCORING_RULES.map((rule) => (
-              <button
-                key={rule.round}
-                onClick={() => goToRound(rule.round, true)}
-                className={`w-8 h-8 rounded-full text-xs font-bold transition-colors ${
-                  currentRound === rule.round
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {rule.round}
-              </button>
-            ))}
-          </div>
-          <button
-            aria-label="Next round"
-            disabled={currentRound === 6}
-            onClick={() => goToRound(currentRound + 1, true)}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground disabled:opacity-30"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+        <div className="hidden items-center gap-2 lg:flex">
+          <Button variant="outline" size="sm" onClick={editor.undo} disabled={!editor.canUndo}>
+            <Undo2 className="mr-1.5 h-4 w-4" /> Undo
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowClear(true)} disabled={!picks.size}>
+            <Trash2 className="mr-1.5 h-4 w-4" /> Clear
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={`/api/tournament/blank-pdf?poolId=${encodeURIComponent(pool.id)}`} download={`${field.tournament.year}-bracket.pdf`}>
+              <Download className="mr-1.5 h-4 w-4" /> Blank PDF
+            </a>
+          </Button>
         </div>
       </div>
 
-      {/* Payment Instructions Modal */}
-      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(prog.done / prog.total) * 100}%` }} />
+      </div>
+
+      {/* Bracket details (collapsed on phones so the picks stay on screen) */}
+      <button
+        type="button"
+        onClick={() => setShowDetails(!showDetails)}
+        className="flex w-full items-center justify-between rounded-lg border bg-card px-3 py-2 text-left text-sm lg:hidden"
+        aria-expanded={showDetails}
+      >
+        <span className="truncate">
+          <span className="font-semibold">{name}</span>
+          <span className="text-muted-foreground"> · for {entryName}</span>
+        </span>
+        <span className="shrink-0 text-xs font-semibold text-primary">{showDetails ? "Done" : "Edit"}</span>
+      </button>
+      <div className={cn("grid gap-3 sm:grid-cols-2", !showDetails && "hidden lg:grid")}>
+        <div>
+          <Label htmlFor="bracket-name" className="text-xs text-muted-foreground">
+            Bracket name
+          </Label>
+          <Input id="bracket-name" value={name} maxLength={100} onChange={(e) => editMeta(setName)(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Entry for</Label>
+          <Select value={person} onValueChange={editMeta(setPerson)}>
+            <SelectTrigger className="mt-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="self">{session.user?.name || "Myself"}</SelectItem>
+              {family.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Desktop: the whole bracket */}
+      <div className="hidden space-y-5 lg:block">
+        <DesktopBracketView regions={regions} picks={picks} byId={byId} team={team} onTap={editor.tap} onReorder={editor.reorder} />
+        <div className="mx-auto max-w-md rounded-xl border bg-card p-5 shadow-sm">{submitPanel}</div>
+      </div>
+
+      {/* Phones and tablets: one card at a time */}
+      <div className="lg:hidden">
+        <MobilePicker
+          steps={steps}
+          regions={regions}
+          picks={picks}
+          byId={byId}
+          team={team}
+          onTap={editor.tap}
+          onReorder={editor.reorder}
+          onUndo={editor.undo}
+          canUndo={editor.canUndo}
+          finale={submitPanel}
+        />
+        <div className="mt-4 flex justify-center gap-4 text-xs">
+          <button type="button" onClick={() => setShowClear(true)} disabled={!picks.size} className="text-muted-foreground underline disabled:opacity-40">
+            Clear all picks
+          </button>
+          <a href={`/api/tournament/blank-pdf?poolId=${encodeURIComponent(pool.id)}`} className="text-muted-foreground underline">
+            Blank bracket PDF
+          </a>
+        </div>
+      </div>
+
+      <Dialog open={showClear} onOpenChange={setShowClear}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              Bracket Submitted!
-            </DialogTitle>
-            <DialogDescription>
-              Your bracket has been submitted successfully. Please complete payment to finalize your entry.
-            </DialogDescription>
+            <DialogTitle>Clear all picks?</DialogTitle>
+            <DialogDescription>This removes every pick in this bracket. You can undo it right after.</DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="bg-secondary border border-accent rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-5 w-5 text-primary" />
-                <span className="font-semibold text-foreground">Entry Fee: {payment.feeLabel}</span>
-              </div>
-              <p className="text-sm text-secondary-foreground">
-                Payment is required to be eligible for prizes.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-medium">Payment Options:</h4>
-              
-              {payment.venmoUrl && (
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">V</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">Venmo</p>
-                      <p className="text-sm text-slate-500">@{payment.venmoHandle}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(payment.venmoUrl!, "_blank")}>
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Pay
-                  </Button>
-                </div>
-              )}
-
-              {payment.paypalUrl && (
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-700 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">P</span>
-                    </div>
-                    <div>
-                      <p className="font-medium">PayPal</p>
-                      <p className="text-sm text-slate-500">{payment.paypalLabel}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => window.open(payment.paypalUrl!, "_blank")}>
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Pay
-                  </Button>
-                </div>
-              )}
-
-              {!payment.venmoUrl && !payment.paypalUrl && (
-                <p className="text-sm text-slate-500">Ask the pool admin how to pay.</p>
-              )}
-            </div>
-
-            <p className="text-xs text-slate-500 text-center">
-              Include your name &quot;{getEntryName()}&quot; in the payment note.
-              <br />
-              Your entry will be marked as paid once confirmed by the admin.
-            </p>
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowPaymentModal(false);
-                router.push("/brackets");
-              }}
-            >
-              I&apos;ll Pay Later
-            </Button>
-            <Button
-              className="bg-primary hover:bg-primary/90"
-              onClick={() => {
-                setShowPaymentModal(false);
-                router.push("/brackets");
-              }}
-            >
-              Done
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Clear Picks Confirmation Dialog */}
-      <Dialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-red-600">Clear Picks</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to clear your picks? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start border-red-200 hover:bg-red-50 hover:border-red-300"
-              onClick={() => handleClearPicks("round")}
-            >
-              <div className="text-left">
-                <p className="font-medium">Clear Current Round</p>
-                <p className="text-xs text-slate-500">
-                  Only clear picks for Round {currentRound} ({scoringRule?.roundName})
-                </p>
-              </div>
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full justify-start border-red-300 hover:bg-red-100 hover:border-red-400 text-red-600"
-              onClick={() => handleClearPicks("full")}
-            >
-              <div className="text-left">
-                <p className="font-medium">Clear Entire Bracket</p>
-                <p className="text-xs text-red-400">
-                  Remove all picks from all rounds
-                </p>
-              </div>
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setShowClearDialog(false)}
-            >
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowClear(false)}>
               Cancel
             </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                editor.clear(() => false);
+                setShowClear(false);
+                toast("All picks cleared", { action: { label: "Undo", onClick: editor.undo } });
+              }}
+            >
+              Clear all
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showLeave} onOpenChange={setShowLeave}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{isSubmitted ? "Save your changes?" : "Save draft before leaving?"}</DialogTitle>
+            <DialogDescription>
+              {isSubmitted
+                ? complete
+                  ? "Your submitted bracket has changes that aren't saved yet."
+                  : "Your changes leave the bracket incomplete, so they can't be saved to your submitted bracket. Finish it or discard the changes."
+                : "Your latest picks haven't been saved yet."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowLeave(false)}>
+              Keep editing
+            </Button>
+            <Button variant="ghost" onClick={() => router.push("/brackets")}>
+              {isSubmitted ? "Discard changes" : "Leave without saving"}
+            </Button>
+            {(!isSubmitted || complete) && (
+              <Button
+                onClick={async () => {
+                  if (await save(isSubmitted ? "SUBMITTED" : "DRAFT")) router.push("/brackets");
+                }}
+              >
+                {isSubmitted ? "Save changes" : "Save draft"}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <PaymentDialog
+        open={showPayment}
+        pool={pool}
+        entryName={entryName}
+        onDone={() => {
+          setShowPayment(false);
+          router.push("/brackets");
+        }}
+      />
+      <span className="sr-only" aria-live="polite">
+        {saving ? "Saving" : unsaved ? "Unsaved changes" : "Saved"}
+      </span>
     </div>
   );
 }
 
 export default function NewBracketPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-[60vh]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
-      <NewBracketContent />
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+        </div>
+      }
+    >
+      <BracketEditorPage />
     </Suspense>
   );
 }

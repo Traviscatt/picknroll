@@ -83,17 +83,25 @@ export function useLiveData(poolId: string | null, date: string | null, enabled 
   };
 }
 
+// One shared status check for every component on the page (navbar, tab bar, standings toggle)
+let statusCache: { at: number; value: Promise<boolean> } | null = null;
+function fetchAnyLive(): Promise<boolean> {
+  if (statusCache && Date.now() - statusCache.at < 30_000) return statusCache.value;
+  const value = fetch("/api/live/status")
+    .then((res) => (res.ok ? res.json() : { anyLive: false }))
+    .then((body) => !!body.anyLive)
+    .catch(() => false);
+  statusCache = { at: Date.now(), value };
+  return value;
+}
+
 /** Whether any tournament game is in progress (navbar dot, standings toggle). Checks once a minute. */
 export function useAnyLive(enabled = true) {
   const [anyLive, setAnyLive] = useState(false);
   useEffect(() => {
     if (!enabled) return;
     let cancelled = false;
-    const check = () =>
-      fetch("/api/live/status")
-        .then((res) => (res.ok ? res.json() : { anyLive: false }))
-        .then((body) => !cancelled && setAnyLive(!!body.anyLive))
-        .catch(() => undefined);
+    const check = () => fetchAnyLive().then((live) => !cancelled && setAnyLive(live));
     check();
     const timer = setInterval(() => !document.hidden && check(), 60_000);
     return () => {

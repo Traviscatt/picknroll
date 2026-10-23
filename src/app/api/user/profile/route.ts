@@ -17,17 +17,21 @@ export async function PATCH(request: Request) {
 
     const updateData: Record<string, unknown> = {};
 
-    if (name && name.trim().length > 0) {
-      updateData.name = name.trim();
+    if (typeof name === "string" && name.trim().length > 0) {
+      updateData.name = name.trim().slice(0, 100);
     }
 
     if (favoriteTeam !== undefined) {
+      if (favoriteTeam && (typeof favoriteTeam !== "string" || !/^[a-z0-9-]{1,60}$/.test(favoriteTeam))) {
+        return NextResponse.json({ error: "Invalid team" }, { status: 400 });
+      }
       updateData.favoriteTeam = favoriteTeam || null;
     }
 
     const user = await db.user.update({
       where: { id: session.user.id },
       data: updateData,
+      select: { id: true, name: true, email: true, favoriteTeam: true },
     });
 
     return NextResponse.json(user);

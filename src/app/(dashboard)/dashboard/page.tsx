@@ -528,7 +528,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Tournament Instructions & Scoring */}
-      <Card className="border-t-4 border-t-primary">
+      <Card id="rules" className="scroll-mt-20 border-t-4 border-t-primary">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />

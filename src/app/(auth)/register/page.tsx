@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Loader2, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { TEAMS } from "@/lib/team-colors";
+import { useTeamOptions } from "@/hooks/use-team-options";
 import { safeCallbackUrl } from "@/lib/utils";
 
 function RegisterContent() {
@@ -33,12 +33,13 @@ function RegisterContent() {
   const [favoriteTeam, setFavoriteTeam] = useState("");
   const [teamSearch, setTeamSearch] = useState("");
   const [showTeamPicker, setShowTeamPicker] = useState(false);
+  const { teams: TEAMS } = useTeamOptions(showTeamPicker || !!favoriteTeam);
 
   const filteredTeams = useMemo(() => {
     if (!teamSearch) return TEAMS;
     const q = teamSearch.toLowerCase();
     return TEAMS.filter((t) => t.name.toLowerCase().includes(q));
-  }, [teamSearch]);
+  }, [teamSearch, TEAMS]);
 
   const selectedTeam = TEAMS.find((t) => t.slug === favoriteTeam);
 

@@ -1,5 +1,5 @@
 // NCAA Team Colors + Palette Generator
-// Each team has primary + secondary colors; the palette generator derives all CSS vars
+// Each team has primary + secondary colors; the palette generator derives the themed (frame) CSS vars
 
 export interface TeamInfo {
   slug: string;
@@ -44,103 +44,96 @@ function darken(hex: string, amount: number): string {
   return rgbToHex(r * (1 - amount), g * (1 - amount), b * (1 - amount));
 }
 
-function luminance(hex: string): number {
-  const [r, g, b] = hexToRgb(hex);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+/** WCAG relative luminance */
+function relativeLuminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-function contrastForeground(bg: string): string {
-  return luminance(bg) > 0.55 ? "#1a1a2e" : "#ffffff";
+/** WCAG contrast ratio (1–21) */
+export function contrastRatio(a: string, b: string): number {
+  const [la, lb] = [relativeLuminance(a), relativeLuminance(b)];
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Darkens a color step by step until it reaches `ratio` against `against` */
+function darkenToContrast(hex: string, against: string, ratio: number): string {
+  let color = hex;
+  for (let i = 0; i < 40 && contrastRatio(color, against) < ratio; i++) color = darken(color, 0.05);
+  return color;
+}
+
+const INK = "#1a1a2e";
+const WHITE = "#ffffff";
+
+/** White or ink, whichever reads better on `bg` */
+function textOn(bg: string): string {
+  return contrastRatio(WHITE, bg) >= contrastRatio(INK, bg) ? WHITE : INK;
 }
 
 // ── Palette generator ───────────────────────────────────────────────
+// The favorite-team theme colors only the app's frame (navbar accents, buttons, links, focus rings, light
+// tints). Text, gray text, borders, error red, pick-rank colors, and game status colors stay fixed so the
+// app reads the same for every team.
 
 export interface ThemePalette {
   background: string;
-  foreground: string;
-  card: string;
-  "card-foreground": string;
-  popover: string;
-  "popover-foreground": string;
   primary: string;
   "primary-foreground": string;
   secondary: string;
   "secondary-foreground": string;
-  muted: string;
-  "muted-foreground": string;
   accent: string;
   "accent-foreground": string;
-  destructive: string;
-  border: string;
-  input: string;
   ring: string;
   "chart-1": string;
   "chart-2": string;
-  "chart-3": string;
-  "chart-4": string;
-  "chart-5": string;
-  sidebar: string;
-  "sidebar-foreground": string;
   "sidebar-primary": string;
   "sidebar-primary-foreground": string;
-  "sidebar-accent": string;
-  "sidebar-accent-foreground": string;
-  "sidebar-border": string;
   "sidebar-ring": string;
   "team-secondary": string;
   "team-secondary-foreground": string;
 }
 
-export function generatePalette(primary: string, secondary: string): ThemePalette {
-  const bg = mix(primary, 0.97);        // near-white tinted with primary
-  const fg = darken(primary, 0.15);     // dark version of primary for text
-  const fgColor = luminance(fg) < 0.15 ? fg : darken(primary, 0.4);
+/** Every CSS variable a palette may set (cleared before applying a new theme) */
+export const THEME_VARS: (keyof ThemePalette)[] = [
+  "background", "primary", "primary-foreground", "secondary", "secondary-foreground", "accent", "accent-foreground",
+  "ring", "chart-1", "chart-2", "sidebar-primary", "sidebar-primary-foreground", "sidebar-ring", "team-secondary",
+  "team-secondary-foreground",
+];
 
-  const cardBg = "#ffffff";
-  const mutedBg = mix(primary, 0.93);
-  const mutedFg = mix(primary, 0.45);
-  const accentBg = mix(secondary, 0.85);
-  const accentFg = darken(secondary, 0.25);
-  const borderColor = mix(primary, 0.82);
-  const sidebarBg = mix(primary, 0.95);
+export function generatePalette(primaryColor: string, secondaryColor: string): ThemePalette {
+  // Primary doubles as link/label text on white and as a button background behind white text: keep it at 4.5:1
+  const primary = darkenToContrast(primaryColor, WHITE, 4.5);
+  // Secondary is used for small accents on light backgrounds (navbar underline, the logo "N"): a white or
+  // near-white team color would vanish, so fall back to a lighter shade of the primary
+  const secondary = contrastRatio(secondaryColor, WHITE) >= 2 ? secondaryColor : darkenToContrast(mix(primary, 0.35), WHITE, 2);
+  const tint = mix(primary, 0.92);
+  const accent = mix(secondary, 0.85);
 
   return {
-    background: bg,
-    foreground: fgColor,
-    card: cardBg,
-    "card-foreground": fgColor,
-    popover: cardBg,
-    "popover-foreground": fgColor,
-    primary: primary,
-    "primary-foreground": contrastForeground(primary),
-    secondary: mix(secondary, 0.88),
-    "secondary-foreground": darken(secondary, 0.3),
-    muted: mutedBg,
-    "muted-foreground": mutedFg,
-    accent: accentBg,
-    "accent-foreground": accentFg,
-    destructive: "#b91c1c",
-    border: borderColor,
-    input: borderColor,
+    background: mix(primary, 0.985),
+    primary,
+    "primary-foreground": textOn(primary),
+    secondary: tint,
+    "secondary-foreground": contrastRatio(primary, tint) >= 4.5 ? primary : INK,
+    accent,
+    "accent-foreground": contrastRatio(primary, accent) >= 4.5 ? primary : INK,
     ring: primary,
     "chart-1": primary,
     "chart-2": secondary,
-    "chart-3": mix(primary, 0.4),
-    "chart-4": mix(secondary, 0.5),
-    "chart-5": darken(primary, 0.2),
-    sidebar: sidebarBg,
-    "sidebar-foreground": fgColor,
     "sidebar-primary": primary,
-    "sidebar-primary-foreground": contrastForeground(primary),
-    "sidebar-accent": accentBg,
-    "sidebar-accent-foreground": accentFg,
-    "sidebar-border": borderColor,
+    "sidebar-primary-foreground": textOn(primary),
     "sidebar-ring": primary,
     "team-secondary": secondary,
-    "team-secondary-foreground": contrastForeground(secondary),
+    "team-secondary-foreground": textOn(secondary),
   };
 }
 
+// ── Curated team colors (2026 field). Override ESPN colors where they differ from the brand;
+// teams not listed here get their colors from the imported tournament field (/api/teams).
 // ── 2026 NCAA Tournament Teams (68) ─────────────────────────────────
 
 const espn = (id: string) =>
@@ -233,3 +226,15 @@ export function getTeamBySlug(slug: string): TeamInfo | undefined {
 export function getAllTeamSlugs(): string[] {
   return TEAMS.map((t) => t.slug);
 }
+
+/** URL-safe slug for a school name ("St. John's" -> "st-johns") */
+export function teamSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['’.()&]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** ESPN team ID from a logo URL like .../500/150.png */
+export const espnIdFromLogo = (logo: string | null | undefined) => logo?.match(/\/(\d+)\.png/)?.[1] ?? null;

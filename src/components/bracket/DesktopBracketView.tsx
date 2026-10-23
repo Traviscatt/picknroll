@@ -2,35 +2,23 @@
 
 import { Fragment } from "react";
 import { BracketSlot } from "./BracketSlot";
-import { SCORING_RULES } from "@/lib/scoring";
 import { cn } from "@/lib/utils";
-
-interface Team {
-  id: string;
-  name: string;
-  seed: number;
-  region: string;
-  logo: string;
-  record?: string;
-}
-
-interface GamePick {
-  gameId: string;
-  round: number;
-  choices: string[];
-}
+import { eligibleTeams, isUnlocked, type GameSlot, type Picks, type TapResult } from "@/lib/picker";
+import type { PickerTeam } from "@/components/picker/game-picker";
 
 type Region = string;
 
 interface DesktopBracketViewProps {
   /** Regions in bracket order: [0] and [1] on the left (Final Four game 1), [2] and [3] on the right */
   regions: string[];
-  picks: Map<string, GamePick>;
-  onPick: (gameId: string, teamId: string, choiceRank: number) => void;
-  getEligibleTeamsForGame: (round: number, region: Region, gameNum: number) => Team[];
-  getFinalFourTeams: (semi: 1 | 2) => Team[];
-  getChampionshipTeams: () => Team[];
+  picks: Picks;
+  byId: Map<string, GameSlot>;
+  team: (id: string) => PickerTeam;
+  onTap: (game: GameSlot, teamId: string) => { result: TapResult; picks: Picks };
+  onReorder: (game: GameSlot, order: string[]) => void;
 }
+
+type SlotRenderer = (gameId: string, mirrored?: boolean) => React.ReactNode;
 
 /* ── Layout constants ─────────────────────────────── */
 const R1_H = 62;
@@ -100,38 +88,8 @@ const ROUNDS_CFG = [
 ];
 
 /* ── Single region bracket ─────────────────────────── */
-function RegionBracket({
-  region,
-  picks,
-  onPick,
-  getEligibleTeamsForGame,
-  mirrored,
-}: {
-  region: Region;
-  picks: Map<string, GamePick>;
-  onPick: (gameId: string, teamId: string, choiceRank: number) => void;
-  getEligibleTeamsForGame: (round: number, region: Region, gameNum: number) => Team[];
-  mirrored: boolean;
-}) {
-  const renderSlot = (round: number, game: number) => {
-    const gameId = `${region}-r${round}-g${game}`;
-    const pick = picks.get(gameId);
-    const rule = SCORING_RULES.find((r) => r.round === round)!;
-    const eligible = getEligibleTeamsForGame(round, region, game);
-    return (
-      <BracketSlot
-        key={gameId}
-        gameId={gameId}
-        round={round}
-        eligibleTeams={eligible}
-        picks={pick?.choices || []}
-        maxChoices={rule.choices}
-        pointsPerChoice={rule.pointsPerChoice}
-        onPick={onPick}
-        mirrored={mirrored}
-      />
-    );
-  };
+function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotRenderer; mirrored: boolean }) {
+  const renderSlot = (round: number, game: number) => slot(`${region}-r${round}-g${game}`, mirrored);
 
   return (
     <div className="flex flex-col">
@@ -200,92 +158,62 @@ function RegionBracket({
 }
 
 /* ── Main desktop bracket view ────────────────────── */
-export function DesktopBracketView({
-  regions,
-  picks,
-  onPick,
-  getEligibleTeamsForGame,
-  getFinalFourTeams,
-  getChampionshipTeams,
-}: DesktopBracketViewProps) {
-  const renderCenterSlot = (gameId: string, round: number, eligible: Team[]) => {
-    const pick = picks.get(gameId);
-    const rule = SCORING_RULES.find((r) => r.round === round)!;
+export function DesktopBracketView({ regions, picks, byId, team, onTap, onReorder }: DesktopBracketViewProps) {
+  const slot: SlotRenderer = (gameId, mirrored = false) => {
+    const game = byId.get(gameId)!;
     return (
       <BracketSlot
-        gameId={gameId}
-        round={round}
-        eligibleTeams={eligible}
-        picks={pick?.choices || []}
-        maxChoices={rule.choices}
-        pointsPerChoice={rule.pointsPerChoice}
-        onPick={onPick}
+        key={gameId}
+        game={game}
+        eligible={eligibleTeams(game, picks).map(team)}
+        choices={picks.get(gameId)?.choices ?? []}
+        unlocked={isUnlocked(game, picks, byId)}
+        team={team}
+        onTap={(teamId) => onTap(game, teamId)}
+        onReorder={(order) => onReorder(game, order)}
+        mirrored={mirrored}
       />
     );
   };
 
   return (
-    <div className="w-full overflow-x-auto bg-slate-50 rounded-xl border border-slate-200 shadow-sm">
+    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
       <div className="min-w-[1200px] p-4">
-
         {/* Top half: regions[0] (L→R)  ·  regions[2] (R←L) */}
-        <div className="flex justify-between items-start">
-          <RegionBracket
-            region={regions[0]}
-            picks={picks}
-            onPick={onPick}
-            getEligibleTeamsForGame={getEligibleTeamsForGame}
-            mirrored={false}
-          />
-
-          <RegionBracket
-            region={regions[2]}
-            picks={picks}
-            onPick={onPick}
-            getEligibleTeamsForGame={getEligibleTeamsForGame}
-            mirrored={true}
-          />
+        <div className="flex items-start justify-between">
+          <RegionBracket region={regions[0]} slot={slot} mirrored={false} />
+          <RegionBracket region={regions[2]} slot={slot} mirrored={true} />
         </div>
 
         {/* Center row: FF game 1 (left regions) · Championship · FF game 2 (right regions) */}
-        <div className="flex items-center justify-center gap-6 py-4 -mt-14">
+        <div className="-mt-14 flex items-center justify-center gap-6 py-4">
           <div className="flex flex-col items-center">
-            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">{regions[0]} vs {regions[1]}</div>
-            {renderCenterSlot("final-four-r5-g1", 5, getFinalFourTeams(1))}
+            <div className="mb-1 text-[10px] font-bold text-slate-700">Final Four</div>
+            <div className="mb-1 text-[9px] text-slate-500">
+              {regions[0]} vs {regions[1]}
+            </div>
+            {slot("final-four-r5-g1")}
           </div>
 
-          {/* Championship */}
-          <div className="flex flex-col items-center gap-2 bg-white border-2 border-primary rounded-xl px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
-            <div className="text-lg font-extrabold text-primary tracking-wide">CHAMPION</div>
-            <div className="text-[10px] text-slate-600 font-bold">35 / 25 / 15 / 10 / 5 pts</div>
-            {renderCenterSlot("championship-r6-g1", 6, getChampionshipTeams())}
+          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-primary bg-white px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
+            <div className="text-lg font-extrabold tracking-wide text-primary">CHAMPION</div>
+            <div className="text-[10px] font-bold text-slate-600">35 / 25 / 15 / 10 / 5 pts</div>
+            {slot("championship-r6-g1")}
           </div>
 
           <div className="flex flex-col items-center">
-            <div className="text-[10px] text-slate-700 mb-1 font-bold">Final Four</div>
-            <div className="text-[9px] text-slate-500 mb-1">{regions[2]} vs {regions[3]}</div>
-            {renderCenterSlot("final-four-r5-g2", 5, getFinalFourTeams(2))}
+            <div className="mb-1 text-[10px] font-bold text-slate-700">Final Four</div>
+            <div className="mb-1 text-[9px] text-slate-500">
+              {regions[2]} vs {regions[3]}
+            </div>
+            {slot("final-four-r5-g2", true)}
           </div>
         </div>
 
         {/* Bottom half: regions[1] (L→R)  ·  regions[3] (R←L) */}
-        <div className="flex justify-between items-start -mt-14">
-          <RegionBracket
-            region={regions[1]}
-            picks={picks}
-            onPick={onPick}
-            getEligibleTeamsForGame={getEligibleTeamsForGame}
-            mirrored={false}
-          />
-
-          <RegionBracket
-            region={regions[3]}
-            picks={picks}
-            onPick={onPick}
-            getEligibleTeamsForGame={getEligibleTeamsForGame}
-            mirrored={true}
-          />
+        <div className="-mt-14 flex items-start justify-between">
+          <RegionBracket region={regions[1]} slot={slot} mirrored={false} />
+          <RegionBracket region={regions[3]} slot={slot} mirrored={true} />
         </div>
       </div>
     </div>

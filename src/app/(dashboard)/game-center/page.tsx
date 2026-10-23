@@ -12,7 +12,8 @@ import { useStandingsMode } from "@/hooks/use-standings-mode";
 import { useTournamentField } from "@/hooks/use-tournament-field";
 import { isLive, pickVerdict, rootingFor, tonightRange, type LiveGame, type Rooting } from "@/lib/live";
 import { parsePicksData } from "@/lib/scoring-engine";
-import { getTeamBySlug } from "@/lib/team-colors";
+import { espnIdFromLogo } from "@/lib/team-colors";
+import { useTeamOptions } from "@/hooks/use-team-options";
 import { GameCard } from "@/components/game-center/game-card";
 import { RootingGuide } from "@/components/game-center/rooting-guide";
 import { StandingsPanel } from "@/components/game-center/standings-panel";
@@ -74,7 +75,8 @@ export default function GameCenterPage() {
   const { lookup } = useTournamentField(poolId, !!poolId);
 
   const favoriteTeam = session?.user?.favoriteTeam;
-  const favoriteEspnId = (favoriteTeam ? getTeamBySlug(favoriteTeam)?.logo : null)?.match(/\/(\d+)\.png/)?.[1] ?? null;
+  const { teams: teamOptions } = useTeamOptions(!!favoriteTeam);
+  const favoriteEspnId = espnIdFromLogo(teamOptions.find((t) => t.slug === favoriteTeam)?.logo);
 
   const myIds = useMemo(() => myBrackets.map((b) => b.id), [myBrackets]);
   const standings = useMemo(() => data?.standings ?? [], [data]);

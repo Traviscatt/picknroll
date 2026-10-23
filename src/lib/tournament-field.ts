@@ -34,6 +34,9 @@ export interface TournamentField {
   teams: FieldTeam[];
 }
 
+/** Round 1 matchups by seed, in bracket order (games 1–8 of each region) */
+export const R1_SEED_PAIRS = [[1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]];
+
 export const slotKey = (region: string, seed: number) => `${region.toLowerCase()}-${seed}`;
 
 /** Regions in bracket order, falling back to the standard order for tournaments created before `regions` existed */

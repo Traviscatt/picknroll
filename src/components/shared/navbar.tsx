@@ -12,8 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Menu, Trophy, User, LogOut, Settings, Shield } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { NotificationBell } from "@/components/shared/notification-bell";
 import { useAnyLive } from "@/hooks/use-live-data";
 
@@ -144,51 +143,6 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Mobile menu */}
-              <Sheet>
-                <SheetTrigger asChild className="md:hidden">
-                  <Button variant="ghost" size="icon">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[300px]">
-                  <div className="flex flex-col gap-4 mt-8">
-                    <Link
-                      href="/dashboard"
-                      className={`text-lg font-medium transition-colors ${isActive("/dashboard") ? "text-primary" : "hover:text-primary"}`}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/brackets"
-                      className={`text-lg font-medium transition-colors ${isActive("/brackets") ? "text-primary" : "hover:text-primary"}`}
-                    >
-                      My Brackets
-                    </Link>
-                    <Link
-                      href="/game-center"
-                      className={`flex items-center gap-2 text-lg font-medium transition-colors ${isActive("/game-center") ? "text-primary" : "hover:text-primary"}`}
-                    >
-                      Game Center
-                      {anyLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" aria-label="Games live" />}
-                    </Link>
-                    <Link
-                      href="/leaderboard"
-                      className={`text-lg font-medium transition-colors ${isActive("/leaderboard") ? "text-primary" : "hover:text-primary"}`}
-                    >
-                      Leaderboard
-                    </Link>
-                    {session.user?.role === "ADMIN" && (
-                      <Link
-                        href="/admin"
-                        className={`text-lg font-medium transition-colors ${isActive("/admin") ? "text-primary" : "hover:text-primary"}`}
-                      >
-                        Admin
-                      </Link>
-                    )}
-                  </div>
-                </SheetContent>
-              </Sheet>
             </>
           ) : (
             <div className="flex items-center gap-2">

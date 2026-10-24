@@ -19,6 +19,40 @@ export function seasonPhase({ now, deadline, fieldReady, championshipFinal }: Se
   return now < new Date(deadline) ? "entry" : "tournament";
 }
 
+/** One of the member's entries in the current pool (GET /api/season) */
+export interface SeasonEntry {
+  id: string;
+  name: string;
+  entryName: string;
+  status: string;
+  paid: boolean;
+  paymentPending: boolean;
+  totalScore: number;
+  bonusScore: number;
+  picked: number;
+  totalGames: number;
+}
+
+export interface SeasonPool {
+  id: string;
+  name: string;
+  status: string;
+  deadline: string;
+  inviteCode: string;
+  entryFee: string;
+  paypalLink: string | null;
+  venmoHandle: string | null;
+  members: number;
+  entries: number;
+}
+
+export interface SeasonResponse {
+  phase: SeasonPhase;
+  pool: SeasonPool | null;
+  tournament: { year: number; startDate: string } | null;
+  entries: SeasonEntry[];
+}
+
 /** e.g. "Thu, Mar 19 · 12:15 PM ET" */
 export function formatDeadline(deadline: Date | string) {
   const d = new Date(deadline);

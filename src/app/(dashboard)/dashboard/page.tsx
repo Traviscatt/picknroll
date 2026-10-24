@@ -2,57 +2,28 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { toast } from "sonner";
+import { ChevronRight, Copy, Crown, Megaphone, Pin, Plus, Radio, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/shared/page-header";
+import { ScoringRules } from "@/components/shared/scoring-rules";
+import { DeadlineCountdown, EntryChecklist } from "@/components/home/entry-checklist";
+import { TodayGames } from "@/components/home/today-games";
+import { SeasonRecap } from "@/components/home/season-recap";
+import { YourNight } from "@/components/game-center/your-night";
+import { StandingsPanel } from "@/components/game-center/standings-panel";
 import { useTournamentField } from "@/hooks/use-tournament-field";
+import { useLiveData } from "@/hooks/use-live-data";
+import { useStandingsMode } from "@/hooks/use-standings-mode";
 import { paymentDetails } from "@/lib/payment";
-import { MAX_POSSIBLE_SCORE } from "@/lib/scoring";
-import {
-  Trophy,
-  Plus,
-  Users,
-  TrendingUp,
-  Calendar,
-  DollarSign,
-  ChevronRight,
-  Clock,
-  CheckCircle,
-  Megaphone,
-  Pin,
-  BookOpen,
-  Target,
-  AlertTriangle,
-  Crown,
-} from "lucide-react";
-
-interface Bracket {
-  id: string;
-  name: string;
-  entryName: string;
-  status: "DRAFT" | "SUBMITTED" | "PAID";
-  totalScore: number;
-  bonusScore: number;
-  paid: boolean;
-  updatedAt: string;
-  familyMember?: { id: string; name: string } | null;
-}
-
-interface Pool {
-  id: string;
-  name: string;
-  inviteCode: string;
-  entryFee: string;
-  paypalLink: string | null;
-  venmoHandle: string | null;
-  deadline: string;
-  _count: { brackets: number };
-  members: { userId: string; role: string; user: { name: string } }[];
-}
+import { personalSummary } from "@/lib/live";
+import { parsePicksData } from "@/lib/scoring-engine";
+import { formatDeadline, type SeasonResponse } from "@/lib/season";
+import type { HallOfFameSeason } from "@/lib/hall-of-fame";
 
 interface Announcement {
   id: string;
@@ -63,591 +34,328 @@ interface Announcement {
   author: { name: string };
 }
 
-interface ChampionshipPick {
-  teamId: string;
-  count: number;
-  percentage: number;
-}
-
 interface PickStats {
-  championshipPicks: ChampionshipPick[];
+  championshipPicks: { teamId: string; count: number; percentage: number }[];
   totalBrackets: number;
 }
 
-export default function DashboardPage() {
+interface MyBracket {
+  id: string;
+  name: string;
+  status: string;
+  picksData: string | null;
+}
+
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <section className={`overflow-hidden rounded-xl border bg-card shadow-sm ${className}`}>{children}</section>;
+}
+
+function CardTitle({ icon: Icon, children, aside }: { icon: React.ElementType; children: React.ReactNode; aside?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
+      <h2 className="flex items-center gap-2 font-semibold">
+        <Icon className="h-4 w-4 text-primary" /> {children}
+      </h2>
+      {aside}
+    </div>
+  );
+}
+
+export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [brackets, setBrackets] = useState<Bracket[]>([]);
-  const [pools, setPools] = useState<Pool[]>([]);
+  const [season, setSeason] = useState<SeasonResponse | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [pickStats, setPickStats] = useState<PickStats | null>(null);
-  const { lookup } = useTournamentField();
-  const [isLoading, setIsLoading] = useState(true);
+  const [myBrackets, setMyBrackets] = useState<MyBracket[]>([]);
+  const [podium, setPodium] = useState<HallOfFameSeason | null>(null);
+  const [finish, setFinish] = useState<{ rank: number; score: number; total: number } | null>(null);
+  const [mode, setMode] = useStandingsMode();
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
+    if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [bracketsRes, poolsRes, announcementsRes, pickStatsRes] = await Promise.all([
-          fetch("/api/brackets"),
-          fetch("/api/pools"),
-          fetch("/api/announcements"),
-          fetch("/api/pool/pick-stats"),
-        ]);
-        if (bracketsRes.ok) setBrackets(await bracketsRes.json());
-        if (poolsRes.ok) setPools(await poolsRes.json());
-        if (announcementsRes.ok) setAnnouncements(await announcementsRes.json());
-        if (pickStatsRes.ok) setPickStats(await pickStatsRes.json());
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    if (session) fetchData();
+    if (!session) return;
+    const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    Promise.all([json("/api/season"), json("/api/announcements")]).then(([s, a]) => {
+      setSeason(s ?? { phase: "no-pool", pool: null, tournament: null, entries: [] });
+      setAnnouncements(a ?? []);
+    });
   }, [session]);
 
-  if (status === "loading" || isLoading) {
+  // The rules render after loading, so jump to #rules (More → Rules & scoring) once they exist
+  useEffect(() => {
+    if (season && window.location.hash === "#rules") document.getElementById("rules")?.scrollIntoView();
+  }, [season]);
+
+  // Extra data only where the phase needs it
+  const phase = season?.phase;
+  const poolId = season?.pool?.id ?? null;
+  useEffect(() => {
+    if (!poolId || !phase) return;
+    const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    if (phase === "tournament" || phase === "complete") json(`/api/pool/pick-stats?poolId=${poolId}`).then(setPickStats);
+    if (phase === "tournament") json(`/api/brackets?poolId=${poolId}`).then((b) => setMyBrackets((b ?? []).filter((x: MyBracket) => x.status !== "DRAFT")));
+    if (phase === "complete" || phase === "preseason") {
+      json("/api/hall-of-fame").then((h: { seasons: HallOfFameSeason[] } | null) => {
+        const seasons = h?.seasons ?? [];
+        setPodium((phase === "complete" ? seasons.find((s) => s.year === season?.tournament?.year) : seasons[0]) ?? null);
+      });
+    }
+    if (phase === "complete") {
+      json("/api/leaderboard").then((l) => l?.userRank && setFinish({ rank: l.userRank, score: l.userScore, total: l.totalEntries }));
+    }
+  }, [phase, poolId, season?.tournament?.year]);
+
+  const live = useLiveData(poolId, null, phase === "tournament");
+  const { lookup } = useTournamentField(poolId, !!poolId && !!pickStats?.championshipPicks.length);
+  const myIds = useMemo(() => myBrackets.map((b) => b.id), [myBrackets]);
+  const firstInStandings = myBrackets.find((b) => live.data?.standings.some((s) => s.bracketId === b.id)) ?? null;
+  const picksByGame = useMemo(
+    () => new Map(parsePicksData(firstInStandings?.picksData ?? null).map((p) => [p.gameId, p.choices])),
+    [firstInStandings?.picksData]
+  );
+  const summary = useMemo(() => (live.data ? personalSummary(live.data, firstInStandings?.id ?? null, picksByGame) : null), [live.data, firstInStandings?.id, picksByGame]);
+
+  if (status === "loading" || !season) {
     return (
-      <div className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="space-y-2">
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-          <div className="flex gap-3">
-            <Skeleton className="h-10 w-36" />
-            <Skeleton className="h-10 w-36" />
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-4 rounded" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-8 w-16 mb-1" />
-                <Skeleton className="h-3 w-32" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-            <Skeleton className="h-4 w-56" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-56" />
+        <Skeleton className="h-28 w-full rounded-2xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
       </div>
     );
   }
-
   if (!session) return null;
 
-  const submittedCount = brackets.filter((b) => b.status === "SUBMITTED" || b.status === "PAID").length;
-  const draftCount = brackets.filter((b) => b.status === "DRAFT").length;
-  const bestScore = brackets.length > 0 ? Math.max(...brackets.map((b) => b.totalScore + b.bonusScore)) : 0;
-  const hasPaidBracket = brackets.some((b) => b.paid);
-  const currentPool = pools[0];
-  const deadlinePassed = currentPool?.deadline ? new Date() > new Date(currentPool.deadline) : false;
+  const { pool, entries, tournament } = season;
+  const firstName = session.user?.name?.split(" ")[0];
+  const seasonLine = !pool ? "Join a pool to get started" : !tournament || pool.name.includes(String(tournament.year)) ? pool.name : `${tournament.year} · ${pool.name}`;
+
+  const hero = (() => {
+    switch (season.phase) {
+      case "no-pool":
+        return <Onboarding />;
+      case "preseason":
+        return (
+          <Card className="p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{tournament?.year ?? "Next"} season</p>
+            <h2 className="mt-1 text-xl font-bold">The field is set on Selection Sunday</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Brackets open as soon as the teams are in. We&apos;ll let you know.</p>
+            {podium?.podium.find((p) => p.place === 1) && (
+              <p className="mt-3 flex items-center gap-2 text-sm">
+                <Crown className="h-4 w-4 text-yellow-500" /> Reigning champion ({podium.year}):{" "}
+                <span className="font-semibold">{podium.podium.find((p) => p.place === 1)!.name}</span>
+              </p>
+            )}
+          </Card>
+        );
+      case "entry":
+        return (
+          <div className="space-y-4">
+            <DeadlineCountdown deadline={pool!.deadline} />
+            <EntryChecklist pool={pool!} entries={entries} />
+          </div>
+        );
+      case "tournament":
+        return (
+          <div className="space-y-4">
+            {summary?.entry ? (
+              <YourNight
+                entry={summary.entry}
+                title={firstInStandings?.name ?? summary.entry.bracketName}
+                anyLive={!!live.data?.anyLive}
+                alive={summary.alive}
+                biggestSwing={summary.biggestSwing}
+                onRooting={() => router.push("/game-center?view=rooting")}
+                onLiveStandings={() => live.data?.anyLive && setMode("live")}
+              />
+            ) : (
+              !live.loading && (
+                <Card className="p-5">
+                  <h2 className="text-lg font-bold">The tournament is on</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">You don&apos;t have a submitted bracket this season, but you can follow every game.</p>
+                </Card>
+              )
+            )}
+            {live.data ? (
+              <TodayGames data={live.data} picksByGame={picksByGame} />
+            ) : live.loading ? (
+              <Skeleton className="h-64 w-full rounded-xl" />
+            ) : (
+              <Card className="p-5 text-sm text-muted-foreground">
+                Live scores are unavailable right now.{" "}
+                <Link href="/game-center" className="font-semibold text-primary">
+                  Open Game Center
+                </Link>
+              </Card>
+            )}
+          </div>
+        );
+      case "complete":
+        return <SeasonRecap year={tournament?.year ?? null} season={podium} you={finish} />;
+    }
+  })();
 
   return (
-    <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            Welcome back, {session.user?.name?.split(" ")[0]}!
-          </h1>
-          <p className="text-slate-600 mt-1">
-            Manage your brackets and track your standings
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button asChild className="bg-primary hover:bg-primary/90">
-            <Link href="/brackets/new">
-              <Plus className="mr-2 h-4 w-4" />
-              New Bracket
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* New User Onboarding Banner */}
-      {!currentPool && brackets.length === 0 && (
-        <Card className="border-2 border-primary bg-accent">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-xl flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-primary" />
-              Welcome to PickNRoll! Let&apos;s get you started
-            </CardTitle>
-            <CardDescription className="text-sm">
-              Follow these steps to join the action
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 md:grid-cols-3">
-              <Link href="/join">
-                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                    1
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Join a Pool</p>
-                    <p className="text-xs text-muted-foreground">Enter the invite code from your pool admin</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
-                </div>
-              </Link>
+    <div className="space-y-6">
+      <PageHeader
+        title={`Hi, ${firstName ?? "there"}`}
+        description={seasonLine}
+        actions={
+          season.phase === "entry" && pool?.status === "OPEN" ? (
+            <Button asChild>
               <Link href="/brackets/new">
-                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                    2
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Create a Bracket</p>
-                    <p className="text-xs text-muted-foreground">Make your picks for all 63 games</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
-                </div>
+                <Plus className="mr-1.5 h-4 w-4" /> New bracket
               </Link>
-              <Link href="/payment">
-                <div className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors cursor-pointer">
-                  <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                    3
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Pay Entry Fee</p>
-                    <p className="text-xs text-muted-foreground">{paymentDetails(pools[0]).feeLabel} via PayPal or Venmo</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 ml-auto text-muted-foreground" />
-                </div>
+            </Button>
+          ) : season.phase === "tournament" ? (
+            <Button asChild variant="outline">
+              <Link href="/game-center">
+                <Radio className="mr-1.5 h-4 w-4" /> Game Center
               </Link>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </Button>
+          ) : null
+        }
+      />
 
-      {/* Announcements */}
-      {announcements.length > 0 && (
-        <Card className="border-l-4 border-l-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Megaphone className="h-5 w-5 text-primary" />
-              Announcements
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {announcements.slice(0, 3).map((announcement) => (
-              <div
-                key={announcement.id}
-                className={`p-4 rounded-lg border ${announcement.pinned ? "bg-primary/5 border-primary/20" : "bg-slate-50"}`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm">{announcement.title}</h4>
-                      {announcement.pinned && (
-                        <Pin className="h-3 w-3 text-primary" />
-                      )}
-                    </div>
-                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap line-clamp-2">
-                      {announcement.message}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {announcement.author.name} · {new Date(announcement.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Stats */}
-      <div className="grid gap-4 grid-cols-2">
-        <Card className="border-t-[3px] border-t-team-secondary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Brackets</CardTitle>
-            <Trophy className="h-4 w-4 text-team-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{brackets.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {submittedCount} submitted, {draftCount} drafts
-            </p>
-            <div className="mt-3 pt-3 border-t">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-600">Best Score</span>
-                <TrendingUp className="h-4 w-4 text-team-secondary" />
-              </div>
-              <div className="text-2xl font-bold mt-1">{bestScore}</div>
-              <p className="text-xs text-muted-foreground">
-                Max possible: {MAX_POSSIBLE_SCORE}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-t-[3px] border-t-team-secondary">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pool</CardTitle>
-            <Users className="h-4 w-4 text-team-secondary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currentPool ? currentPool._count.brackets : "--"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {currentPool ? `${currentPool.name}` : "Join a pool to compete"}
-            </p>
-            <div className="mt-3 pt-3 border-t">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-600">Payment</span>
-                <DollarSign className="h-4 w-4 text-team-secondary" />
-              </div>
-              <div className="text-2xl font-bold mt-1">{paymentDetails(pools[0]).feeLabel}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {hasPaidBracket ? (
-                  <Badge className="bg-green-500">Paid</Badge>
-                ) : (
-                  <Link href="/payment">
-                    <Badge variant="outline" className="text-primary border-primary hover:bg-primary/10 cursor-pointer">
-                      Unpaid - Click to Pay
-                    </Badge>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-6">
+          {hero}
+          {announcements.length > 0 && <Announcements items={announcements} />}
+          {pickStats && pickStats.championshipPicks.length > 0 && <ChampionshipPicks stats={pickStats} lookup={lookup} />}
+        </div>
+        <aside className="space-y-6">
+          {season.phase === "tournament" && live.data && live.data.standings.length > 0 && (
+            <StandingsPanel standings={live.data.standings} mode={mode} onModeChange={setMode} anyLive={live.data.anyLive} myBracketIds={myIds} />
+          )}
+          {pool && <PoolCard pool={pool} />}
+        </aside>
       </div>
 
-      {/* Championship Pick Distribution */}
-      {pickStats && pickStats.championshipPicks.length > 0 && (
-        <Card className="border-t-4 border-t-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-500" />
-              Championship Picks
-            </CardTitle>
-            <CardDescription>
-              Who the pool is picking to win it all ({pickStats.totalBrackets} brackets)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pickStats.championshipPicks.slice(0, 8).map((pick, i) => {
-                const name = lookup.name(pick.teamId);
-                const logo = lookup.logo(pick.teamId);
-                const info = lookup.get(pick.teamId);
-                const maxPct = pickStats.championshipPicks[0].percentage;
-                const barWidth = maxPct > 0 ? (pick.percentage / maxPct) * 100 : 0;
-                return (
-                  <div key={pick.teamId} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 w-4 text-right shrink-0">
-                      {i + 1}
-                    </span>
-                    {logo && (
-                      <Image
-                        src={logo}
-                        alt={name}
-                        width={24}
-                        height={24}
-                        className="w-6 h-6 object-contain shrink-0"
-                        unoptimized
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium truncate">
-                          {info ? `(${info.seed}) ` : ""}{name}
-                        </span>
-                        <span className="text-sm font-bold text-primary shrink-0 ml-2">
-                          {pick.percentage}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-2">
-                        <div
-                          className="bg-primary rounded-full h-2 transition-all duration-500"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className="text-xs text-slate-400 shrink-0 w-12 text-right">
-                      {pick.count}/{pickStats.totalBrackets}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Deadline Alert - only show before deadline */}
-      {!deadlinePassed && (
-        <Card className="border-accent bg-secondary">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Submission Deadline</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-slate-700">
-              <span className="font-semibold">Thursday at 12:00 PM (Noon)</span> - Before the first tipoff
-            </p>
-            <p className="text-sm text-slate-600 mt-1">
-              Make sure your bracket is submitted and payment is complete before the deadline.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* My Brackets & Pool Info */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* My Brackets */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              My Brackets
-            </CardTitle>
-            <CardDescription>
-              Your submitted and draft brackets
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {brackets.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                <Trophy className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                <p className="mb-4">You haven&apos;t created any brackets yet</p>
-                <Button asChild className="bg-primary hover:bg-primary/90">
-                  <Link href="/brackets/new">
-                    Create Your First Bracket
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {brackets.slice(0, 5).map((bracket) => (
-                  <Link key={bracket.id} href={`/brackets/${bracket.id}`}>
-                    <div className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-50 transition-colors">
-                      <div>
-                        <p className="font-medium text-sm">{bracket.entryName}</p>
-                        <p className="text-xs text-slate-500">{bracket.name}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-primary">{bracket.totalScore + bracket.bonusScore} pts</span>
-                        <Badge
-                          variant={bracket.status === "DRAFT" ? "outline" : "default"}
-                          className={bracket.status === "SUBMITTED" ? "bg-blue-500" : bracket.status === "PAID" ? "bg-green-500" : ""}
-                        >
-                          {bracket.status === "DRAFT" && <Clock className="mr-1 h-3 w-3" />}
-                          {bracket.status !== "DRAFT" && <CheckCircle className="mr-1 h-3 w-3" />}
-                          {bracket.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-                {brackets.length > 5 && (
-                  <Link href="/brackets" className="block text-center text-sm text-primary hover:underline pt-2">
-                    View all {brackets.length} brackets
-                  </Link>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pool Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              My Pool
-            </CardTitle>
-            <CardDescription>
-              Pool membership and standings
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!currentPool ? (
-              <div className="text-center py-8 text-slate-500">
-                <Users className="h-12 w-12 mx-auto mb-4 text-slate-300" />
-                <p className="mb-4">You&apos;re not in any pool yet</p>
-                <Button asChild variant="outline">
-                  <Link href="/join">
-                    Join a Pool
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <p className="font-semibold">{currentPool.name}</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Invite code: <span className="font-mono font-medium">{currentPool.inviteCode}</span>
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 bg-slate-50 rounded-lg text-center">
-                    <p className="text-2xl font-bold">{currentPool.members.length}</p>
-                    <p className="text-xs text-slate-500">Members</p>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg text-center">
-                    <p className="text-2xl font-bold">{currentPool._count.brackets}</p>
-                    <p className="text-xs text-slate-500">Brackets</p>
-                  </div>
-                </div>
-                <div className="text-sm text-slate-600">
-                  <p>Deadline: <span className="font-medium">{new Date(currentPool.deadline).toLocaleString()}</span></p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tournament Instructions & Scoring */}
-      <Card id="rules" className="scroll-mt-20 border-t-4 border-t-primary">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            Tournament Instructions
-          </CardTitle>
-          <CardDescription>
-            Everything you need to know about the bracket pool
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Key Rules */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Target className="h-5 w-5 text-primary" />
-                <h4 className="font-semibold">How Picks Work</h4>
-              </div>
-              <p className="text-sm text-slate-600 mb-3">
-                <strong>One sheet per person.</strong> Each round lets you pick more potential winners:
-              </p>
-              <ul className="text-sm text-slate-600 space-y-1.5">
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  <strong>Round 1 & 2:</strong> 1 pick per game
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  <strong>Round 3 (Sweet 16):</strong> 2 picks per game
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  <strong>Round 4 (Elite 8):</strong> 3 picks per game
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  <strong>Round 5 (Final Four):</strong> 4 picks per game
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary"></span>
-                  <strong>Round 6 (Championship):</strong> 5 picks per game
-                </li>
-              </ul>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  <h4 className="font-semibold text-yellow-800">Important Deadline</h4>
-                </div>
-                <p className="text-sm text-yellow-700">
-                  Bracket must be <strong>submitted and paid</strong> before tip-off of the first game:
-                </p>
-                <p className="text-lg font-bold text-yellow-800 mt-2">
-                  <Clock className="h-4 w-4 inline mr-1" />
-                  {pools[0]?.deadline
-                    ? new Date(pools[0].deadline).toLocaleString("en-US", {
-                        timeZone: "America/New_York",
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      }) + " ET"
-                    : "To be announced"}
-                </p>
-              </div>
-
-              <div className="p-4 bg-slate-50 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy className="h-5 w-5 text-slate-600" />
-                  <h4 className="font-semibold">Tiebreaker</h4>
-                </div>
-                <p className="text-sm text-slate-600">
-                  Total combined points of the Championship game.
-                </p>
-                <p className="text-xs text-slate-500 mt-2">
-                  Example: Team A scores 45, Team B scores 50 → Tiebreaker = <strong>95 points</strong>
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Scoring Breakdown */}
-          <div>
-            <h4 className="font-semibold mb-3 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              Scoring Breakdown
-            </h4>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <h5 className="font-medium text-sm mb-2">Rounds 1 & 2</h5>
-                <p className="text-xs text-slate-500 mb-2">Single picks</p>
-                <div className="flex gap-2">
-                  <Badge>R1: 2 pts</Badge>
-                  <Badge>R2: 5 pts</Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <h5 className="font-medium text-sm mb-2">Sweet 16 & Elite 8</h5>
-                <p className="text-xs text-slate-500 mb-2">Multi-choice picks</p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">S16: 10/5 pts</Badge>
-                  <Badge variant="outline">E8: 15/10/5 pts</Badge>
-                </div>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <h5 className="font-medium text-sm mb-2">Final Four & Champ</h5>
-                <p className="text-xs text-slate-500 mb-2">Maximum hedging</p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">FF: 25/15/10/5</Badge>
-                  <Badge variant="outline">Champ: 35/25/15/10/5</Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {season.phase !== "no-pool" && <ScoringRules deadline={pool?.deadline ?? null} />}
     </div>
+  );
+}
+
+function Onboarding() {
+  const steps = [
+    { href: "/join", title: "Join a pool", detail: "Enter the invite code from your pool admin" },
+    { href: "/brackets/new", title: "Fill out a bracket", detail: "Pick all 63 games" },
+    { href: "/payment", title: "Pay the entry fee", detail: "Venmo or PayPal, set by your pool" },
+  ];
+  return (
+    <Card className="p-5">
+      <h2 className="flex items-center gap-2 text-lg font-bold">
+        <Trophy className="h-5 w-5 text-primary" /> Welcome to PickNRoll
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">Three steps to get in the game.</p>
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {steps.map((s, i) => (
+          <Link key={s.href} href={s.href} className="flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{i + 1}</span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold">{s.title}</span>
+              <span className="block text-xs text-muted-foreground">{s.detail}</span>
+            </span>
+            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+          </Link>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function Announcements({ items }: { items: Announcement[] }) {
+  return (
+    <Card>
+      <CardTitle icon={Megaphone}>Announcements</CardTitle>
+      <div className="space-y-2 px-4 pb-4">
+        {items.slice(0, 3).map((a) => (
+          <div key={a.id} className={`rounded-lg border p-3 ${a.pinned ? "border-primary/20 bg-primary/5" : "bg-muted/40"}`}>
+            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+              {a.title}
+              {a.pinned && <Pin className="h-3 w-3 text-primary" />}
+            </h3>
+            <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">{a.message}</p>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
+            </p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function ChampionshipPicks({ stats, lookup }: { stats: PickStats; lookup: ReturnType<typeof useTournamentField>["lookup"] }) {
+  const max = stats.championshipPicks[0].percentage;
+  return (
+    <Card>
+      <CardTitle icon={Crown} aside={<span className="text-xs text-muted-foreground">{stats.totalBrackets} brackets</span>}>
+        Who the pool picked to win it all
+      </CardTitle>
+      <div className="space-y-2.5 px-4 pb-4">
+        {stats.championshipPicks.slice(0, 8).map((pick) => {
+          const info = lookup.get(pick.teamId);
+          const logo = lookup.logo(pick.teamId);
+          return (
+            <div key={pick.teamId} className="flex items-center gap-3">
+              {logo ? <Image src={logo} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 object-contain" unoptimized /> : <span className="h-[22px] w-[22px] shrink-0" />}
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate font-medium">
+                    {info ? <span className="mr-1 text-xs text-muted-foreground">{info.seed}</span> : null}
+                    {lookup.name(pick.teamId)}
+                  </span>
+                  <span className="shrink-0 font-semibold tabular-nums">{pick.percentage}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted">
+                  <div className="h-1.5 rounded-full bg-primary" style={{ width: `${max ? (pick.percentage / max) * 100 : 0}%` }} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function PoolCard({ pool }: { pool: NonNullable<SeasonResponse["pool"]> }) {
+  const copy = () => {
+    navigator.clipboard.writeText(pool.inviteCode);
+    toast.success("Invite code copied");
+  };
+  return (
+    <Card>
+      <CardTitle icon={Users}>{pool.name}</CardTitle>
+      <div className="grid grid-cols-3 gap-2 px-4 pb-3 text-center">
+        {[
+          [pool.members, "members"],
+          [pool.entries, "entries"],
+          [paymentDetails(pool).feeLabel, "per entry"],
+        ].map(([value, label]) => (
+          <div key={label} className="rounded-lg bg-muted/60 py-2">
+            <p className="text-lg font-bold tabular-nums">{value}</p>
+            <p className="text-[11px] text-muted-foreground">{label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-2 border-t px-4 py-3 text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">Invite code</span>
+          <button type="button" onClick={copy} className="flex items-center gap-1.5 font-mono font-semibold" aria-label="Copy invite code">
+            {pool.inviteCode} <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-muted-foreground">Deadline</span>
+          <span className="text-right font-medium">{formatDeadline(pool.deadline)}</span>
+        </div>
+      </div>
+    </Card>
   );
 }

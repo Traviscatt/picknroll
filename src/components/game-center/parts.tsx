@@ -95,6 +95,7 @@ export function StandingsToggle({
       type="button"
       onClick={() => onChange(value)}
       disabled={value === "live" && !liveAvailable && mode !== "live"}
+      title={value === "live" && !liveAvailable ? "No games in progress" : undefined}
       className={cn(
         "flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         mode === value ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"
@@ -110,7 +111,7 @@ export function StandingsToggle({
         "live",
         <>
           <span className={cn("h-1.5 w-1.5 rounded-full", liveAvailable ? "bg-red-600" : "bg-slate-300")} />
-          {liveAvailable || mode === "live" ? "Live" : "Live (no games now)"}
+          Live
         </>
       )}
     </div>

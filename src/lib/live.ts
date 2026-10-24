@@ -225,6 +225,29 @@ export function tonightRange(payload: LivePayload, index: number) {
   };
 }
 
+/** One bracket's view of the day: its standing, rooting per undecided game, picks alive, and the day's range */
+export function personalSummary(payload: LivePayload, bracketId: string | null, picksByGame: Map<string, string[]>) {
+  const index = payload.standings.findIndex((s) => s.bracketId === bracketId);
+  const entry = index >= 0 ? payload.standings[index] : null;
+  const rootings = new Map<string, Rooting>();
+  if (index >= 0) for (const o of payload.outcomes) rootings.set(o.gameId, rootingFor(o, index, payload.standings, payload.actualTiebreaker));
+  const items = payload.games.flatMap((game) => {
+    const rooting = game.gameId ? rootings.get(game.gameId) : undefined;
+    return rooting ? [{ game, rooting, choices: picksByGame.get(game.gameId!) ?? null }] : [];
+  });
+  const withPicks = payload.games.filter((g) => g.gameId && picksByGame.has(g.gameId));
+  return {
+    index,
+    entry,
+    rootings,
+    items,
+    biggestSwing: Math.max(0, ...items.map((i) => i.rooting.swing)),
+    highlightGame: items.filter((i) => isLive(i.game) && i.rooting.swing > 0).sort((a, b) => b.rooting.swing - a.rooting.swing)[0]?.game.espnId ?? null,
+    alive: { total: withPicks.length, alive: withPicks.filter((g) => pickVerdict(picksByGame.get(g.gameId!)!, g)?.tone !== "zero").length },
+    range: index >= 0 ? tonightRange(payload, index) : null,
+  };
+}
+
 const ET_DATE = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" });
 
 /** YYYYMMDD in US Eastern time */

@@ -5,6 +5,7 @@ import {
   defaultDay,
   easternDate,
   leaderSlot,
+  personalSummary,
   pickVerdict,
   rootingFor,
   tonightRange,
@@ -139,6 +140,22 @@ describe("rooting", () => {
   it("estimates the day's best and worst case", () => {
     const payload = { standings, outcomes: [outcome], games: [game({})], actualTiebreaker: null } as unknown as LivePayload;
     expect(tonightRange(payload, 0)).toEqual({ best: { rank: 1, points: 110 }, worst: { rank: 2, points: 105 } });
+  });
+
+  it("summarizes one bracket's day", () => {
+    const live = game({ state: "in", scores: [40, 31] });
+    const out = game({ espnId: "2", gameId: "East-r1-g1", round: 1, state: "post", winner: 0 });
+    const payload = { standings, outcomes: [outcome], games: [live, out], actualTiebreaker: null } as unknown as LivePayload;
+    const picks = new Map([
+      ["East-r3-g1", ["east-1", "east-4"]],
+      ["East-r1-g1", ["east-16"]],
+    ]);
+    const summary = personalSummary(payload, "0", picks);
+    expect(summary.entry?.name).toBe("You");
+    expect(summary.items).toHaveLength(1);
+    expect(summary.rootings.get("East-r3-g1")).toEqual(rootingFor(outcome, 0, standings, null));
+    expect(summary).toMatchObject({ biggestSwing: 1, highlightGame: "1", alive: { total: 2, alive: 1 }, range: tonightRange(payload, 0) });
+    expect(personalSummary(payload, "missing", picks)).toMatchObject({ index: -1, entry: null, items: [], biggestSwing: 0, range: null });
   });
 });
 

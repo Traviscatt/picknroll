@@ -12,3 +12,8 @@ export function currentMembership(userId: string, { adminOnly = false } = {}) {
     include: { pool: true },
   });
 }
+
+/** A pool the user belongs to (any pool for site admins), or null */
+export function accessiblePool(poolId: string, userId: string, isSiteAdmin: boolean) {
+  return db.pool.findFirst({ where: { id: poolId, ...(!isSiteAdmin && { members: { some: { userId } } }) } });
+}

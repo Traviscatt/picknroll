@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { useLiveData } from "@/hooks/use-live-data";
 import { useStandingsMode } from "@/hooks/use-standings-mode";
 import { useTournamentField } from "@/hooks/use-tournament-field";
-import { isLive, pickVerdict, rootingFor, tonightRange, type LiveGame, type Rooting } from "@/lib/live";
+import { isLive, personalSummary, type LiveGame } from "@/lib/live";
 import { parsePicksData } from "@/lib/scoring-engine";
 import { espnIdFromLogo } from "@/lib/team-colors";
 import { useTeamOptions } from "@/hooks/use-team-options";
@@ -45,14 +45,23 @@ function UpdatedAgo({ at }: { at: number | null }) {
 }
 
 export default function GameCenterPage() {
+  return (
+    <Suspense>
+      <GameCenter />
+    </Suspense>
+  );
+}
+
+function GameCenter() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [poolId, setPoolId] = useState<string | null>(null);
   const [myBrackets, setMyBrackets] = useState<MyBracket[]>([]);
   const [setupDone, setSetupDone] = useState(false);
   const [date, setDate] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState<"games" | "rooting">("games");
+  const [view, setView] = useState<"games" | "rooting">(() => (searchParams.get("view") === "rooting" ? "rooting" : "games"));
   const [mode, setMode] = useStandingsMode();
 
   useEffect(() => {
@@ -81,19 +90,11 @@ export default function GameCenterPage() {
   const myIds = useMemo(() => myBrackets.map((b) => b.id), [myBrackets]);
   const standings = useMemo(() => data?.standings ?? [], [data]);
   const selected = selectedId ?? myBrackets.find((b) => standings.some((s) => s.bracketId === b.id))?.id ?? myBrackets[0]?.id ?? null;
-  const index = standings.findIndex((s) => s.bracketId === selected);
-  const entry = index >= 0 ? standings[index] : null;
   const picksByGame = useMemo(() => {
     const bracket = myBrackets.find((b) => b.id === selected);
     return new Map(parsePicksData(bracket?.picksData ?? null).map((p) => [p.gameId, p.choices]));
   }, [myBrackets, selected]);
-
-  const rootings = useMemo(() => {
-    const map = new Map<string, Rooting>();
-    if (data && index >= 0) for (const o of data.outcomes) map.set(o.gameId, rootingFor(o, index, data.standings, data.actualTiebreaker));
-    return map;
-  }, [data, index]);
-  const range = useMemo(() => (data && index >= 0 ? tonightRange(data, index) : null), [data, index]);
+  const summary = useMemo(() => (data ? personalSummary(data, selected, picksByGame) : null), [data, selected, picksByGame]);
 
   if (status === "loading" || !setupDone || (poolId && loading)) {
     return (
@@ -103,7 +104,7 @@ export default function GameCenterPage() {
     );
   }
   if (!session) return null;
-  if (!poolId || !data) {
+  if (!poolId || !data || !summary) {
     return (
       <Card className="mx-auto mt-12 max-w-lg">
         <CardHeader>
@@ -121,18 +122,8 @@ export default function GameCenterPage() {
     ["Up next", games.filter((g) => g.state === "pre"), false],
   ];
   const day = data.days.find((d) => d.date === data.date);
+  const { entry, rootings, items, biggestSwing, highlightGame, alive, range } = summary;
   const currentRank = entry ? entry.liveRank : null;
-  const items = games.flatMap((game) => {
-    const rooting = game.gameId ? rootings.get(game.gameId) : undefined;
-    return rooting ? [{ game, rooting, choices: picksByGame.get(game.gameId!) ?? null }] : [];
-  });
-  const biggestSwing = Math.max(0, ...items.map((i) => i.rooting.swing));
-  const highlightGame = items.filter((i) => isLive(i.game) && i.rooting.swing > 0).sort((a, b) => b.rooting.swing - a.rooting.swing)[0]?.game.espnId;
-  const withPicks = games.filter((g) => g.gameId && picksByGame.has(g.gameId));
-  const alive = {
-    total: withPicks.length,
-    alive: withPicks.filter((g) => pickVerdict(picksByGame.get(g.gameId!)!, g)?.tone !== "zero").length,
-  };
   const selectedBracket = myBrackets.find((b) => b.id === selected);
   const counts = groups.map(([label, list]) => `${list.length} ${label === "Live now" ? "live" : label === "Final" ? "final" : "upcoming"}`).join(", ");
 

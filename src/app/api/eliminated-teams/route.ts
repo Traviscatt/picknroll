@@ -3,18 +3,25 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildTeamKeyMaps } from "@/lib/scoring-engine";
+import { accessiblePool } from "@/lib/pools";
 
-// GET /api/eliminated-teams - Returns bracket-style team IDs (e.g. "east-1") of eliminated teams
-export async function GET() {
+// GET /api/eliminated-teams?poolId= - Bracket-style team IDs (e.g. "east-1") of eliminated teams
+// in a pool's tournament (default: the newest tournament)
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const tournament = await db.tournament.findFirst({
-      orderBy: { year: "desc" },
-    });
+    const poolId = new URL(request.url).searchParams.get("poolId");
+    const pool = poolId ? await accessiblePool(poolId, session.user.id, session.user.role === "ADMIN") : null;
+    if (poolId && !pool) {
+      return NextResponse.json({ eliminated: [] });
+    }
+    const tournament = pool
+      ? await db.tournament.findUnique({ where: { id: pool.tournamentId } })
+      : await db.tournament.findFirst({ orderBy: { year: "desc" } });
 
     if (!tournament) {
       return NextResponse.json({ eliminated: [] });

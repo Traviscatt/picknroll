@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { currentMembership } from "@/lib/pools";
+import { accessiblePool, currentMembership } from "@/lib/pools";
 
-// GET /api/pool/pick-stats - Get pick distribution stats for user's pool
-export async function GET() {
+// GET /api/pool/pick-stats?poolId= - Pick distribution for a pool (default: the user's current pool)
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -13,22 +13,22 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Find user's pool
-    const poolMembership = await currentMembership(session.user.id);
+    const requested = new URL(request.url).searchParams.get("poolId");
+    const pool = requested ? await accessiblePool(requested, session.user.id, session.user.role === "ADMIN") : (await currentMembership(session.user.id))?.pool;
 
-    if (!poolMembership) {
+    if (!pool) {
       return NextResponse.json({ championshipPicks: [], totalBrackets: 0 });
     }
 
     // Only show stats after the deadline has passed
-    if (poolMembership.pool && new Date() <= new Date(poolMembership.pool.deadline)) {
+    if (new Date() <= new Date(pool.deadline)) {
       return NextResponse.json({ championshipPicks: [], totalBrackets: 0 });
     }
 
     // Get all submitted brackets in this pool
     const brackets = await db.bracket.findMany({
       where: {
-        poolId: poolMembership.poolId,
+        poolId: pool.id,
         status: { in: ["SUBMITTED", "PAID"] },
       },
       select: {

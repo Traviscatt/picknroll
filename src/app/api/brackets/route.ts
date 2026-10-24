@@ -5,8 +5,8 @@ import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
 import { regionsForPool } from "@/lib/tournament-service";
 
-// GET /api/brackets - Get all brackets for the current user
-export async function GET() {
+// GET /api/brackets?poolId= - The current user's brackets (every season, or one pool)
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -14,14 +14,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const poolId = new URL(request.url).searchParams.get("poolId");
     const brackets = await db.bracket.findMany({
       where: {
         userId: session.user.id,
+        ...(poolId && { poolId }),
       },
       include: {
-        pool: true,
+        pool: { select: { id: true, name: true, deadline: true, status: true, tournament: { select: { year: true } } } },
         familyMember: true,
-        picks: true,
       },
       orderBy: {
         updatedAt: "desc",

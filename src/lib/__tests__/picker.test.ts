@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyTap,
   bracketGames,
+  choiceResult,
   eligibleTeams,
   inconsistentChoices,
   isUnlocked,
@@ -18,6 +19,16 @@ const byId = new Map(games.map((g) => [g.gameId, g]));
 const g = (id: string) => byId.get(id)!;
 const picksOf = (entries: Record<string, string[]>): Picks =>
   new Map(Object.entries(entries).map(([gameId, choices]) => [gameId, { gameId, round: g(gameId).round, choices }]));
+
+describe("choiceResult", () => {
+  const out = new Set(["east-16"]);
+  it("marks final games right or wrong, and teams already knocked out", () => {
+    expect(choiceResult("east-1", "east-1", out)).toBe("won");
+    expect(choiceResult("east-4", "east-1", out)).toBe("lost");
+    expect(choiceResult("east-16", null, out)).toBe("out");
+    expect(choiceResult("east-1", undefined, out)).toBe("pending");
+  });
+});
 
 describe("bracket structure", () => {
   it("has 63 games with feeders", () => {

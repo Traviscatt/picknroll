@@ -1,22 +1,33 @@
 "use client";
 
 import { Fragment } from "react";
-import { BracketSlot } from "./BracketSlot";
+import { BracketResultSlot, BracketSlot } from "./BracketSlot";
 import { cn } from "@/lib/utils";
-import { eligibleTeams, isUnlocked, type GameSlot, type Picks, type TapResult } from "@/lib/picker";
+import { eligibleTeams, isUnlocked, pointsFor, type GameSlot, type Picks, type TapResult } from "@/lib/picker";
 import type { PickerTeam } from "@/components/picker/game-picker";
 
 type Region = string;
 
-interface DesktopBracketViewProps {
+/** Read-only mode: results to mark picks against */
+export interface BracketResults {
+  /** Bracket game ID → winning team ID, for final games */
+  winners: Map<string, string>;
+  /** Teams that have lost a game */
+  eliminated: Set<string>;
+  /** Pool pick shares per game, keyed "rank index:teamId" */
+  pct?: Record<string, Record<string, number>>;
+}
+
+type DesktopBracketViewProps = {
   /** Regions in bracket order: [0] and [1] on the left (Final Four game 1), [2] and [3] on the right */
   regions: string[];
   picks: Picks;
   byId: Map<string, GameSlot>;
   team: (id: string) => PickerTeam;
-  onTap: (game: GameSlot, teamId: string) => { result: TapResult; picks: Picks };
-  onReorder: (game: GameSlot, order: string[]) => void;
-}
+} & (
+  | { results?: undefined; onTap: (game: GameSlot, teamId: string) => { result: TapResult; picks: Picks }; onReorder: (game: GameSlot, order: string[]) => void }
+  | { results: BracketResults; onTap?: undefined; onReorder?: undefined }
+);
 
 type SlotRenderer = (gameId: string, mirrored?: boolean) => React.ReactNode;
 
@@ -95,11 +106,11 @@ function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotR
     <div className="flex flex-col">
       {/* Region header */}
       <div className="flex items-center justify-center gap-2 mb-2">
-        <div className="h-px flex-1 bg-slate-400" />
-        <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-800 px-3">
+        <div className="h-px flex-1 bg-border" />
+        <h3 className="text-xs font-extrabold uppercase tracking-widest text-foreground px-3">
           {region}
         </h3>
-        <div className="h-px flex-1 bg-slate-400" />
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       {/* Round labels */}
@@ -107,7 +118,7 @@ function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotR
         {ROUNDS_CFG.map(({ round, label }, i) => (
           <Fragment key={round}>
             <div
-              className="text-[9px] text-slate-600 font-bold text-center shrink-0"
+              className="text-[9px] text-muted-foreground font-bold text-center shrink-0"
               style={{ width: SLOT_W }}
             >
               {label}
@@ -158,15 +169,33 @@ function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotR
 }
 
 /* ── Main desktop bracket view ────────────────────── */
-export function DesktopBracketView({ regions, picks, byId, team, onTap, onReorder }: DesktopBracketViewProps) {
+export function DesktopBracketView(props: DesktopBracketViewProps) {
+  const { regions, picks, byId, team } = props;
   const slot: SlotRenderer = (gameId, mirrored = false) => {
     const game = byId.get(gameId)!;
+    const choices = picks.get(gameId)?.choices ?? [];
+    if (props.results) {
+      return (
+        <BracketResultSlot
+          key={gameId}
+          game={game}
+          eligible={game.round === 1 ? eligibleTeams(game, picks).map(team) : []}
+          choices={choices}
+          team={team}
+          winner={props.results.winners.get(gameId) ?? null}
+          eliminated={props.results.eliminated}
+          pct={props.results.pct?.[gameId]}
+          mirrored={mirrored}
+        />
+      );
+    }
+    const { onTap, onReorder } = props;
     return (
       <BracketSlot
         key={gameId}
         game={game}
         eligible={eligibleTeams(game, picks).map(team)}
-        choices={picks.get(gameId)?.choices ?? []}
+        choices={choices}
         unlocked={isUnlocked(game, picks, byId)}
         team={team}
         onTap={(teamId) => onTap(game, teamId)}
@@ -177,7 +206,7 @@ export function DesktopBracketView({ regions, picks, byId, team, onTap, onReorde
   };
 
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
+    <div className="w-full overflow-x-auto rounded-xl border bg-muted/40 shadow-sm">
       <div className="min-w-[1200px] p-4">
         {/* Top half: regions[0] (L→R)  ·  regions[2] (R←L) */}
         <div className="flex items-start justify-between">
@@ -188,22 +217,22 @@ export function DesktopBracketView({ regions, picks, byId, team, onTap, onReorde
         {/* Center row: FF game 1 (left regions) · Championship · FF game 2 (right regions) */}
         <div className="-mt-14 flex items-center justify-center gap-6 py-4">
           <div className="flex flex-col items-center">
-            <div className="mb-1 text-[10px] font-bold text-slate-700">Final Four</div>
-            <div className="mb-1 text-[9px] text-slate-500">
+            <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
+            <div className="mb-1 text-[9px] text-muted-foreground">
               {regions[0]} vs {regions[1]}
             </div>
             {slot("final-four-r5-g1")}
           </div>
 
-          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-primary bg-white px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
+          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-primary bg-card px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
             <div className="text-lg font-extrabold tracking-wide text-primary">CHAMPION</div>
-            <div className="text-[10px] font-bold text-slate-600">35 / 25 / 15 / 10 / 5 pts</div>
+            <div className="text-[10px] font-bold text-muted-foreground">{pointsFor(6).join(" / ")} pts</div>
             {slot("championship-r6-g1")}
           </div>
 
           <div className="flex flex-col items-center">
-            <div className="mb-1 text-[10px] font-bold text-slate-700">Final Four</div>
-            <div className="mb-1 text-[9px] text-slate-500">
+            <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
+            <div className="mb-1 text-[9px] text-muted-foreground">
               {regions[2]} vs {regions[3]}
             </div>
             {slot("final-four-r5-g2", true)}
@@ -211,7 +240,7 @@ export function DesktopBracketView({ regions, picks, byId, team, onTap, onReorde
         </div>
 
         {/* Bottom half: regions[1] (L→R)  ·  regions[3] (R←L) */}
-        <div className="-mt-14 flex items-start justify-between">
+        <div className="-mt-2 flex items-start justify-between">
           <RegionBracket region={regions[1]} slot={slot} mirrored={false} />
           <RegionBracket region={regions[3]} slot={slot} mirrored={true} />
         </div>

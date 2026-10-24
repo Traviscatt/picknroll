@@ -67,6 +67,14 @@ export function isUnlocked(game: GameSlot, picks: Picks, byId: Map<string, GameS
   });
 }
 
+export type ChoiceResult = "won" | "lost" | "out" | "pending";
+
+/** How one choice stands: won/lost once its game is final, "out" if the team already lost elsewhere, else pending */
+export function choiceResult(teamId: string, winner: string | null | undefined, eliminated: Set<string>): ChoiceResult {
+  if (winner) return teamId === winner ? "won" : "lost";
+  return eliminated.has(teamId) ? "out" : "pending";
+}
+
 export type TapResult = "set" | "replaced" | "removed" | "added" | "full";
 
 /**

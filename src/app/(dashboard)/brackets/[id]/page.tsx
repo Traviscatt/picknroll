@@ -2,786 +2,240 @@
 
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Trophy, 
-  ArrowLeft, 
-  Edit, 
-  CheckCircle, 
-  Clock, 
-  Users,
-  DollarSign,
-  Trash2,
-  AlertTriangle,
-  Loader2,
-  Crown,
-  Download,
-} from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { ArrowLeft, DollarSign, Edit, Lock, Trophy, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/shared/page-header";
+import { BracketStatusBadge } from "@/components/shared/bracket-status-badge";
+import { BracketMenu } from "@/components/shared/bracket-menu";
+import { DesktopBracketView, type BracketResults } from "@/components/bracket/DesktopBracketView";
+import { BracketRounds } from "@/components/bracket/bracket-rounds";
+import type { PickerTeam } from "@/components/picker/game-picker";
 import { useTournamentField } from "@/hooks/use-tournament-field";
-
-interface PickData {
-  gameId: string;
-  round: number;
-  choices: string[];
-}
-
-interface CompletedGame {
-  bracketGameId: string;
-  winnerBracketId: string | null;
-}
+import { bracketGames, progress, toPicks } from "@/lib/picker";
+import { parsePicksData } from "@/lib/scoring-engine";
+import { bracketActions } from "@/lib/season";
 
 interface Bracket {
   id: string;
   poolId: string | null;
   name: string;
   entryName: string;
-  status: "DRAFT" | "SUBMITTED" | "PAID";
+  status: string;
   totalScore: number;
   bonusScore: number;
   tiebreaker: number | null;
   paid: boolean;
   picksData: string | null;
   createdAt: string;
-  isOwner: boolean;
-  ownerName: string | null;
   updatedAt: string;
   submittedAt: string | null;
+  isOwner: boolean;
+  ownerName: string | null;
   rank: number | null;
   totalInPool: number | null;
-  completedGames: CompletedGame[];
-  familyMember?: {
-    id: string;
-    name: string;
-  } | null;
-  pool?: {
-    id: string;
-    deadline: string;
-  } | null;
+  completedGames: { bracketGameId: string; winnerBracketId: string | null }[];
+  familyMember?: { id: string; name: string } | null;
+  pool?: { id: string; deadline: string; status: string } | null;
 }
-
-const ROUND_LABELS: Record<number, string> = { 1: "R1", 2: "R2", 3: "S16", 4: "E8" };
 
 export default function BracketDetailPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const params = useParams();
-  const bracketId = params.id as string;
-  
+  const { id: bracketId } = useParams<{ id: string }>();
   const [bracket, setBracket] = useState<Bracket | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [selectedTab, setActiveTab] = useState<string | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [eliminatedTeams, setEliminatedTeams] = useState<Set<string>>(new Set());
-  const [gamePicks, setGamePicks] = useState<Record<string, Record<string, number>>>({});
-  const { lookup, loading: fieldLoading } = useTournamentField(bracket?.poolId ?? null, !!bracket);
-  const REGIONS = lookup.regions;
-  const activeTab = selectedTab ?? REGIONS[0] ?? "Final Four";
-
-  const handleDownloadPdf = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(`/api/brackets/${bracketId}/pdf`);
-      if (!response.ok) {
-        const data = await response.json();
-        toast.error(data.error || "Failed to generate PDF");
-        return;
-      }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${bracket?.name?.replace(/[^a-zA-Z0-9]/g, "_") || "bracket"}_picks.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success("PDF downloaded!");
-    } catch {
-      toast.error("Something went wrong generating the PDF");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/brackets/${bracketId}`, {
-        method: "DELETE",
-      });
-      if (response.ok) {
-        toast.success("Bracket deleted successfully");
-        router.push("/brackets");
-      } else {
-        const data = await response.json();
-        toast.error(data.error || "Failed to delete bracket");
-      }
-    } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const [eliminated, setEliminated] = useState<Set<string>>(new Set());
+  const [pct, setPct] = useState<Record<string, Record<string, number>>>({});
+  const { field, loading: fieldLoading } = useTournamentField(bracket?.poolId ?? null, !!bracket);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
+    if (status === "unauthenticated") router.push("/login");
   }, [status, router]);
 
   useEffect(() => {
-    const fetchBracket = async () => {
-      try {
-        const [bracketRes, eliminatedRes, pickStatsRes] = await Promise.all([
-          fetch(`/api/brackets/${bracketId}`),
-          fetch("/api/eliminated-teams"),
-          fetch("/api/pool/pick-stats"),
-        ]);
-        
-        if (bracketRes.ok) {
-          const data = await bracketRes.json();
-          setBracket(data);
-        } else if (bracketRes.status === 403) {
-          toast.error("Brackets are hidden until the submission deadline passes");
-          router.push("/leaderboard");
-        } else if (bracketRes.status === 404) {
-          router.push("/brackets");
-        }
-        
-        if (eliminatedRes.ok) {
-          const elimData = await eliminatedRes.json();
-          setEliminatedTeams(new Set(elimData.eliminated || []));
-        }
-
-        if (pickStatsRes.ok) {
-          const statsData = await pickStatsRes.json();
-          if (statsData.gamePicks) setGamePicks(statsData.gamePicks);
-        }
-      } catch (error) {
-        console.error("Failed to fetch bracket:", error);
-      } finally {
-        setIsLoading(false);
+    if (!session || !bracketId) return;
+    fetch(`/api/brackets/${bracketId}`).then(async (res) => {
+      if (res.ok) {
+        const data: Bracket = await res.json();
+        setBracket(data);
+        // Results and pool shares always come from the bracket's own pool (past seasons included)
+        const pool = data.poolId ? `?poolId=${encodeURIComponent(data.poolId)}` : "";
+        const [elim, stats] = await Promise.all([
+          fetch(`/api/eliminated-teams${pool}`).then((r) => (r.ok ? r.json() : null)),
+          data.poolId ? fetch(`/api/pool/pick-stats${pool}`).then((r) => (r.ok ? r.json() : null)) : null,
+        ]).catch(() => [null, null]);
+        setEliminated(new Set(elim?.eliminated ?? []));
+        setPct(stats?.gamePicks ?? {});
+      } else if (res.status === 403) {
+        toast.error("Brackets are hidden until the submission deadline passes");
+        router.push("/leaderboard");
+      } else {
+        router.push("/brackets");
       }
-    };
-
-    if (session && bracketId) {
-      fetchBracket();
-    }
+    });
   }, [session, bracketId, router]);
 
-  if (status === "loading" || isLoading || fieldLoading) {
+  const regions = useMemo(() => field?.tournament.regions ?? [], [field]);
+  const games = useMemo(() => (regions.length === 4 ? bracketGames(regions) : []), [regions]);
+  const byId = useMemo(() => new Map(games.map((g) => [g.gameId, g])), [games]);
+  const picks = useMemo(() => toPicks(parsePicksData(bracket?.picksData ?? null)), [bracket?.picksData]);
+  const teams = useMemo(() => new Map((field?.teams ?? []).map((t) => [t.id, t])), [field]);
+  const team = (id: string): PickerTeam => {
+    const t = teams.get(id);
+    return t ? { id, name: t.name, seed: t.seed, logo: t.logo, record: t.record } : { id, name: id, seed: 0, logo: null, record: null };
+  };
+  const results: BracketResults = useMemo(
+    () => ({
+      winners: new Map((bracket?.completedGames ?? []).flatMap((g) => (g.winnerBracketId ? [[g.bracketGameId, g.winnerBracketId] as const] : []))),
+      eliminated,
+      pct,
+    }),
+    [bracket?.completedGames, eliminated, pct]
+  );
+
+  if (status === "loading" || !bracket || fieldLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
       </div>
     );
   }
-
-  if (!session || !bracket) return null;
+  if (!session) return null;
 
   const isOwner = bracket.isOwner !== false;
+  const actions = bracketActions(bracket);
+  const prog = games.length ? progress(picks, games) : { done: picks.size, total: 63 };
+  const submitted = bracket.status !== "DRAFT";
+  const back = isOwner ? "/brackets" : "/leaderboard";
 
-  // Parse picks data from JSON
-  const parsedPicks: PickData[] = bracket.picksData 
-    ? JSON.parse(bracket.picksData) 
-    : [];
-
-  const getStatusBadge = () => {
-    switch (bracket.status) {
-      case "PAID":
-        return isOwner ? (
-          <Badge className="bg-green-500">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Paid
-          </Badge>
-        ) : (
-          <Badge className="bg-blue-500">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Submitted
-          </Badge>
-        );
-      case "SUBMITTED":
-        return (
-          <Badge className="bg-blue-500">
-            <CheckCircle className="mr-1 h-3 w-3" />
-            Submitted
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            <Clock className="mr-1 h-3 w-3" />
-            Draft
-          </Badge>
-        );
+  const downloadPdf = async () => {
+    const res = await fetch(`/api/brackets/${bracket.id}/pdf`);
+    if (!res.ok) {
+      toast.error((await res.json().catch(() => ({}))).error || "Couldn't make the PDF");
+      return;
     }
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement("a"), { href: url, download: `${bracket.name.replace(/[^a-zA-Z0-9]/g, "_") || "bracket"}_picks.pdf` });
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  // Game IDs: "East-r1-g1", "South-r2-g3", "final-four-r5-g1", "championship-r6-g1"
-  const getRegionPicks = (region: string) => {
-    return parsedPicks.filter((p) => p.gameId.startsWith(`${region}-r`));
-  };
-
-  const getFinalFourPicks = () => {
-    return parsedPicks.filter((p) => p.gameId.startsWith("final-four-"));
-  };
-
-  const getChampionshipPick = () => {
-    return parsedPicks.find((p) => p.gameId.startsWith("championship-"));
-  };
-
-  const renderTeam = (teamId: string, rank: number, size: "sm" | "md" = "sm", isIncorrect: boolean = false, showEliminated: boolean = true, pickPct?: number) => {
-    const name = lookup.name(teamId);
-    const info = lookup.get(teamId);
-    const logo = lookup.logo(teamId);
-    const imgSize = size === "md" ? 24 : 18;
-    const isEliminated = showEliminated && eliminatedTeams.has(teamId);
-    return (
-      <div key={`${teamId}-${rank}`} className={`flex items-center gap-1.5 ${isIncorrect ? "line-through opacity-40" : isEliminated ? "opacity-30 grayscale" : ""}`}>
-        {rank > 0 && (
-          <span className={`font-bold shrink-0 w-4 text-right ${rank === 1 ? "text-primary" : "text-slate-400"} ${size === "md" ? "text-sm" : "text-[11px]"}`}>
-            {rank}.
-          </span>
-        )}
-        {logo && (
-          <Image
-            src={logo}
-            alt={name}
-            width={imgSize}
-            height={imgSize}
-            className={`${size === "md" ? "w-6 h-6" : "w-[18px] h-[18px]"} object-contain shrink-0`}
-            unoptimized
-          />
-        )}
-        <span className={`font-medium truncate ${size === "md" ? "text-sm" : "text-xs"}`}>{name}</span>
-        {info && (
-          <span className={`text-slate-400 shrink-0 ${size === "md" ? "text-xs" : "text-[10px]"}`}>({info.seed})</span>
-        )}
-        {pickPct !== undefined && (
-          <span className="text-[10px] text-primary/60 font-medium shrink-0 ml-auto">{pickPct}%</span>
-        )}
-      </div>
-    );
-  };
-
-  const renderGameCard = (pick: PickData, roundNum: number) => {
-    const gameNumStr = pick.gameId.split("-g")[1];
-    
-    // Match by bracketGameId directly (API returns same format as pick gameIds)
-    const completedGame = bracket?.completedGames?.find(
-      (g) => g.bracketGameId === pick.gameId
-    );
-    const isCompleted = !!completedGame;
-    const winnerBracketId = completedGame?.winnerBracketId;
-
-    return (
-      <div 
-        key={pick.gameId} 
-        className={`bg-white rounded-md p-2 space-y-0.5 ${
-          isCompleted ? "border-2 border-slate-400" : "border border-slate-200"
-        }`}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[10px] text-slate-400 font-medium">Game {gameNumStr}</span>
-          <span className="text-[10px] text-slate-400">{ROUND_LABELS[roundNum]}</span>
-        </div>
-        {pick.choices.map((teamId, i) => {
-          // Check if this pick is incorrect (game completed and this team didn't win)
-          const isIncorrect = isCompleted && winnerBracketId && teamId !== winnerBracketId;
-          // Don't show eliminated styling for teams that won this specific game
-          const isWinner = isCompleted && winnerBracketId === teamId;
-          const pickPct = gamePicks[pick.gameId]?.[`${i}:${teamId}`];
-          return (
-            <div key={`${teamId}-${i}`}>
-              {renderTeam(teamId, pick.choices.length > 1 ? i + 1 : 0, "sm", !!isIncorrect, !isWinner, pickPct)}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderRegionContent = (region: string) => {
-    const regionPicks = getRegionPicks(region);
-    if (regionPicks.length === 0) {
-      return (
-        <p className="text-sm text-slate-400 text-center py-6">No picks for this region yet.</p>
-      );
-    }
-
-    const roundNames = ["First Round", "Second Round", "Sweet 16", "Elite 8"];
-    const roundPoints = ["2 pts", "5 pts", "10/5 pts", "15/10/5 pts"];
-
-    return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4].map((round) => {
-          const roundPicks = regionPicks
-            .filter((p) => {
-              const match = p.gameId.match(/-r(\d+)-/);
-              return match ? parseInt(match[1]) === round : false;
-            })
-            .sort((a, b) => {
-              const aNum = parseInt(a.gameId.split("-g")[1] || "0");
-              const bNum = parseInt(b.gameId.split("-g")[1] || "0");
-              return aNum - bNum;
-            });
-          if (roundPicks.length === 0) return null;
-
-          return (
-            <div key={round}>
-              <div className="flex items-center gap-2 mb-2">
-                <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wide">
-                  {roundNames[round - 1]}
-                </h4>
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                  {roundPoints[round - 1]}
-                </Badge>
-              </div>
-              <div className={`grid gap-2 ${round <= 2 ? "grid-cols-2 sm:grid-cols-4" : round === 3 ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}>
-                {roundPicks.map((pick) => renderGameCard(pick, round))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderFinalContent = () => {
-    const ff = getFinalFourPicks();
-    const champ = getChampionshipPick();
-    const ffGame1 = ff.find((p) => p.gameId.includes("g1"));
-    const ffGame2 = ff.find((p) => p.gameId.includes("g2"));
-
-    if (ff.length === 0 && !champ) {
-      return (
-        <p className="text-sm text-slate-400 text-center py-6">No Final Four picks yet.</p>
-      );
-    }
-
-    // Check if user has all 4 Final Four teams picked (potential bonus)
-    const hasFinalFourBonus = ff.length === 2 && 
-      ffGame1?.choices.length === 4 && 
-      ffGame2?.choices.length === 4;
-
-    return (
-      <div className="space-y-4">
-        {/* Bonus indicator */}
-        {bracket.bonusScore > 0 ? (
-          <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            <Trophy className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-700">
-              Final Four Bonus Earned: +{bracket.bonusScore} pts
-            </span>
-          </div>
-        ) : hasFinalFourBonus && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            <Trophy className="h-4 w-4 text-amber-600" />
-            <span className="text-sm text-amber-700">
-              Perfect Final Four = +10 bonus pts
-            </span>
-          </div>
-        )}
-
-        {/* Mini Bracket Visual */}
-        {(ff.length > 0 || champ) && (
-          <div className="bg-white border rounded-lg p-4">
-            <div className="flex flex-col items-center gap-4">
-              {/* Final Four Games Row */}
-              <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
-                {/* FF Game 1: East vs South */}
-                <div className="border rounded-lg p-3 bg-slate-50">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">East vs South</p>
-                  {ffGame1 ? (
-                    <div className="space-y-1">
-                      {(() => {
-                        const cg = bracket?.completedGames?.find(g => g.bracketGameId === ffGame1.gameId);
-                        return ffGame1.choices.map((teamId, i) => {
-                          const pickPct = gamePicks[ffGame1.gameId]?.[`${i}:${teamId}`];
-                          const isIncorrect = !!cg && !!cg.winnerBracketId && teamId !== cg.winnerBracketId;
-                          const isWinner = !!cg && cg.winnerBracketId === teamId;
-                          return renderTeam(teamId, i + 1, "sm", isIncorrect, !isWinner, pickPct);
-                        });
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-300 text-center py-2">—</p>
-                  )}
-                </div>
-
-                {/* FF Game 2: West vs Midwest */}
-                <div className="border rounded-lg p-3 bg-slate-50">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-2 text-center">West vs Midwest</p>
-                  {ffGame2 ? (
-                    <div className="space-y-1">
-                      {(() => {
-                        const cg = bracket?.completedGames?.find(g => g.bracketGameId === ffGame2.gameId);
-                        return ffGame2.choices.map((teamId, i) => {
-                          const pickPct = gamePicks[ffGame2.gameId]?.[`${i}:${teamId}`];
-                          const isIncorrect = !!cg && !!cg.winnerBracketId && teamId !== cg.winnerBracketId;
-                          const isWinner = !!cg && cg.winnerBracketId === teamId;
-                          return renderTeam(teamId, i + 1, "sm", isIncorrect, !isWinner, pickPct);
-                        });
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-300 text-center py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Connector lines */}
-              <div className="flex items-center justify-center w-full max-w-lg">
-                <div className="flex-1 h-px bg-slate-200" />
-                <Crown className="h-5 w-5 text-yellow-500 mx-2" />
-                <div className="flex-1 h-px bg-slate-200" />
-              </div>
-
-              {/* Championship */}
-              <div className="w-full max-w-xs">
-                <div className="bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20 rounded-lg p-4">
-                  <p className="text-[10px] font-semibold text-primary/60 uppercase tracking-wide mb-2 text-center">Championship</p>
-                  {champ ? (
-                    <div className="space-y-1.5">
-                      {(() => {
-                        const cg = bracket?.completedGames?.find(g => g.bracketGameId === champ.gameId);
-                        return champ.choices.map((teamId, i) => {
-                          const pickPct = gamePicks[champ.gameId]?.[`${i}:${teamId}`];
-                          const isIncorrect = !!cg && !!cg.winnerBracketId && teamId !== cg.winnerBracketId;
-                          const isWinner = !!cg && cg.winnerBracketId === teamId;
-                          return renderTeam(teamId, i + 1, "md", isIncorrect, !isWinner, pickPct);
-                        });
-                      })()}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-300 text-center py-2">—</p>
-                  )}
-                  {bracket.tiebreaker !== null && (
-                    <div className="mt-3 pt-3 border-t border-primary/10 text-center">
-                      <span className="text-xs text-slate-500">Tiebreaker: </span>
-                      <span className="text-sm font-bold text-primary">{bracket.tiebreaker}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Points breakdown */}
-        <div className="flex flex-wrap gap-3 justify-center text-xs text-slate-500">
-          <span className="bg-slate-100 px-2 py-1 rounded">Final Four: 25/15/10/5 pts</span>
-          <span className="bg-slate-100 px-2 py-1 rounded">Championship: 35/25/15/10/5 pts</span>
-        </div>
-      </div>
-    );
-  };
-
-  const tabs = [...REGIONS, "Final Four"];
-
-  const deadlinePassed = bracket.pool?.deadline
-    ? new Date() > new Date(bracket.pool.deadline)
-    : false;
-  const canEdit =
-    bracket.status === "DRAFT" ||
-    ((bracket.status === "SUBMITTED" || bracket.status === "PAID") && !deadlinePassed);
+  const stats: [string, React.ReactNode][] = [
+    ["Score", <span key="s" className="text-primary">{bracket.totalScore + bracket.bonusScore}</span>],
+    ...(bracket.rank != null ? [["Rank", `${bracket.rank}${bracket.totalInPool ? ` / ${bracket.totalInPool}` : ""}`] as [string, React.ReactNode]] : []),
+    ...(bracket.bonusScore > 0 ? [["Bonus", `+${bracket.bonusScore}`] as [string, React.ReactNode]] : []),
+    ["Tiebreaker", bracket.tiebreaker ?? "—"],
+    ...(prog.done < prog.total ? [["Picked", `${prog.done} / ${prog.total}`] as [string, React.ReactNode]] : []),
+  ];
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" asChild className="shrink-0 mt-1">
-          <Link href={isOwner ? "/brackets" : "/leaderboard"}>
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 truncate">
-              {isOwner ? bracket.name : `${bracket.ownerName}'s Bracket`}
-            </h1>
-            {getStatusBadge()}
-            {deadlinePassed && (bracket.status === "SUBMITTED" || bracket.status === "PAID") && (
-              <Badge variant="outline" className="text-slate-500">
-                <Clock className="mr-1 h-3 w-3" />
-                Locked
-              </Badge>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-slate-600">
-            {isOwner ? (
-              <span>{bracket.entryName}</span>
-            ) : (
-              <span>{bracket.name} — {bracket.entryName}</span>
-            )}
-            {bracket.familyMember && (
-              <Badge variant="outline" className="font-normal text-xs">
-                <Users className="mr-1 h-3 w-3" />
-                {bracket.familyMember.name}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons - Toolbar style (only for owner) */}
-      {isOwner && (
-        <div className="flex flex-wrap items-center gap-2">
-          {canEdit && (
-            <Button asChild size="sm" className="bg-primary hover:bg-primary/90">
-              <Link href={`/brackets/${bracket.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Link>
-            </Button>
-          )}
-          {(bracket.status === "SUBMITTED" || bracket.status === "PAID") && !bracket.paid && (
-            <Button asChild size="sm" className="bg-green-600 hover:bg-green-700">
-              <Link href="/payment">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Pay Now
-              </Link>
-            </Button>
-          )}
-          {parsedPicks.length > 0 && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadPdf}
-                disabled={isDownloading}
-                className="hidden sm:flex"
-              >
-                {isDownloading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isDownloading ? "Generating..." : "Download PDF"}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={handleDownloadPdf}
-                disabled={isDownloading}
-                className="sm:hidden"
-              >
-                {isDownloading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
-              </Button>
-            </>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="icon" className="text-destructive border-destructive hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                  Delete Bracket
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete <strong>&quot;{bracket.name}&quot;</strong>?
-                  This action cannot be undone. All picks and scores associated with this
-                  bracket will be permanently removed.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Bracket
-                    </>
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      )}
-      {!isOwner && (
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/leaderboard">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Leaderboard
+    <div className="space-y-5">
+      <PageHeader
+        leading={
+          <Button variant="ghost" size="icon" asChild className="-ml-2 mt-0.5 shrink-0">
+            <Link href={back} aria-label="Back">
+              <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
-        </div>
-      )}
-
-      {/* Score Cards - 2 cards on mobile, 4 on desktop */}
-      <div className="grid gap-3 grid-cols-2">
-        {/* Card 1: Score & Ranking */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Score & Rank</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-primary" />
-              <span className="text-2xl md:text-3xl font-bold text-primary">
-                {bracket.totalScore + bracket.bonusScore}
+        }
+        title={<span className="block truncate">{isOwner ? bracket.name : `${bracket.ownerName}'s bracket`}</span>}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            {isOwner ? `for ${bracket.entryName}` : `${bracket.name} · ${bracket.entryName}`}
+            {bracket.familyMember && (
+              <span className="inline-flex items-center gap-1 text-xs">
+                <Users className="h-3 w-3" /> {bracket.familyMember.name}
               </span>
-              {bracket.rank !== null && (
-                <span className="text-sm text-muted-foreground">
-                  • #{bracket.rank}{bracket.totalInPool ? `/${bracket.totalInPool}` : ""}
-                </span>
-              )}
-            </div>
-            {bracket.bonusScore > 0 && (
-              <p className="text-xs text-muted-foreground">
-                Base: {bracket.totalScore} + Bonus: {bracket.bonusScore}
-              </p>
             )}
-          </CardContent>
-        </Card>
-
-        {/* Card 2: Payment & Tiebreaker */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {isOwner && (
-              <div className="flex items-center gap-2">
-                <DollarSign className={`h-4 w-4 ${bracket.paid ? "text-green-500" : "text-slate-400"}`} />
-                <span className={`text-sm font-medium ${bracket.paid ? "text-green-600" : "text-slate-500"}`}>
-                  {bracket.paid ? "Paid" : "Unpaid"}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <span className="text-muted-foreground">Tiebreaker:</span>
-              <span className="font-semibold">{bracket.tiebreaker ?? "—"}</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bracket Picks - Region Tabs */}
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-0">
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="h-5 w-5 text-primary" />
-            {isOwner ? "Your Bracket Picks" : `${bracket.ownerName}'s Picks`}
-          </CardTitle>
-          <CardDescription>
-            {parsedPicks.length > 0 
-              ? `${parsedPicks.length} games picked`
-              : "No picks recorded yet"
-            }
-          </CardDescription>
-          {parsedPicks.length > 0 && Object.keys(gamePicks).length > 0 && (
-            <div className="flex items-center gap-2 bg-primary/5 border border-primary/10 rounded-lg px-3 py-2 mt-2">
-              <Users className="h-4 w-4 text-primary/60 shrink-0" />
-              <span className="text-xs text-slate-600">
-                <span className="font-medium text-primary/80">%</span> = pool members who made the same pick at the same rank
+            <BracketStatusBadge status={bracket.status} paid={bracket.paid} isOwner={isOwner} />
+            {submitted && actions.locked && (
+              <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                <Lock className="h-3 w-3" /> Locked
               </span>
-            </div>
-          )}
-        </CardHeader>
-        <CardContent className="p-0">
-          {parsedPicks.length === 0 ? (
-            <div className="text-center py-8 px-4 text-slate-500">
-              <Trophy className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-              <p>No picks have been saved for this bracket yet.</p>
-              {isOwner && bracket.status === "DRAFT" && (
-                <Button asChild className="mt-4 bg-primary hover:bg-primary/90">
-                  <Link href={`/brackets/${bracket.id}/edit`}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Start Filling Out Bracket
+            )}
+          </span>
+        }
+        actions={
+          isOwner && (
+            <>
+              {actions.canEdit && (
+                <Button asChild size="sm">
+                  <Link href={`/brackets/new?editId=${bracket.id}`}>
+                    <Edit className="mr-1.5 h-4 w-4" /> Edit picks
                   </Link>
                 </Button>
               )}
-            </div>
-          ) : (
-            <div>
-              {/* Sticky Tab navigation */}
-              <div className="sticky top-0 z-10 bg-white border-b px-4 pt-3">
-                <div className="flex gap-1 overflow-x-auto pb-0 -mb-px">
-                  {tabs.map((tab) => {
-                    const isActive = activeTab === tab;
-                    const isFinal = tab === "Final Four";
-                    return (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-3 py-2 text-sm font-medium rounded-t-md transition-colors whitespace-nowrap border-b-2
-                          ${isActive
-                            ? "text-primary border-primary bg-primary/5"
-                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-transparent"
-                          }
-                          ${isFinal ? "flex items-center gap-1.5" : ""}
-                        `}
-                      >
-                        {isFinal && <Crown className="h-3.5 w-3.5" />}
-                        {tab}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              {submitted && !bracket.paid && (
+                <Button asChild size="sm" variant="outline">
+                  <Link href="/payment">
+                    <DollarSign className="mr-1.5 h-4 w-4" /> Pay
+                  </Link>
+                </Button>
+              )}
+              <BracketMenu
+                bracket={bracket}
+                canEdit={false}
+                canDelete={actions.canDelete}
+                showView={false}
+                onDownload={picks.size ? downloadPdf : undefined}
+                onDeleted={() => router.push("/brackets")}
+              />
+            </>
+          )
+        }
+      />
 
-              {/* Tab content */}
-              <div className="bg-slate-50 p-4">
-                {activeTab === "Final Four"
-                  ? renderFinalContent()
-                  : renderRegionContent(activeTab)
-                }
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Timestamps - Subtle footer */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-slate-400 pt-2">
-        <span>Created {new Date(bracket.createdAt).toLocaleDateString()}</span>
-        <span>•</span>
-        <span>Updated {new Date(bracket.updatedAt).toLocaleDateString()}</span>
-        {bracket.submittedAt && (
-          <>
-            <span>•</span>
-            <span>Submitted {new Date(bracket.submittedAt).toLocaleDateString()}</span>
-          </>
-        )}
+      <div className="flex divide-x overflow-x-auto rounded-xl border bg-card shadow-sm">
+        {stats.map(([label, value]) => (
+          <div key={label} className="min-w-[84px] flex-1 px-4 py-3">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+            <p className="text-xl font-bold tabular-nums">{value}</p>
+          </div>
+        ))}
       </div>
+
+      {picks.size === 0 ? (
+        <div className="rounded-xl border bg-card px-4 py-12 text-center">
+          <Trophy className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">No picks saved yet.</p>
+          {isOwner && actions.canEdit && (
+            <Button asChild className="mt-4">
+              <Link href={`/brackets/new?editId=${bracket.id}`}>Start picking</Link>
+            </Button>
+          )}
+        </div>
+      ) : games.length === 0 ? (
+        <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">The tournament field for this bracket isn&apos;t available.</p>
+      ) : (
+        <>
+          <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <span>
+              <span className="font-semibold text-emerald-700">Green ✓</span> right
+            </span>
+            <span>
+              <span className="line-through">Struck</span> wrong
+            </span>
+            <span>
+              <span className="text-muted-foreground/60">Faded</span> knocked out
+            </span>
+            {Object.keys(pct).length > 0 && <span>% of the pool made the same pick at that rank</span>}
+          </p>
+          <div className="hidden lg:block">
+            <DesktopBracketView regions={regions} picks={picks} byId={byId} team={team} results={results} />
+          </div>
+          <div className="lg:hidden">
+            <BracketRounds regions={regions} games={games} picks={picks} team={team} results={results} tiebreaker={bracket.tiebreaker} />
+          </div>
+        </>
+      )}
+
+      <p className="flex flex-wrap justify-center gap-x-3 gap-y-1 pt-2 text-xs text-muted-foreground">
+        <span>Created {new Date(bracket.createdAt).toLocaleDateString()}</span>
+        <span>· Updated {new Date(bracket.updatedAt).toLocaleDateString()}</span>
+        {bracket.submittedAt && <span>· Submitted {new Date(bracket.submittedAt).toLocaleDateString()}</span>}
+      </p>
     </div>
   );
 }

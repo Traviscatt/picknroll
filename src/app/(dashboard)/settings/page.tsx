@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { generatePalette } from "@/lib/team-colors";
 import { useTeamOptions } from "@/hooks/use-team-options";
 import { EmailPreferences } from "@/components/settings/email-preferences";
+import { PageHeader } from "@/components/shared/page-header";
 
 export default function SettingsPage() {
   const { data: session, status, update } = useSession();
@@ -112,13 +113,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-        <p className="text-slate-600 mt-1">
-          Manage your account and preferences
-        </p>
-      </div>
+      <PageHeader title="Settings" description="Manage your account and preferences" />
 
       {/* Quick Links */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -191,15 +186,15 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-slate-400" />
+              <Mail className="h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 value={email}
                 disabled
-                className="bg-slate-50"
+                className="bg-muted/50"
               />
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Email cannot be changed. Contact support if needed.
             </p>
           </div>
@@ -358,7 +353,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -377,7 +372,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -393,7 +388,7 @@ export default function SettingsPage() {
               placeholder="Confirm new password"
             />
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Password must be at least 6 characters.
           </p>
           <Button
@@ -414,11 +409,11 @@ export default function SettingsPage() {
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-500">Account ID</span>
+              <span className="text-muted-foreground">Account ID</span>
               <span className="font-mono text-xs">{session.user.id}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Account Type</span>
+              <span className="text-muted-foreground">Account Type</span>
               <span>Standard</span>
             </div>
           </div>

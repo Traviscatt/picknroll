@@ -213,8 +213,8 @@ export default function AdminResultsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Enter Results</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Enter Results</h1>
+            <p className="text-muted-foreground">
               {games.length > 0
                 ? `${completedGames} of ${games.length} games have winners`
                 : "No games in database yet. Add tournament data first."}
@@ -294,8 +294,8 @@ export default function AdminResultsPage() {
                 </CardHeader>
                 <CardContent>
                   {roundGames.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <Trophy className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Trophy className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
                       <p>No games for this round yet.</p>
                       <p className="text-sm mt-1">Tournament games need to be added to the database first.</p>
                     </div>
@@ -309,11 +309,11 @@ export default function AdminResultsPage() {
                         return (
                           <div
                             key={game.id}
-                            className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg"
+                            className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg"
                           >
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-2">
-                                <p className="text-sm text-slate-500">
+                                <p className="text-sm text-muted-foreground">
                                   {game.region ? `${game.region} - ` : ""}Game {game.gameNumber}
                                 </p>
                                 {(isTeam1Winner || isTeam2Winner) && (
@@ -335,7 +335,7 @@ export default function AdminResultsPage() {
                                     disabled={!game.team1}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <span className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
+                                      <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground/80">
                                         {game.team1?.seed ?? "?"}
                                       </span>
                                       <span>{game.team1?.team.name ?? "TBD"}</span>
@@ -360,7 +360,7 @@ export default function AdminResultsPage() {
                                     disabled={!game.team2}
                                   >
                                     <div className="flex items-center gap-2">
-                                      <span className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-700">
+                                      <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-foreground/80">
                                         {game.team2?.seed ?? "?"}
                                       </span>
                                       <span>{game.team2?.team.name ?? "TBD"}</span>
@@ -410,7 +410,7 @@ export default function AdminResultsPage() {
                   onChange={(e) => setActualTiebreaker(e.target.value)}
                 />
               </div>
-              <p className="text-sm text-slate-500 mt-6">
+              <p className="text-sm text-muted-foreground mt-6">
                 {autoTiebreaker != null
                   ? `Currently using ${actualTiebreaker || autoTiebreaker}. Leave blank to use the championship score.`
                   : "The championship score will be used once the game is final."}

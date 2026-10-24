@@ -133,15 +133,15 @@ export function NotificationBell() {
         <ScrollArea className="h-[300px]">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Bell className="h-10 w-10 text-slate-300 mb-2" />
-              <p className="text-sm text-slate-500">No notifications yet</p>
+              <Bell className="h-10 w-10 text-muted-foreground/40 mb-2" />
+              <p className="text-sm text-muted-foreground">No notifications yet</p>
             </div>
           ) : (
             <div className="divide-y">
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors ${
+                  className={`px-4 py-3 hover:bg-muted/50 cursor-pointer transition-colors ${
                     !notification.read ? "bg-blue-50/50" : ""
                   }`}
                   onClick={() => {
@@ -161,10 +161,10 @@ export function NotificationBell() {
                           <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" />
                         )}
                       </div>
-                      <p className="text-xs text-slate-600 mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                         {notification.message}
                       </p>
-                      <p className="text-[10px] text-slate-400 mt-1">
+                      <p className="text-[10px] text-muted-foreground mt-1">
                         {formatDistanceToNow(new Date(notification.createdAt), {
                           addSuffix: true,
                         })}

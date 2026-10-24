@@ -332,8 +332,8 @@ export default function AdminDashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Admin Dashboard</h1>
-        <p className="text-slate-600 mt-1">
+        <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Admin Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
           Manage your bracket pool
         </p>
       </div>
@@ -343,7 +343,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Brackets</CardTitle>
-            <FileText className="h-4 w-4 text-slate-500" />
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalBrackets}</div>
@@ -373,10 +373,10 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Drafts</CardTitle>
-            <FileText className="h-4 w-4 text-slate-400" />
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-500">{stats.draftBrackets}</div>
+            <div className="text-2xl font-bold text-muted-foreground">{stats.draftBrackets}</div>
           </CardContent>
         </Card>
 
@@ -428,9 +428,9 @@ export default function AdminDashboardPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Paid</span>
+              <span className="text-sm text-muted-foreground">Paid</span>
               <div className="flex items-center gap-2">
-                <div className="w-48 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-green-500 rounded-full"
                     style={{
@@ -446,9 +446,9 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Unpaid</span>
+              <span className="text-sm text-muted-foreground">Unpaid</span>
               <div className="flex items-center gap-2">
-                <div className="w-48 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className="w-48 h-2 bg-muted rounded-full overflow-hidden">
                   <div
                     className="h-full bg-yellow-500 rounded-full"
                     style={{
@@ -479,13 +479,13 @@ export default function AdminDashboardPage() {
             </div>
           )}
           {stats.draftBrackets > 0 && (
-            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2">
-              <FileText className="h-5 w-5 text-slate-500 flex-shrink-0 mt-0.5" />
+            <div className="mt-4 p-3 bg-muted/50 border border-border rounded-lg flex items-start gap-2">
+              <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-slate-700">
+                <p className="text-sm font-medium text-foreground/80">
                   {stats.draftBrackets} unsubmitted {stats.draftBrackets === 1 ? "draft" : "drafts"}
                 </p>
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-muted-foreground">
                   These brackets haven&apos;t been submitted yet.
                 </p>
               </div>
@@ -638,7 +638,7 @@ export default function AdminDashboardPage() {
                     {!sendToAll && (
                       <div className="space-y-2">
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
                             placeholder="Search users..."
                             className="pl-9"
@@ -649,10 +649,10 @@ export default function AdminDashboardPage() {
                         <ScrollArea className="h-48 border rounded-md p-2">
                           {loadingUsers ? (
                             <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                             </div>
                           ) : filteredUsers.length === 0 ? (
-                            <p className="text-sm text-slate-500 text-center py-4">
+                            <p className="text-sm text-muted-foreground text-center py-4">
                               No users found
                             </p>
                           ) : (
@@ -660,7 +660,7 @@ export default function AdminDashboardPage() {
                               {filteredUsers.map((user) => (
                                 <div
                                   key={user.id}
-                                  className="flex items-center space-x-2 p-2 hover:bg-slate-50 rounded cursor-pointer"
+                                  className="flex items-center space-x-2 p-2 hover:bg-muted/50 rounded cursor-pointer"
                                   onClick={() => toggleUserSelection(user.id)}
                                 >
                                   <Checkbox
@@ -669,7 +669,7 @@ export default function AdminDashboardPage() {
                                   />
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">{user.name}</p>
-                                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                   </div>
                                 </div>
                               ))}
@@ -677,7 +677,7 @@ export default function AdminDashboardPage() {
                           )}
                         </ScrollArea>
                         {selectedUserIds.length > 0 && (
-                          <p className="text-xs text-slate-600">
+                          <p className="text-xs text-muted-foreground">
                             {selectedUserIds.length} user{selectedUserIds.length !== 1 ? "s" : ""} selected
                           </p>
                         )}
@@ -701,7 +701,7 @@ export default function AdminDashboardPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-xs text-slate-500 mt-3">
+          <p className="text-xs text-muted-foreground mt-3">
             Notifications are sent via email and appear in the bell icon for each user.
           </p>
         </CardContent>
@@ -738,14 +738,14 @@ export default function AdminDashboardPage() {
               <div>
                 <CardTitle>Outcome Scenarios</CardTitle>
                 <CardDescription>
-                  See the top 10 leaderboard for every possible remaining-game outcome
+                  See the top 10 standings for every possible remaining-game outcome
                 </CardDescription>
               </div>
             </div>
             {scenariosOpen ? (
-              <ChevronUp className="h-5 w-5 text-slate-400" />
+              <ChevronUp className="h-5 w-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-slate-400" />
+              <ChevronDown className="h-5 w-5 text-muted-foreground" />
             )}
           </div>
         </CardHeader>
@@ -753,23 +753,23 @@ export default function AdminDashboardPage() {
           <CardContent>
             {scenariosLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-                <span className="ml-2 text-sm text-slate-500">Computing all scenarios...</span>
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Computing all scenarios...</span>
               </div>
             ) : scenariosData?.message ? (
-              <p className="text-sm text-slate-500 py-4">{scenariosData.message}</p>
+              <p className="text-sm text-muted-foreground py-4">{scenariosData.message}</p>
             ) : scenariosData ? (
               <div className="space-y-4">
                 {/* Final Four Summary */}
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  <p className="text-sm font-medium text-slate-700 mb-2">
+                <div className="p-3 bg-muted/50 border border-border rounded-lg">
+                  <p className="text-sm font-medium text-foreground/80 mb-2">
                     Final Four &middot; {scenariosData.totalScenarios} championship scenarios
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
+                    <span className="text-xs bg-card border rounded-full px-3 py-1 text-muted-foreground">
                       Semi 1: {scenariosData.finalFourTeams.semi1.team1} vs {scenariosData.finalFourTeams.semi1.team2}
                     </span>
-                    <span className="text-xs bg-white border rounded-full px-3 py-1 text-slate-600">
+                    <span className="text-xs bg-card border rounded-full px-3 py-1 text-muted-foreground">
                       Semi 2: {scenariosData.finalFourTeams.semi2.team1} vs {scenariosData.finalFourTeams.semi2.team2}
                     </span>
                   </div>
@@ -780,7 +780,7 @@ export default function AdminDashboardPage() {
                   {scenariosData.scenarios.map((scenario) => (
                     <div key={scenario.scenarioIndex} className="border rounded-lg overflow-hidden">
                       <button
-                        className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors text-left"
+                        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
                         onClick={() =>
                           setExpandedScenario(
                             expandedScenario === scenario.scenarioIndex ? null : scenario.scenarioIndex
@@ -788,34 +788,34 @@ export default function AdminDashboardPage() {
                         }
                       >
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-semibold bg-slate-200 text-slate-700 rounded px-2 py-0.5">
+                          <span className="text-xs font-semibold bg-muted text-foreground/80 rounded px-2 py-0.5">
                             #{scenario.scenarioIndex}
                           </span>
                           <div className="flex items-center gap-1.5">
                             <Trophy className="h-4 w-4 text-yellow-500" />
-                            <span className="font-bold text-sm text-slate-900">{scenario.champion} wins</span>
+                            <span className="font-bold text-sm text-foreground">{scenario.champion} wins</span>
                           </div>
-                          <span className="text-xs text-slate-400">|</span>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">|</span>
+                          <span className="text-xs text-muted-foreground">
                             Championship: {scenario.championship}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs text-slate-500">
-                            Pool Winner: <span className="font-semibold text-slate-700">{scenario.top10[0]?.entryName || "\u2014"}</span> ({scenario.top10[0]?.combined || 0}pts)
+                          <span className="text-xs text-muted-foreground">
+                            Pool Winner: <span className="font-semibold text-foreground/80">{scenario.top10[0]?.entryName || "\u2014"}</span> ({scenario.top10[0]?.combined || 0}pts)
                           </span>
                           {expandedScenario === scenario.scenarioIndex ? (
-                            <ChevronUp className="h-4 w-4 text-slate-400" />
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="h-4 w-4 text-slate-400" />
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
                           )}
                         </div>
                       </button>
                       {expandedScenario === scenario.scenarioIndex && (
-                        <div className="border-t bg-white">
+                        <div className="border-t bg-card">
                           <table className="w-full text-sm">
                             <thead>
-                              <tr className="border-b bg-slate-50 text-slate-500">
+                              <tr className="border-b bg-muted/50 text-muted-foreground">
                                 <th className="text-left px-3 py-2 font-medium w-12">#</th>
                                 <th className="text-left px-3 py-2 font-medium">Bracket</th>
                                 <th className="text-left px-3 py-2 font-medium">Entry</th>
@@ -826,28 +826,28 @@ export default function AdminDashboardPage() {
                             </thead>
                             <tbody>
                               {scenario.top10.map((entry) => (
-                                <tr key={entry.rank} className="border-b last:border-b-0 hover:bg-slate-50">
+                                <tr key={entry.rank} className="border-b last:border-b-0 hover:bg-muted/50">
                                   <td className="px-3 py-2">
                                     <div className="flex items-center">
                                       {entry.rank <= 3 ? (
                                         <Medal className={`h-4 w-4 ${
                                           entry.rank === 1 ? "text-yellow-500" :
-                                          entry.rank === 2 ? "text-slate-400" :
+                                          entry.rank === 2 ? "text-muted-foreground" :
                                           "text-amber-600"
                                         }`} />
                                       ) : (
-                                        <span className="text-slate-500">{entry.rank}</span>
+                                        <span className="text-muted-foreground">{entry.rank}</span>
                                       )}
                                     </div>
                                   </td>
                                   <td className="px-3 py-2 font-medium truncate max-w-[200px]">{entry.name}</td>
-                                  <td className="px-3 py-2 text-slate-600 truncate max-w-[150px]">{entry.entryName}</td>
+                                  <td className="px-3 py-2 text-muted-foreground truncate max-w-[150px]">{entry.entryName}</td>
                                   <td className="px-3 py-2 text-right tabular-nums">{entry.combined - entry.bonusScore}</td>
                                   <td className="px-3 py-2 text-right tabular-nums">
                                     {entry.bonusScore > 0 ? (
                                       <span className="text-green-600">+{entry.bonusScore}</span>
                                     ) : (
-                                      <span className="text-slate-300">0</span>
+                                      <span className="text-muted-foreground/40">0</span>
                                     )}
                                   </td>
                                   <td className="px-3 py-2 text-right font-bold tabular-nums">{entry.combined}</td>

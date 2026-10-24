@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-muted/40 to-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
@@ -60,10 +60,10 @@ export default function ForgotPasswordPage() {
         {submitted ? (
           <CardContent className="text-center space-y-4">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-            <p className="text-slate-600">
+            <p className="text-muted-foreground">
               If an account with <strong>{email}</strong> exists, we&apos;ve emailed a password reset link.
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               The link expires in 1 hour. Check your spam folder if you don&apos;t see it.
             </p>
           </CardContent>

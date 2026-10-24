@@ -29,11 +29,11 @@ function TeamRow({ team, picked, onClick, mirrored }: { team: PickerTeam; picked
       className={cn(
         "flex h-7 w-full items-center gap-1 px-1.5 transition-colors",
         mirrored ? "flex-row-reverse text-right" : "text-left",
-        picked ? "bg-emerald-50 text-emerald-900" : "text-slate-900 hover:bg-slate-100"
+        picked ? "bg-emerald-50 text-emerald-900" : "text-foreground hover:bg-muted"
       )}
     >
       {team.logo && <Image src={team.logo} alt="" width={14} height={14} className="h-3.5 w-3.5 shrink-0 object-contain" unoptimized />}
-      <span className="shrink-0 text-[10px] font-bold text-slate-500">{team.seed}</span>
+      <span className="shrink-0 text-[10px] font-bold text-muted-foreground">{team.seed}</span>
       <span className="truncate text-[11px] font-semibold">{team.name}</span>
       {picked && <span className={cn("h-3.5 w-1 shrink-0 rounded-full bg-emerald-500", mirrored ? "mr-auto" : "ml-auto")} />}
     </button>
@@ -111,9 +111,9 @@ export function BracketSlot({ game, eligible, choices, unlocked, team, onTap, on
 
   if (game.round === 1) {
     return (
-      <div className={cn("w-[130px] overflow-hidden rounded border-2 bg-white", choices.length ? "border-slate-700" : "border-slate-400")}>
+      <div className={cn("w-[130px] overflow-hidden rounded border-2 bg-card", choices.length ? "border-foreground/70" : "border-foreground/30")}>
         {eligible.map((t, i) => (
-          <div key={t.id} className={cn(i > 0 && "border-t border-slate-300")}>
+          <div key={t.id} className={cn(i > 0 && "border-t border-border")}>
             <TeamRow team={t} picked={choices[0] === t.id} onClick={() => onTap(t.id)} mirrored={mirrored} />
           </div>
         ))}
@@ -123,7 +123,7 @@ export function BracketSlot({ game, eligible, choices, unlocked, team, onTap, on
 
   if (!unlocked) {
     return (
-      <div className="flex h-7 w-[130px] items-center justify-center gap-1 rounded border-2 border-dashed border-slate-300 bg-slate-50 text-[10px] font-medium text-slate-400">
+      <div className="flex h-7 w-[130px] items-center justify-center gap-1 rounded border-2 border-dashed border-border bg-muted/50 text-[10px] font-medium text-muted-foreground">
         <Lock className="h-3 w-3" /> {max > 1 ? `Rank ${max}` : "Winner"}
       </div>
     );
@@ -143,9 +143,9 @@ export function BracketSlot({ game, eligible, choices, unlocked, team, onTap, on
         <button
           type="button"
           className={cn(
-            "flex min-h-7 w-[130px] cursor-pointer flex-col justify-center rounded border-2 bg-white px-1.5 py-0.5 text-left transition-colors",
+            "flex min-h-7 w-[130px] cursor-pointer flex-col justify-center rounded border-2 bg-card px-1.5 py-0.5 text-left transition-colors",
             mirrored && "items-end text-right",
-            choices.length >= max ? "border-slate-700" : choices.length ? "border-amber-400" : "border-slate-400 hover:border-slate-700"
+            choices.length >= max ? "border-foreground/70" : choices.length ? "border-amber-400" : "border-foreground/30 hover:border-foreground/70"
           )}
         >
           {choices.length ? (
@@ -158,13 +158,13 @@ export function BracketSlot({ game, eligible, choices, unlocked, team, onTap, on
                   ) : (
                     t.logo && <Image src={t.logo} alt="" width={14} height={14} className="h-3.5 w-3.5 shrink-0 object-contain" unoptimized />
                   )}
-                  <span className="truncate text-[10px] font-semibold text-slate-900">{t.name}</span>
-                  {max > 1 && <span className={cn("text-[8px] font-bold text-slate-500", mirrored ? "mr-auto" : "ml-auto")}>{points[i]}</span>}
+                  <span className="truncate text-[10px] font-semibold text-foreground">{t.name}</span>
+                  {max > 1 && <span className={cn("text-[8px] font-bold text-muted-foreground", mirrored ? "mr-auto" : "ml-auto")}>{points[i]}</span>}
                 </span>
               );
             })
           ) : (
-            <span className="text-[10px] font-medium text-slate-500">{max > 1 ? `Rank ${max}…` : "Pick winner…"}</span>
+            <span className="text-[10px] font-medium text-muted-foreground">{max > 1 ? `Rank ${max}…` : "Pick winner…"}</span>
           )}
           {max > 1 && choices.length > 0 && choices.length < max && <span className="text-[9px] text-amber-600">{max - choices.length} more</span>}
         </button>

@@ -191,7 +191,7 @@ export default function AdminRemindersPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Reminders</h1>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Reminders</h1>
           <p className="text-muted-foreground">
             Automatic reminders run every 10 minutes during March and April. Each is sent once per person, and members can unsubscribe from emails.
           </p>

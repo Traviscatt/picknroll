@@ -59,7 +59,7 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <CardContent className="text-center space-y-4">
-        <p className="text-slate-600">
+        <p className="text-muted-foreground">
           Invalid reset link. Please request a new one.
         </p>
         <Button asChild className="bg-primary hover:bg-primary/90">
@@ -73,7 +73,7 @@ function ResetPasswordForm() {
     return (
       <CardContent className="text-center space-y-4">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
-        <p className="text-slate-600">
+        <p className="text-muted-foreground">
           Your password has been reset successfully.
         </p>
         <Button asChild className="bg-primary hover:bg-primary/90">
@@ -135,7 +135,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-muted/40 to-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">

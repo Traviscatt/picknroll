@@ -78,7 +78,7 @@ export function Navbar() {
                   href="/leaderboard"
                   className={`text-sm font-medium transition-colors ${isActive("/leaderboard") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                  Leaderboard
+                  Standings
                 </Link>
                 <Link
                   href="/hall-of-fame"

@@ -202,8 +202,8 @@ export default function AdminAnnouncementsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Announcements</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Announcements</h1>
+            <p className="text-muted-foreground">
               Post messages to all bracket participants
             </p>
           </div>
@@ -222,9 +222,9 @@ export default function AdminAnnouncementsPage() {
         <Card>
           <CardContent className="py-16">
             <div className="text-center">
-              <Megaphone className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+              <Megaphone className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-xl font-semibold mb-2">No announcements yet</h3>
-              <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Post your first announcement to communicate with all bracket participants.
               </p>
               <Button
@@ -267,7 +267,7 @@ export default function AdminAnnouncementsPage() {
                       onClick={() => handleTogglePin(announcement)}
                       title={announcement.pinned ? "Unpin" : "Pin to top"}
                     >
-                      <Pin className={`h-4 w-4 ${announcement.pinned ? "text-primary" : "text-slate-400"}`} />
+                      <Pin className={`h-4 w-4 ${announcement.pinned ? "text-primary" : "text-muted-foreground"}`} />
                     </Button>
                     <Button
                       variant="ghost"
@@ -286,7 +286,7 @@ export default function AdminAnnouncementsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-700 whitespace-pre-wrap">{announcement.message}</p>
+                <p className="text-foreground/80 whitespace-pre-wrap">{announcement.message}</p>
               </CardContent>
             </Card>
           ))}
@@ -328,7 +328,7 @@ export default function AdminAnnouncementsPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="pinned">Pin to top</Label>
-                <p className="text-xs text-slate-500">Pinned announcements appear first</p>
+                <p className="text-xs text-muted-foreground">Pinned announcements appear first</p>
               </div>
               <Switch
                 id="pinned"

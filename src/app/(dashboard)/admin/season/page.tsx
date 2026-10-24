@@ -169,7 +169,7 @@ export default function AdminSeasonPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">New Season</h1>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">New Season</h1>
           <p className="text-muted-foreground">Start next year&apos;s pool and keep the Hall of Fame up to date</p>
         </div>
       </div>

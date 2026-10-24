@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/shared/page-header";
 import { paymentDetails, PAYMENT_METHOD_LABELS, PAYMENT_METHODS, type PaymentMethod, type PoolPayment } from "@/lib/payment";
 
 interface Entry {
@@ -94,12 +95,10 @@ export default function PaymentPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Pay Entry Fee</h1>
-        <p className="mt-1 text-muted-foreground">
-          {payment.feeLabel} per entry{data.pool ? ` · ${data.pool.name}` : ""}. Send it with Venmo or PayPal, then tell us below.
-        </p>
-      </div>
+      <PageHeader
+        title="Pay entry fee"
+        description={`${payment.feeLabel} per entry${data.pool ? ` · ${data.pool.name}` : ""}. Send it with Venmo or PayPal, then tell us below.`}
+      />
 
       {/* Payment options */}
       <div className="grid gap-4 md:grid-cols-2">

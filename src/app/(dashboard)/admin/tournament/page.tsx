@@ -152,8 +152,8 @@ export default function AdminTournamentPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Tournament</h1>
-          <p className="text-slate-600">Import the bracket from ESPN after Selection Sunday</p>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Tournament</h1>
+          <p className="text-muted-foreground">Import the bracket from ESPN after Selection Sunday</p>
         </div>
       </div>
 

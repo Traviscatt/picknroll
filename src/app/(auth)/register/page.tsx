@@ -93,7 +93,7 @@ function RegisterContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-50 to-white px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-muted/40 to-background px-4 py-12">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/" className="inline-flex items-center justify-center gap-2 mb-4">
@@ -162,7 +162,7 @@ function RegisterContent() {
             <div className="space-y-2">
               <Label>Favorite Team <span className="text-muted-foreground text-xs">(optional)</span></Label>
               {selectedTeam ? (
-                <div className="flex items-center gap-3 p-2.5 border rounded-md bg-slate-50">
+                <div className="flex items-center gap-3 p-2.5 border rounded-md bg-muted/50">
                   <Image
                     src={selectedTeam.logo}
                     alt={selectedTeam.name}
@@ -178,7 +178,7 @@ function RegisterContent() {
                     type="button"
                     title="Clear team selection"
                     onClick={() => { setFavoriteTeam(""); setShowTeamPicker(false); }}
-                    className="text-slate-400 hover:text-slate-600 ml-1"
+                    className="text-muted-foreground hover:text-foreground ml-1"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -187,7 +187,7 @@ function RegisterContent() {
                 <button
                   type="button"
                   onClick={() => setShowTeamPicker(!showTeamPicker)}
-                  className="w-full flex items-center gap-2 p-2.5 border rounded-md text-sm text-muted-foreground hover:border-slate-400 transition-colors text-left"
+                  className="w-full flex items-center gap-2 p-2.5 border rounded-md text-sm text-muted-foreground hover:border-foreground/30 transition-colors text-left"
                 >
                   <Trophy className="h-4 w-4" />
                   Choose your favorite team...
@@ -214,7 +214,7 @@ function RegisterContent() {
                           setShowTeamPicker(false);
                           setTeamSearch("");
                         }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 text-left text-sm transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/50 text-left text-sm transition-colors"
                       >
                         <Image
                           src={team.logo}

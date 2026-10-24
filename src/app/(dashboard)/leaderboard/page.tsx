@@ -15,6 +15,7 @@ import { useStandingsMode } from "@/hooks/use-standings-mode";
 import { useAnyLive, useLiveData } from "@/hooks/use-live-data";
 import { Movement, StandingsToggle } from "@/components/game-center/parts";
 import { isLive } from "@/lib/live";
+import { PageHeader } from "@/components/shared/page-header";
 
 interface LeaderboardEntry {
   rank: number;
@@ -156,35 +157,30 @@ export default function LeaderboardPage() {
       case 3:
         return <Medal className="h-5 w-5 text-amber-600" />;
       default:
-        return <span className="text-slate-500 font-medium">{rank}</span>;
+        return <span className="text-muted-foreground font-medium">{rank}</span>;
     }
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Leaderboard</h1>
-          <p className="text-slate-600 mt-1">
-            See how you stack up against the competition
-          </p>
-        </div>
-        {data?.viewCode && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              navigator.clipboard.writeText(
-                `${window.location.origin}/share/leaderboard/${data.viewCode}`
-              );
-              toast.success("Share link copied!");
-            }}
-          >
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Standings"
+        description="See how you stack up against the pool"
+        actions={
+          data?.viewCode && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/share/leaderboard/${data.viewCode}`);
+                toast.success("Share link copied!");
+              }}
+            >
+              <Share2 className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          )
+        }
+      />
 
       {/* Stats Overview */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
@@ -295,16 +291,16 @@ export default function LeaderboardPage() {
         <CardContent>
           {leaderboard.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+              <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-xl font-semibold mb-2">No entries yet</h3>
-              <p className="text-slate-600 max-w-md mx-auto">
-                The leaderboard will populate once brackets are submitted and games begin.
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Standings fill in once brackets are submitted and games begin.
               </p>
             </div>
           ) : (
             <>
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name or bracket..."
                   value={searchQuery}
@@ -313,7 +309,7 @@ export default function LeaderboardPage() {
                 />
               </div>
               {filteredLeaderboard.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-muted-foreground">
                   No results found for &quot;{searchQuery}&quot;
                 </div>
               ) : (
@@ -334,7 +330,7 @@ export default function LeaderboardPage() {
                   {filteredLeaderboard.map((entry) => (
                   <TableRow
                     key={`${entry.name}-${entry.bracketName}`}
-                    className={`cursor-pointer transition-colors hover:bg-slate-50 ${
+                    className={`cursor-pointer transition-colors hover:bg-muted/50 ${
                       entry.isCurrentUser
                         ? "bg-secondary hover:bg-secondary/80"
                         : ""
@@ -361,13 +357,13 @@ export default function LeaderboardPage() {
                             </Badge>
                           )}
                         </div>
-                        <div className="text-xs text-slate-500 font-normal md:hidden truncate">
+                        <div className="text-xs text-muted-foreground font-normal md:hidden truncate">
                           {entry.bracketName}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{entry.bracketName}</TableCell>
-                    <TableCell className="text-right text-slate-500 hidden md:table-cell">
+                    <TableCell className="text-right text-muted-foreground hidden md:table-cell">
                       {entry.tiebreaker ?? "-"}
                     </TableCell>
                     {showLive && (
@@ -381,7 +377,7 @@ export default function LeaderboardPage() {
                       </span>
                     </TableCell>
                     <TableCell className="w-8 px-1">
-                      <Eye className="h-4 w-4 text-slate-300" />
+                      <Eye className="h-4 w-4 text-muted-foreground/40" />
                     </TableCell>
                   </TableRow>
                 ))}

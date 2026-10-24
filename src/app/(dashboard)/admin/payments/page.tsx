@@ -95,7 +95,7 @@ export default function AdminPaymentsPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">Payments</h1>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Payments</h1>
           <p className="text-muted-foreground">Members report payments here. Check Venmo/PayPal, then confirm or reject.</p>
         </div>
       </div>

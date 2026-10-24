@@ -113,8 +113,8 @@ export default function AdminSettingsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Pool Settings</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Pool Settings</h1>
+            <p className="text-muted-foreground">
               Configure your bracket pool
             </p>
           </div>
@@ -232,7 +232,7 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Leave blank to hide that payment option from users.
           </p>
         </CardContent>
@@ -250,7 +250,7 @@ export default function AdminSettingsPage() {
               <span className="font-medium">🥇 1st Place</span>
               <span className="text-lg font-bold">65%</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg">
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
               <span className="font-medium">🥈 2nd Place</span>
               <span className="text-lg font-bold">25%</span>
             </div>
@@ -259,7 +259,7 @@ export default function AdminSettingsPage() {
               <span className="text-lg font-bold">10%</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-3">
+          <p className="text-xs text-muted-foreground mt-3">
             Prize distribution is fixed. Contact support to customize.
           </p>
         </CardContent>

@@ -247,8 +247,8 @@ export default function AdminUsersPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Manage Users</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Manage Users</h1>
+            <p className="text-muted-foreground">
               {users.length} registered users
             </p>
           </div>
@@ -267,7 +267,7 @@ export default function AdminUsersPage() {
       <Card>
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by name or email..."
               value={searchQuery}
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           {filteredUsers.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-muted-foreground">
               No users found
             </div>
           ) : (
@@ -313,7 +313,7 @@ export default function AdminUsersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1 text-slate-500">
+                      <div className="flex items-center gap-1 text-muted-foreground">
                         <Mail className="h-3 w-3" />
                         {user.email}
                       </div>
@@ -329,14 +329,14 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <FileText className="h-3 w-3 text-slate-400" />
+                        <FileText className="h-3 w-3 text-muted-foreground" />
                         {user._count.brackets}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {user._count.familyMembers}
                     </TableCell>
-                    <TableCell className="text-slate-500 text-sm">
+                    <TableCell className="text-muted-foreground text-sm">
                       {new Date(user.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
@@ -402,7 +402,7 @@ export default function AdminUsersPage() {
                 placeholder="Confirm new password"
               />
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-muted-foreground">
               Password must be at least 6 characters.
             </p>
           </div>

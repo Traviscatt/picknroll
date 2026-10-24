@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Crown, Medal, Trophy } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/shared/page-header";
 import type { HallOfFameLeader, HallOfFameSeason } from "@/lib/hall-of-fame";
 
 const PLACE_STYLE: Record<number, { label: string; ring: string; text: string }> = {
@@ -43,12 +44,14 @@ export default function HallOfFamePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="flex items-center gap-2 text-3xl font-bold">
-          <Crown className="h-7 w-7 text-yellow-500" /> Hall of Fame
-        </h1>
-        <p className="text-muted-foreground">Every season&apos;s champion and podium.</p>
-      </div>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <Crown className="h-7 w-7 text-yellow-500" /> Hall of Fame
+          </span>
+        }
+        description="Every season's champion and podium."
+      />
 
       {data.seasons.length === 0 ? (
         <Card>

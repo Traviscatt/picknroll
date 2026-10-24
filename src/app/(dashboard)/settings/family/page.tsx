@@ -194,8 +194,8 @@ export default function FamilyMembersPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Family Members</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Family Members</h1>
+          <p className="text-muted-foreground mt-1">
             Manage brackets for your family members
           </p>
         </div>
@@ -232,7 +232,7 @@ export default function FamilyMembersPage() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                 />
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground">
                   If provided, they can create their own account later to manage their bracket.
                 </p>
               </div>
@@ -277,9 +277,9 @@ export default function FamilyMembersPage() {
         <Card>
           <CardContent className="py-16">
             <div className="text-center">
-              <Users className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+              <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-xl font-semibold mb-2">No family members yet</h3>
-              <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Add family members to create and manage brackets on their behalf.
               </p>
               <Button
@@ -344,14 +344,14 @@ export default function FamilyMembersPage() {
               <CardContent>
                 {member.brackets.length > 0 ? (
                   <div className="space-y-2">
-                    <p className="text-sm text-slate-600 mb-2">Brackets:</p>
+                    <p className="text-sm text-muted-foreground mb-2">Brackets:</p>
                     {member.brackets.map((bracket) => (
                       <div
                         key={bracket.id}
                         className="flex items-center justify-between text-sm"
                       >
                         <span className="flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-slate-400" />
+                          <FileText className="h-4 w-4 text-muted-foreground" />
                           {bracket.name}
                         </span>
                         <Badge
@@ -372,7 +372,7 @@ export default function FamilyMembersPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">No brackets yet</p>
+                  <p className="text-sm text-muted-foreground">No brackets yet</p>
                 )}
               </CardContent>
             </Card>

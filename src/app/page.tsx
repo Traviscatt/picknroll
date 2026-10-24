@@ -5,17 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { Navbar } from "@/components/shared/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MAX_POSSIBLE_SCORE } from "@/lib/scoring";
-import {
-  Trophy,
-  Users,
-  Zap,
-  DollarSign,
-  ChevronRight,
-  Target,
-  Award,
-  TrendingUp,
-} from "lucide-react";
+import { FINAL_FOUR_BONUS, MAX_POSSIBLE_SCORE } from "@/lib/scoring";
+import { scoringGroups } from "@/components/shared/scoring-rules";
+import { Trophy, Users, Zap, DollarSign, ChevronRight, Target, Award, Radio, Crown } from "lucide-react";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -29,7 +21,7 @@ export default async function Home() {
   const tournamentYear = now.getMonth() >= 4 ? now.getFullYear() + 1 : now.getFullYear();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-muted/40 to-background">
       <Navbar />
 
       {/* Hero Section */}
@@ -41,16 +33,16 @@ export default async function Home() {
               <Trophy className="h-4 w-4" />
               NCAA Tournament {tournamentYear}
             </div>
-            <h1 className="mb-6 text-4xl font-bold tracking-tight text-slate-900 md:text-6xl lg:text-7xl">
+            <h1 className="mb-6 text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl">
               Make Every Pick{" "}
               <span className="text-primary">
                 Count
               </span>
             </h1>
-            <p className="mb-8 text-xl text-slate-600 md:text-2xl">
+            <p className="mb-8 text-xl text-muted-foreground md:text-2xl">
               Pick<span className="font-bold text-primary">N</span>Roll
             </p>
-            <p className="mx-auto mb-10 max-w-2xl text-lg text-slate-600">
+            <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground">
               The ultimate NCAA Tournament bracket pool with our unique multi-choice
               scoring system. Hedge your bets, maximize your points, and dominate
               your pool.
@@ -65,6 +57,9 @@ export default async function Home() {
                   Join a Pool
                   <ChevronRight className="ml-2 h-5 w-5" />
                 </Link>
+              </Button>
+              <Button size="lg" variant="outline" className="h-14 px-8 text-lg" asChild>
+                <Link href="/login">Log in</Link>
               </Button>
             </div>
           </div>
@@ -84,92 +79,33 @@ export default async function Home() {
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <Card className="bg-white/10 border-white/20">
-              <CardContent className="p-6">
-                <div className="text-[#b9bc91] font-bold text-sm mb-2">
-                  ROUNDS 1 & 2
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-white">
-                  Traditional Picks
-                </h3>
-                <p className="text-white/60 text-sm mb-4">
-                  Pick one winner per game
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="bg-white/10 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-[#b9bc91]">2</span>
-                    <span className="text-white/60 text-sm ml-1">pts</span>
+            {scoringGroups().map((group, i) => (
+              <Card key={group.label} className={`bg-white/10 border-white/20 ${i === 2 ? "md:col-span-2 lg:col-span-1" : ""}`}>
+                <CardContent className="p-6">
+                  <div className="text-brand-gold font-bold text-sm mb-2 uppercase">{group.label}</div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">{group.title}</h3>
+                  <p className="text-white/60 text-sm mb-4">{group.detail}</p>
+                  <div className="space-y-2 text-sm">
+                    {group.rules.map((rule) => (
+                      <div key={rule.round} className="flex justify-between text-white/80">
+                        <span>{rule.roundName}</span>
+                        <span>
+                          <span className="text-brand-gold font-semibold">{rule.pointsPerChoice[0]}</span>
+                          {rule.pointsPerChoice.slice(1).map((p) => `/${p}`).join("")} pts
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-white/10 rounded-lg px-3 py-2">
-                    <span className="text-2xl font-bold text-[#b9bc91]">5</span>
-                    <span className="text-white/60 text-sm ml-1">pts</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/10 border-white/20">
-              <CardContent className="p-6">
-                <div className="text-[#b9bc91] font-bold text-sm mb-2">
-                  SWEET 16 & ELITE 8
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-white">
-                  Multi-Choice Picks
-                </h3>
-                <p className="text-white/60 text-sm mb-4">
-                  Rank 2-3 teams per game
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-white/80">
-                    <span>Sweet 16:</span>
-                    <span>
-                      <span className="text-[#b9bc91] font-semibold">10</span>/5 pts
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-white/80">
-                    <span>Elite 8:</span>
-                    <span>
-                      <span className="text-[#b9bc91] font-semibold">15</span>/10/5 pts
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/10 border-white/20 md:col-span-2 lg:col-span-1">
-              <CardContent className="p-6">
-                <div className="text-[#b9bc91] font-bold text-sm mb-2">
-                  FINAL FOUR & CHAMPIONSHIP
-                </div>
-                <h3 className="text-xl font-semibold mb-2 text-white">
-                  Maximum Hedging
-                </h3>
-                <p className="text-white/60 text-sm mb-4">
-                  Rank 4-5 teams for big points
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-white/80">
-                    <span>Final Four:</span>
-                    <span>
-                      <span className="text-[#b9bc91] font-semibold">25</span>/15/10/5
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-white/80">
-                    <span>Championship:</span>
-                    <span>
-                      <span className="text-[#b9bc91] font-semibold">35</span>/25/15/10/5
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ))}
           </div>
           <div className="text-center mt-8">
             <p className="text-white/70">
               Maximum possible points:{" "}
-              <span className="text-[#b9bc91] font-bold text-2xl">{MAX_POSSIBLE_SCORE}</span>
+              <span className="text-brand-gold font-bold text-2xl">{MAX_POSSIBLE_SCORE}</span>
               <span className="block text-sm text-white/50 mt-1">
-                Includes a +10 bonus for picking all four Final Four teams as your 1st choice
+                Includes a +{FINAL_FOUR_BONUS} bonus for picking all four Final Four teams as your 1st choice
               </span>
             </p>
           </div>
@@ -180,10 +116,10 @@ export default async function Home() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-slate-900">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">
               Everything You Need to Run Your Pool
             </h2>
-            <p className="text-slate-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               From bracket submission to automatic scoring, we&apos;ve got you covered.
             </p>
           </div>
@@ -193,7 +129,7 @@ export default async function Home() {
                 <Target className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Easy Bracket Entry</h3>
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 Intuitive interface to make your picks online. Region by region,
                 round by round.
               </p>
@@ -204,7 +140,7 @@ export default async function Home() {
                 <Users className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Family Brackets</h3>
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 Create brackets for family members who don&apos;t want to manage
                 their own account.
               </p>
@@ -215,19 +151,9 @@ export default async function Home() {
                 <Zap className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Auto Scoring</h3>
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 Connected to live game data. Scores update automatically as
                 games finish.
-              </p>
-            </div>
-
-            <div className="flex flex-col items-center text-center p-6">
-              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
-                <Users className="h-7 w-7 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Invite Codes</h3>
-              <p className="text-slate-600">
-                Share a simple code to invite friends. No complex setup required.
               </p>
             </div>
 
@@ -236,7 +162,7 @@ export default async function Home() {
                 <DollarSign className="h-7 w-7 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Easy Payments</h3>
-              <p className="text-slate-600">
+              <p className="text-muted-foreground">
                 Collect entry fees via PayPal or Venmo. Track who&apos;s paid at a
                 glance.
               </p>
@@ -244,12 +170,23 @@ export default async function Home() {
 
             <div className="flex flex-col items-center text-center p-6">
               <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
-                <TrendingUp className="h-7 w-7 text-primary" />
+                <Radio className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Live Leaderboard</h3>
-              <p className="text-slate-600">
-                Real-time standings. See how you stack up against the
-                competition.
+              <h3 className="text-xl font-semibold mb-2">Game Center</h3>
+              <p className="text-muted-foreground">
+                Live scores next to your picks, live standings, and a rooting
+                guide for every game.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-center text-center p-6">
+              <div className="h-14 w-14 rounded-full bg-accent flex items-center justify-center mb-4">
+                <Crown className="h-7 w-7 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Hall of Fame</h3>
+              <p className="text-muted-foreground">
+                Every season&apos;s champion and podium, plus all-time
+                bragging rights.
               </p>
             </div>
           </div>
@@ -269,7 +206,7 @@ export default async function Home() {
           <div className="flex items-center justify-center">
             <Button
               size="lg"
-              className="h-14 px-8 text-lg bg-white text-primary hover:bg-secondary"
+              className="h-14 px-8 text-lg bg-card text-primary hover:bg-secondary"
               asChild
             >
               <Link href="/join">Join a Pool</Link>
@@ -279,13 +216,13 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#1a3328] text-white/60 py-12">
+      <footer className="bg-brand-forest text-white/60 py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <Trophy className="h-6 w-6 text-[#b9bc91]" />
+              <Trophy className="h-6 w-6 text-brand-gold" />
               <span className="text-xl font-bold text-white">
-                Pick<span className="text-[#b9bc91]">N</span>Roll
+                Pick<span className="text-brand-gold">N</span>Roll
               </span>
             </div>
             <p className="text-sm">

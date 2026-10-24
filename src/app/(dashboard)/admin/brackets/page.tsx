@@ -248,8 +248,8 @@ function AdminBracketsContent() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Manage Brackets</h1>
-          <p className="text-slate-600">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Manage Brackets</h1>
+          <p className="text-muted-foreground">
             {brackets.length} total • {paidCount} paid • {unpaidCount} unpaid • {draftCount} {draftCount === 1 ? "draft" : "drafts"}
           </p>
         </div>
@@ -260,7 +260,7 @@ function AdminBracketsContent() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name, email..."
                 value={searchQuery}
@@ -315,7 +315,7 @@ function AdminBracketsContent() {
         </CardHeader>
         <CardContent>
           {filteredBrackets.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
+            <div className="text-center py-8 text-muted-foreground">
               No brackets found
             </div>
           ) : (
@@ -347,7 +347,7 @@ function AdminBracketsContent() {
                     <TableCell>
                       <div>
                         <p className="text-sm">{bracket.user.name}</p>
-                        <p className="text-xs text-slate-500">{bracket.user.email}</p>
+                        <p className="text-xs text-muted-foreground">{bracket.user.email}</p>
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
@@ -394,7 +394,7 @@ function AdminBracketsContent() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-slate-500">
+                    <TableCell className="text-right text-muted-foreground">
                       {bracket.tiebreaker ?? "-"}
                     </TableCell>
                     <TableCell>
@@ -464,7 +464,7 @@ function AdminBracketsContent() {
                 onChange={(e) => setEditBonus(e.target.value)}
                 placeholder="Enter bonus points"
               />
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Bonus points for Final Four perfect picks (+10)
               </p>
             </div>

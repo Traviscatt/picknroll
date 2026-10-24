@@ -313,8 +313,8 @@ export default function AdminPoolsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Manage Pools</h1>
-            <p className="text-slate-600">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Manage Pools</h1>
+            <p className="text-muted-foreground">
               Create, edit, and manage bracket pools
             </p>
           </div>
@@ -333,9 +333,9 @@ export default function AdminPoolsPage() {
         <Card>
           <CardContent className="py-16">
             <div className="text-center">
-              <Trophy className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+              <Trophy className="h-16 w-16 mx-auto mb-4 text-muted-foreground/40" />
               <h3 className="text-xl font-semibold mb-2">No pools yet</h3>
-              <p className="text-slate-600 mb-6 max-w-md mx-auto">
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Create your first pool to start accepting bracket entries.
               </p>
               <Button
@@ -404,7 +404,7 @@ export default function AdminPoolsPage() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-slate-500">Invite Code</p>
+                    <p className="text-sm text-muted-foreground">Invite Code</p>
                     <div className="flex items-center gap-1">
                       <span className="font-mono font-semibold">{pool.inviteCode}</span>
                       <Button
@@ -418,30 +418,30 @@ export default function AdminPoolsPage() {
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Entry Fee</p>
+                    <p className="text-sm text-muted-foreground">Entry Fee</p>
                     <p className="font-semibold">${parseFloat(pool.entryFee).toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Members</p>
+                    <p className="text-sm text-muted-foreground">Members</p>
                     <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-slate-400" />
+                      <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold">{pool.members?.length ?? 0}</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-500">Brackets</p>
+                    <p className="text-sm text-muted-foreground">Brackets</p>
                     <div className="flex items-center gap-1">
-                      <Trophy className="h-4 w-4 text-slate-400" />
+                      <Trophy className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold">{pool._count?.brackets ?? 0}</span>
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 text-sm text-slate-500">
+                <div className="mt-3 text-sm text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5 inline mr-1" />
                   Deadline: {new Date(pool.deadline).toLocaleString()}
                 </div>
                 {(pool.venmoHandle || pool.paypalLink) && (
-                  <div className="mt-2 text-sm text-slate-500">
+                  <div className="mt-2 text-sm text-muted-foreground">
                     <DollarSign className="h-3.5 w-3.5 inline mr-1" />
                     Payment:{" "}
                     {pool.venmoHandle && <span>Venmo {pool.venmoHandle}</span>}
@@ -454,7 +454,7 @@ export default function AdminPoolsPage() {
                 <div className="mt-3 pt-3 border-t">
                   <button
                     onClick={() => setExpandedPoolId(expandedPoolId === pool.id ? null : pool.id)}
-                    className="flex items-center justify-between w-full text-sm font-medium text-slate-700 hover:text-primary transition-colors"
+                    className="flex items-center justify-between w-full text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
                   >
                     <span className="flex items-center gap-1.5">
                       <Users className="h-4 w-4" />
@@ -471,14 +471,14 @@ export default function AdminPoolsPage() {
                       {pool.members.map((member, idx) => (
                         <div
                           key={member.userId}
-                          className="flex items-center justify-between py-1.5 px-2 rounded text-sm bg-slate-50"
+                          className="flex items-center justify-between py-1.5 px-2 rounded text-sm bg-muted/50"
                         >
                           <span className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400 w-5">{idx + 1}.</span>
+                            <span className="text-xs text-muted-foreground w-5">{idx + 1}.</span>
                             <span>
                               <span className="font-medium">{member.user.name || "Unknown"}</span>
                               {member.user.email && (
-                                <span className="text-xs text-slate-400 ml-2">{member.user.email}</span>
+                                <span className="text-xs text-muted-foreground ml-2">{member.user.email}</span>
                               )}
                             </span>
                           </span>
@@ -491,7 +491,7 @@ export default function AdminPoolsPage() {
                         </div>
                       ))}
                       {pool.members.length === 0 && (
-                        <p className="text-xs text-slate-400 py-2">No members yet</p>
+                        <p className="text-xs text-muted-foreground py-2">No members yet</p>
                       )}
                     </div>
                   )}
@@ -499,14 +499,14 @@ export default function AdminPoolsPage() {
 
                 {/* Share Leaderboard */}
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                     <Eye className="h-3 w-3" />
-                    Share Leaderboard (Public — No Account Needed)
+                    Share Standings (Public — No Account Needed)
                   </p>
                   {pool.viewCode ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 text-xs bg-slate-100 rounded px-3 py-2 font-mono truncate">
+                        <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono truncate">
                           {typeof window !== "undefined" ? window.location.origin : ""}/share/leaderboard/{pool.viewCode}
                         </code>
                         <Button
@@ -584,12 +584,12 @@ export default function AdminPoolsPage() {
                 </div>
 
                 <div className="mt-3 pt-3 border-t">
-                  <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                     <LinkIcon className="h-3 w-3" />
                     Shareable Invite Link
                   </p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 text-xs bg-slate-100 rounded px-3 py-2 font-mono truncate">
+                    <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono truncate">
                       {typeof window !== "undefined" ? window.location.origin : "https://picknroll.net"}/join?code={pool.inviteCode}
                     </code>
                     <Button
@@ -624,7 +624,7 @@ export default function AdminPoolsPage() {
                 <span className="font-medium">1st Place</span>
                 <span className="text-lg font-bold">65%</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <span className="font-medium">2nd Place</span>
                 <span className="text-lg font-bold">25%</span>
               </div>
@@ -633,7 +633,7 @@ export default function AdminPoolsPage() {
                 <span className="text-lg font-bold">10%</span>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mt-3">
+            <p className="text-xs text-muted-foreground mt-3">
               Prize distribution is fixed. Contact support to customize.
             </p>
           </CardContent>

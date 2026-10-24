@@ -9,14 +9,14 @@ import { paymentDetails, type PoolPayment } from "@/lib/payment";
 export function PaymentDialog({ open, pool, entryName, onDone }: { open: boolean; pool: PoolPayment | null; entryName: string; onDone: () => void }) {
   const payment = paymentDetails(pool);
   const option = (label: string, detail: string, url: string, badge: string, color: string) => (
-    <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
+    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
       <div className="flex items-center gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
           <span className="text-sm font-bold text-white">{badge}</span>
         </div>
         <div>
           <p className="font-medium">{label}</p>
-          <p className="text-sm text-slate-500">{detail}</p>
+          <p className="text-sm text-muted-foreground">{detail}</p>
         </div>
       </div>
       <Button variant="outline" size="sm" onClick={() => window.open(url, "_blank")}>
@@ -50,10 +50,10 @@ export function PaymentDialog({ open, pool, entryName, onDone }: { open: boolean
             <h4 className="font-medium">Payment Options:</h4>
             {payment.venmoUrl && option("Venmo", `@${payment.venmoHandle}`, payment.venmoUrl, "V", "bg-blue-500")}
             {payment.paypalUrl && option("PayPal", payment.paypalLabel ?? "", payment.paypalUrl, "P", "bg-blue-700")}
-            {!payment.venmoUrl && !payment.paypalUrl && <p className="text-sm text-slate-500">Ask the pool admin how to pay.</p>}
+            {!payment.venmoUrl && !payment.paypalUrl && <p className="text-sm text-muted-foreground">Ask the pool admin how to pay.</p>}
           </div>
 
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-muted-foreground">
             Include your name &quot;{entryName}&quot; in the payment note.
             <br />
             Your entry will be marked as paid once confirmed by the admin.

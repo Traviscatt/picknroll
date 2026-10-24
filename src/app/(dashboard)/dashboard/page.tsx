@@ -22,7 +22,7 @@ import { useStandingsMode } from "@/hooks/use-standings-mode";
 import { paymentDetails } from "@/lib/payment";
 import { personalSummary } from "@/lib/live";
 import { parsePicksData } from "@/lib/scoring-engine";
-import { formatDeadline, type SeasonResponse } from "@/lib/season";
+import { formatDeadline, seasonLabel, type SeasonResponse } from "@/lib/season";
 import type { HallOfFameSeason } from "@/lib/hall-of-fame";
 
 interface Announcement {
@@ -132,7 +132,7 @@ export default function HomePage() {
 
   const { pool, entries, tournament } = season;
   const firstName = session.user?.name?.split(" ")[0];
-  const seasonLine = !pool ? "Join a pool to get started" : !tournament || pool.name.includes(String(tournament.year)) ? pool.name : `${tournament.year} · ${pool.name}`;
+  const seasonLine = pool ? seasonLabel(tournament?.year, pool.name) : "Join a pool to get started";
 
   const hero = (() => {
     switch (season.phase) {

@@ -7,15 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BracketStatusBadge } from "@/components/shared/bracket-status-badge";
 import { cn } from "@/lib/utils";
 import { paymentDetails } from "@/lib/payment";
-import { formatDeadline, timeLeft, type SeasonEntry, type SeasonPool } from "@/lib/season";
-
-function nextStep(entry: SeasonEntry): { label: string; href: string; primary: boolean } {
-  if (entry.status === "DRAFT") {
-    return { label: entry.picked < entry.totalGames ? "Finish picks" : "Submit", href: `/brackets/new?editId=${entry.id}`, primary: true };
-  }
-  if (!entry.paid && !entry.paymentPending) return { label: "Pay", href: "/payment", primary: true };
-  return { label: "View", href: `/brackets/${entry.id}`, primary: false };
-}
+import { bracketActions, formatDeadline, nextStep, timeLeft, type SeasonEntry, type SeasonPool } from "@/lib/season";
 
 /** Countdown to the deadline (frame-themed card) */
 export function DeadlineCountdown({ deadline }: { deadline: string }) {
@@ -70,7 +62,7 @@ export function EntryChecklist({ pool, entries }: { pool: SeasonPool; entries: S
       ) : (
         <div className="divide-y">
           {entries.map((entry) => {
-            const step = nextStep(entry);
+            const step = nextStep(entry, bracketActions({ status: entry.status, pool }).locked);
             const pct = entry.totalGames ? (entry.picked / entry.totalGames) * 100 : 0;
             return (
               <div key={entry.id} className="flex items-center gap-3 px-4 py-3">

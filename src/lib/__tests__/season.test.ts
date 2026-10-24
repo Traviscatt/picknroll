@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDeadline, seasonPhase, timeLeft } from "@/lib/season";
+import { bracketActions, formatDeadline, nextStep, seasonPhase, timeLeft } from "@/lib/season";
 
 describe("seasonPhase", () => {
   const deadline = "2027-03-18T16:15:00.000Z";
@@ -22,6 +22,30 @@ describe("seasonPhase", () => {
   it("is complete once the championship is final", () => {
     expect(at("2027-04-06T03:00:00Z", { championshipFinal: true })).toBe("complete");
     expect(at("2027-10-01T00:00:00Z", { championshipFinal: true, fieldReady: true })).toBe("complete");
+  });
+});
+
+describe("bracket actions", () => {
+  const now = new Date("2027-03-18T12:00:00Z");
+  const open = { deadline: "2027-03-18T16:15:00Z", status: "OPEN" };
+  const passed = { deadline: "2027-03-18T11:00:00Z", status: "OPEN" };
+
+  it("follows the server's lock rules", () => {
+    expect(bracketActions({ status: "SUBMITTED", pool: open }, now)).toEqual({ locked: false, canEdit: true, canDelete: true });
+    expect(bracketActions({ status: "SUBMITTED", pool: passed }, now)).toEqual({ locked: true, canEdit: false, canDelete: false });
+    expect(bracketActions({ status: "DRAFT", pool: passed }, now)).toEqual({ locked: true, canEdit: false, canDelete: true });
+    expect(bracketActions({ status: "SUBMITTED", pool: { ...open, status: "CLOSED" } }, now).locked).toBe(true);
+    expect(bracketActions({ status: "DRAFT", pool: null }, now).locked).toBe(false);
+  });
+
+  it("suggests the next step", () => {
+    const entry = { id: "b1", status: "DRAFT", paid: false, paymentPending: false, picked: 40, totalGames: 63 };
+    expect(nextStep(entry, false)).toMatchObject({ label: "Finish picks", href: "/brackets/new?editId=b1" });
+    expect(nextStep({ ...entry, picked: 63 }, false).label).toBe("Submit");
+    expect(nextStep(entry, true).label).toBe("View");
+    expect(nextStep({ ...entry, status: "SUBMITTED" }, true)).toMatchObject({ label: "Pay", href: "/payment" });
+    expect(nextStep({ ...entry, status: "SUBMITTED", paymentPending: true }, false).label).toBe("View");
+    expect(nextStep({ ...entry, status: "PAID", paid: true }, false).label).toBe("View");
   });
 });
 

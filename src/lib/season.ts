@@ -53,6 +53,24 @@ export interface SeasonResponse {
   entries: SeasonEntry[];
 }
 
+/** "2027 · Smith Family Pool" (just the pool name when it already has the year) */
+export const seasonLabel = (year: number | null | undefined, poolName: string) => (!year || poolName.includes(String(year)) ? poolName : `${year} · ${poolName}`);
+
+/** What the server allows for a bracket (mirrors poolLockedReason and the DELETE rule) */
+export function bracketActions(bracket: { status: string; pool?: { deadline: string | Date; status: string } | null }, now = new Date()) {
+  const locked = !!bracket.pool && (bracket.pool.status !== "OPEN" || now > new Date(bracket.pool.deadline));
+  return { locked, canEdit: !locked, canDelete: bracket.status === "DRAFT" || !locked };
+}
+
+/** The one thing to do next with an entry */
+export function nextStep(entry: Pick<SeasonEntry, "id" | "status" | "paid" | "paymentPending" | "picked" | "totalGames">, locked: boolean) {
+  if (entry.status === "DRAFT" && !locked) {
+    return { label: entry.picked < entry.totalGames ? "Finish picks" : "Submit", href: `/brackets/new?editId=${entry.id}`, primary: true };
+  }
+  if (entry.status !== "DRAFT" && !entry.paid && !entry.paymentPending) return { label: "Pay", href: "/payment", primary: true };
+  return { label: "View", href: `/brackets/${entry.id}`, primary: false };
+}
+
 /** e.g. "Thu, Mar 19 · 12:15 PM ET" */
 export function formatDeadline(deadline: Date | string) {
   const d = new Date(deadline);

@@ -75,6 +75,17 @@
   - Emails respect `User.reminderEmails` / `tipoffEmails` and carry a signed unsubscribe link (`src/lib/unsubscribe.ts`).
 - Share images: `src/app/opengraph-image.tsx` and `src/app/share/leaderboard/[code]/opengraph-image.tsx` (`next/og`).
 
+## Home, brackets, and shared UI
+- Season phase (`src/lib/season.ts`, pure + tested): `no-pool` → `preseason` (no field yet) → `entry` (before the deadline) → `tournament` → `complete` (championship final).
+  - `GET /api/season` returns the phase, the current pool, and the member's entries in it (picked count, payment pending). Home and My Brackets use it.
+  - `bracketActions` mirrors the server's lock rules (edit only while the pool is open and before the deadline; delete drafts any time). `nextStep` picks the one action to show.
+- Data for an older bracket must come from its own pool: `/api/brackets?poolId=`, `/api/pool/pick-stats?poolId=`, `/api/eliminated-teams?poolId=` (members of that pool, or site admins).
+- Game Center's per-bracket math is `personalSummary` (`src/lib/live.ts`), shared with Home. `/game-center?view=rooting` opens the rooting guide.
+- Bracket detail reuses `DesktopBracketView` with `results` (read-only, marks right/wrong/knocked out) on desktop and `BracketRounds` on phones.
+- Shared components: `PageHeader` (every page title), `BracketStatusBadge` (Draft / Submitted / Payment pending / Paid), `BracketMenu` (⋯ actions), `ScoringRules` / `scoringGroups` (rules generated from `SCORING_RULES`).
+- Use design tokens (`text-foreground`, `text-muted-foreground`, `bg-card`, `bg-muted`, `border-border`), not slate/white classes. Fixed brand colors for marketing pages are `brand-gold` / `brand-forest`.
+- The standings page is called "Standings" in the UI; its URL stays `/leaderboard`.
+
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).
 - Picks are stored as JSON in `Bracket.picksData` (team IDs like `east-1`, game IDs like `East-r1-g1`).

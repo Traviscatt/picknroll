@@ -14,7 +14,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Trophy, User, LogOut, Settings, Shield } from "lucide-react";
 import { NotificationBell } from "@/components/shared/notification-bell";
+import { isPickerRoute } from "@/components/shared/mobile-tab-bar";
 import { useAnyLive } from "@/hooks/use-live-data";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const { data: session, status } = useSession();
@@ -35,8 +37,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b-[3px] border-b-team-secondary bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
+    <nav
+      className={cn(
+        "sticky top-0 z-50 w-full border-b-[3px] border-b-team-secondary bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        isPickerRoute(pathname) && "max-md:hidden"
+      )}
+    >
+      <div className="container flex h-14 items-center justify-between md:h-16">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2">
             <Trophy className="h-6 w-6 text-primary" />
@@ -94,13 +101,13 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {status === "loading" ? (
-            <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
+            <div className="hidden h-8 w-8 animate-pulse rounded-full bg-muted md:block" />
           ) : session ? (
             <>
               <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button variant="ghost" className="relative hidden h-8 w-8 rounded-full md:inline-flex">
                     <Avatar className="h-8 w-8 ring-2 ring-team-secondary">
                       <AvatarFallback className="bg-primary text-primary-foreground">
                         {getInitials(session.user?.name || "U")}

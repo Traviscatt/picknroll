@@ -280,6 +280,13 @@ function BracketEditorPage() {
             {pool ? fieldError ?? "Teams appear here once the tournament field is announced on Selection Sunday." : "You need to be in a pool to fill out a bracket."}
           </CardDescription>
         </CardHeader>
+        <div className="px-6 pb-6">
+          <Button variant="outline" asChild>
+            <Link href="/brackets">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> My brackets
+            </Link>
+          </Button>
+        </div>
       </Card>
     );
   }
@@ -292,7 +299,12 @@ function BracketEditorPage() {
           </CardTitle>
           <CardDescription>Picks closed at tip-off. {bracketId ? "You can still view your bracket." : ""}</CardDescription>
         </CardHeader>
-        <div className="flex gap-2 px-6 pb-6">
+        <div className="flex flex-wrap gap-2 px-6 pb-6">
+          <Button variant="outline" asChild>
+            <Link href="/brackets">
+              <ArrowLeft className="mr-1.5 h-4 w-4" /> My brackets
+            </Link>
+          </Button>
           {bracketId && (
             <Button asChild>
               <Link href={`/brackets/${bracketId}`}>View bracket</Link>
@@ -356,12 +368,12 @@ function BracketEditorPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 max-md:sticky max-md:top-0 max-md:z-40 max-md:-mx-4 max-md:-mt-8 max-md:gap-2 max-md:border-b max-md:bg-background/95 max-md:px-2 max-md:pt-[calc(0.5rem+env(safe-area-inset-top))] max-md:pb-2 max-md:backdrop-blur">
         <Button variant="ghost" size="icon" onClick={leave} aria-label="Back to my brackets">
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-bold md:text-3xl">{bracketId ? name : "New bracket"}</h1>
+          <h1 className="truncate text-lg font-bold sm:text-2xl md:text-3xl">{bracketId ? name : "New bracket"}</h1>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">
               {prog.done} of {prog.total} games picked

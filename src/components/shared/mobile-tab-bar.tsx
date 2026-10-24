@@ -17,7 +17,8 @@ const TABS = [
 ];
 
 // Hidden while picking so the picker's own controls own the bottom of the screen
-const HIDDEN = [/^\/brackets\/new/, /^\/brackets\/[^/]+\/edit/];
+const PICKER_ROUTES = [/^\/brackets\/new/, /^\/brackets\/[^/]+\/edit/];
+export const isPickerRoute = (pathname: string) => PICKER_ROUTES.some((r) => r.test(pathname));
 
 /** Bottom navigation on phones (replaces the hamburger menu) */
 export function MobileTabBar() {
@@ -25,7 +26,7 @@ export function MobileTabBar() {
   const { data: session } = useSession();
   const anyLive = useAnyLive(!!session);
   const [moreOpen, setMoreOpen] = useState(false);
-  if (!session || HIDDEN.some((r) => r.test(pathname))) return null;
+  if (!session || isPickerRoute(pathname)) return null;
 
   const moreActive = ["/settings", "/payment", "/admin", "/hall-of-fame"].some((p) => pathname.startsWith(p));
   const moreLinks = [

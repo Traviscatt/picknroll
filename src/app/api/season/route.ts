@@ -7,6 +7,8 @@ import { loadRegions } from "@/lib/tournament-service";
 import { bracketGames, progress, toPicks } from "@/lib/picker";
 import { parsePicksData } from "@/lib/scoring-engine";
 import { seasonPhase } from "@/lib/season";
+import { summarizeBracket } from "@/lib/bracket-summary";
+import { eliminatedTeams, loadTournamentResults, rankPool } from "@/lib/scoring-service";
 
 // GET /api/season - Where the member's current season stands, plus their entries in it (Home)
 export async function GET() {
@@ -41,13 +43,25 @@ export async function GET() {
     }),
   ]);
 
+  // Once picks lock, each entry also gets its standing: rank, points by round, champion / Final Four status
+  const locked = new Date() > pool.deadline;
+  const results = locked ? await loadTournamentResults(pool.tournamentId) : null;
+  const ranking = results ? await rankPool(pool.id, results.actualTiebreaker) : null;
+  const eliminated = results ? eliminatedTeams(results) : new Set<string>();
+
   const games = regions.length === 4 ? bracketGames(regions) : [];
-  const entries = brackets.map(({ picksData, payments, ...b }) => ({
-    ...b,
-    paymentPending: !b.paid && payments.length > 0,
-    picked: games.length ? progress(toPicks(parsePicksData(picksData)), games).done : 0,
-    totalGames: games.length,
-  }));
+  const entries = brackets.map(({ picksData, payments, ...b }) => {
+    const picks = parsePicksData(picksData);
+    const scored = results && b.status !== "DRAFT";
+    return {
+      ...b,
+      paymentPending: !b.paid && payments.length > 0,
+      picked: games.length ? progress(toPicks(picks), games).done : 0,
+      totalGames: games.length,
+      rank: scored ? ranking?.ranks.get(b.id) ?? null : null,
+      summary: scored ? summarizeBracket(picks, results.winners, eliminated, regions) : null,
+    };
+  });
 
   return NextResponse.json({
     phase: seasonPhase({ now: new Date(), deadline: pool.deadline, fieldReady: teamCount > 0, championshipFinal: !!championship }),
@@ -62,6 +76,7 @@ export async function GET() {
       venmoHandle: pool.venmoHandle,
       members,
       entries: entryCount,
+      leaderScore: ranking?.ranked[0]?.score ?? null,
     },
     tournament: tournament ? { year: tournament.year, startDate: tournament.startDate } : null,
     entries,

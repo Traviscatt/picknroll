@@ -6,7 +6,6 @@ import { fetchScoreboard, type EspnLiveEvent } from "@/lib/espn-live";
 import { defaultDay, easternDate, isLive, shiftDate, tournamentDays, undecidedOutcomes, type LiveGame, type LivePayload, type Outcome, type StandingEntry } from "@/lib/live";
 import {
   bracketGameForSlots,
-  losers,
   maxPossibleScore,
   parsePicksData,
   poolSplit,
@@ -15,7 +14,7 @@ import {
   withLiveLeaders,
   type Winners,
 } from "@/lib/scoring-engine";
-import { loadTournamentResults, SCORED_STATUSES } from "@/lib/scoring-service";
+import { eliminatedTeams, loadTournamentResults, SCORED_STATUSES } from "@/lib/scoring-service";
 import { loadField } from "@/lib/tournament-service";
 import type { TournamentField } from "@/lib/tournament-field";
 
@@ -104,15 +103,7 @@ async function buildLivePayload(poolId: string, requestedDate: string | null): P
       select: { id: true, name: true, entryName: true, tiebreaker: true, picksData: true },
     });
     const picks = brackets.map((b) => parsePicksData(b.picksData));
-    const eliminated = losers(
-      [...results.gameMap.values()]
-        .filter((g) => g.status === "FINAL")
-        .map((g) => ({
-          team1: g.team1Id ? results.idToKey.get(g.team1Id) ?? null : null,
-          team2: g.team2Id ? results.idToKey.get(g.team2Id) ?? null : null,
-          winner: g.winnerId ? results.idToKey.get(g.winnerId) ?? null : null,
-        }))
-    );
+    const eliminated = eliminatedTeams(results);
     const total = (p: (typeof picks)[number], winners: Winners) => {
       const s = scoreBracket(p, winners);
       return s.total + s.bonus;

@@ -1,4 +1,5 @@
 // Where the member's current season stands. Pure, so Home and tests share it.
+import type { BracketSummary } from "@/lib/bracket-summary";
 
 export type SeasonPhase = "no-pool" | "preseason" | "entry" | "tournament" | "complete";
 
@@ -31,6 +32,9 @@ export interface SeasonEntry {
   bonusScore: number;
   picked: number;
   totalGames: number;
+  /** Once picks lock (submitted entries only) */
+  rank: number | null;
+  summary: BracketSummary | null;
 }
 
 export interface SeasonPool {
@@ -44,6 +48,8 @@ export interface SeasonPool {
   venmoHandle: string | null;
   members: number;
   entries: number;
+  /** Top score in the pool once picks lock */
+  leaderScore: number | null;
 }
 
 export interface SeasonResponse {

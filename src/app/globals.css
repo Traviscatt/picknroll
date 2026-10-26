@@ -37,6 +37,10 @@
   --team-secondary-foreground: #1a1a2e;
   --brand-gold: #b9bc91;
   --brand-forest: #1a3328;
+  --hit: #047857;
+  --hit-soft: #ecfdf5;
+  --miss: #b91c1c;
+  --miss-soft: #fdf3f3;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -89,6 +93,10 @@
   --color-team-secondary-foreground: var(--team-secondary-foreground);
   --color-brand-gold: var(--brand-gold);
   --color-brand-forest: var(--brand-forest);
+  --color-hit: var(--hit);
+  --color-hit-soft: var(--hit-soft);
+  --color-miss: var(--miss);
+  --color-miss-soft: var(--miss-soft);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);

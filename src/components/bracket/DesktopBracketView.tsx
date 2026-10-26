@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Minus, Plus } from "lucide-react";
 import { BracketResultSlot, BracketSlot } from "./BracketSlot";
 import { cn } from "@/lib/utils";
 import { eligibleTeams, isUnlocked, pointsFor, type GameSlot, type Picks, type TapResult } from "@/lib/picker";
@@ -92,14 +93,14 @@ function Connectors({
 
 /* ── Round configs ─────────────────────────────────── */
 const ROUNDS_CFG = [
-  { round: 1, n: 8, label: "R64" },
-  { round: 2, n: 4, label: "R32" },
-  { round: 3, n: 2, label: "Sweet 16" },
-  { round: 4, n: 1, label: "Elite 8" },
+  { round: 1, n: 8, label: "R64", name: "Round 1" },
+  { round: 2, n: 4, label: "R32", name: "Round 2" },
+  { round: 3, n: 2, label: "Sweet 16", name: "Sweet 16" },
+  { round: 4, n: 1, label: "Elite 8", name: "Elite 8" },
 ];
 
 /* ── Single region bracket ─────────────────────────── */
-function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotRenderer; mirrored: boolean }) {
+function RegionBracket({ region, slot, mirrored, slotW, withPoints }: { region: Region; slot: SlotRenderer; mirrored: boolean; slotW: number; withPoints: boolean }) {
   const renderSlot = (round: number, game: number) => slot(`${region}-r${round}-g${game}`, mirrored);
 
   return (
@@ -115,13 +116,13 @@ function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotR
 
       {/* Round labels */}
       <div className={cn("flex items-center mb-1", mirrored && "flex-row-reverse")}>
-        {ROUNDS_CFG.map(({ round, label }, i) => (
+        {ROUNDS_CFG.map(({ round, label, name }, i) => (
           <Fragment key={round}>
             <div
-              className="text-[9px] text-muted-foreground font-bold text-center shrink-0"
-              style={{ width: SLOT_W }}
+              className={cn("text-center shrink-0 font-bold text-muted-foreground", withPoints ? "text-[10px]" : "text-[9px]")}
+              style={{ width: slotW }}
             >
-              {label}
+              {withPoints ? `${name} · ${pointsFor(round).join("/")} pts` : label}
             </div>
             {i < ROUNDS_CFG.length - 1 && (
               <div style={{ width: CONN_W }} className="shrink-0" />
@@ -168,9 +169,37 @@ function RegionBracket({ region, slot, mirrored }: { region: Region; slot: SlotR
   );
 }
 
+const READ_ONLY_SLOT_W = 152;
+const ZOOM_STEPS = [0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25];
+
 /* ── Main desktop bracket view ────────────────────── */
 export function DesktopBracketView(props: DesktopBracketViewProps) {
   const { regions, picks, byId, team } = props;
+  const readOnly = !!props.results;
+  const slotW = readOnly ? READ_ONLY_SLOT_W : SLOT_W;
+  const [traced, setTraced] = useState<string | null>(null);
+  const [zoom, setZoom] = useState<number | "fit">("fit");
+  const [fitScale, setFitScale] = useState(1);
+  const outer = useRef<HTMLDivElement>(null);
+  const naturalW = 2 * (4 * slotW + 3 * CONN_W) + 48;
+
+  useEffect(() => {
+    if (!readOnly || !outer.current) return;
+    const el = outer.current;
+    const update = () => setFitScale(Math.min(1, (el.clientWidth - 2) / naturalW));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [readOnly, naturalW]);
+
+  const scale = zoom === "fit" ? fitScale : zoom;
+  const tracedGames = useMemo(() => {
+    if (!traced) return null;
+    return new Set([...picks.values()].filter((p) => (p.round === 1 ? p.choices[0] === traced : p.choices.includes(traced))).map((p) => p.gameId));
+  }, [traced, picks]);
+  const tracedWins = traced && props.results ? [...props.results.winners.values()].filter((w) => w === traced).length : 0;
+
   const slot: SlotRenderer = (gameId, mirrored = false) => {
     const game = byId.get(gameId)!;
     const choices = picks.get(gameId)?.choices ?? [];
@@ -186,6 +215,8 @@ export function DesktopBracketView(props: DesktopBracketViewProps) {
           eliminated={props.results.eliminated}
           pct={props.results.pct?.[gameId]}
           mirrored={mirrored}
+          traced={tracedGames?.has(gameId) ?? false}
+          onTrace={(teamId) => setTraced((t) => (t === teamId ? null : teamId))}
         />
       );
     }
@@ -205,44 +236,92 @@ export function DesktopBracketView(props: DesktopBracketViewProps) {
     );
   };
 
+  const stepZoom = (dir: 1 | -1) => {
+    const current = zoom === "fit" ? fitScale : zoom;
+    const next = dir > 0 ? ZOOM_STEPS.find((z) => z > current + 0.01) : [...ZOOM_STEPS].reverse().find((z) => z < current - 0.01);
+    if (next) setZoom(next);
+  };
+
   return (
-    <div className="w-full overflow-x-auto rounded-xl border bg-muted/40 shadow-sm">
-      <div className="min-w-[1200px] p-4">
-        {/* Top half: regions[0] (L→R)  ·  regions[2] (R←L) */}
-        <div className="flex items-start justify-between">
-          <RegionBracket region={regions[0]} slot={slot} mirrored={false} />
-          <RegionBracket region={regions[2]} slot={slot} mirrored={true} />
+    <div className="w-full rounded-xl border bg-muted/40 shadow-sm">
+      {readOnly && (
+        <div className="flex flex-wrap items-center gap-3 border-b bg-card px-4 py-3 rounded-t-xl">
+          {[
+            ["Right", "bg-hit-soft text-hit"],
+            ["Wrong", "bg-miss-soft text-muted-foreground line-through"],
+            ["Knocked out", "text-muted-foreground/60 line-through"],
+            ["Still alive", "bg-card font-semibold"],
+          ].map(([label, cls]) => (
+            <span key={label} className={cn("rounded-md border px-2 py-0.5 text-xs", cls)}>
+              {label}
+            </span>
+          ))}
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {traced ? (
+              <>
+                Tracing <span className="font-semibold text-foreground">{team(traced).name}</span>: {tracedWins} win{tracedWins === 1 ? "" : "s"} so far ·{" "}
+                <button type="button" className="font-semibold text-primary" onClick={() => setTraced(null)}>
+                  Clear
+                </button>
+              </>
+            ) : (
+              "Tap a team to trace its path · hover a pick for the pool %"
+            )}
+          </span>
+          <span className="flex items-center gap-1 rounded-md border bg-card px-1 py-0.5 text-xs">
+            <button type="button" onClick={() => stepZoom(-1)} className="rounded px-1.5 py-0.5 hover:bg-muted" aria-label="Zoom out">
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+            <button type="button" onClick={() => setZoom("fit")} className={cn("rounded px-1.5 py-0.5 hover:bg-muted", zoom === "fit" && "font-semibold")}>
+              {zoom === "fit" ? "Fit to screen" : `${Math.round(scale * 100)}%`}
+            </button>
+            <button type="button" onClick={() => stepZoom(1)} className="rounded px-1.5 py-0.5 hover:bg-muted" aria-label="Zoom in">
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          </span>
         </div>
+      )}
+      <div ref={outer} className="w-full overflow-x-auto">
+        <div
+          className="p-4"
+          style={readOnly ? ({ width: naturalW, zoom: scale, ["--slot-w" as string]: `${slotW}px` } as React.CSSProperties) : { minWidth: 1200 }}
+        >
+          {/* Top half: regions[0] (L→R)  ·  regions[2] (R←L) */}
+          <div className="flex items-start justify-between">
+            <RegionBracket region={regions[0]} slot={slot} mirrored={false} slotW={slotW} withPoints={readOnly} />
+            <RegionBracket region={regions[2]} slot={slot} mirrored={true} slotW={slotW} withPoints={readOnly} />
+          </div>
 
-        {/* Center row: FF game 1 (left regions) · Championship · FF game 2 (right regions) */}
-        <div className="-mt-14 flex items-center justify-center gap-6 py-4">
-          <div className="flex flex-col items-center">
-            <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
-            <div className="mb-1 text-[9px] text-muted-foreground">
-              {regions[0]} vs {regions[1]}
+          {/* Center row: FF game 1 (left regions) · Championship · FF game 2 (right regions) */}
+          <div className="-mt-14 flex items-center justify-center gap-6 py-4">
+            <div className="flex flex-col items-center">
+              <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
+              <div className="mb-1 text-[9px] text-muted-foreground">
+                {regions[0]} vs {regions[1]}
+              </div>
+              {slot("final-four-r5-g1")}
             </div>
-            {slot("final-four-r5-g1")}
-          </div>
 
-          <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-primary bg-card px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
-            <div className="text-lg font-extrabold tracking-wide text-primary">CHAMPION</div>
-            <div className="text-[10px] font-bold text-muted-foreground">{pointsFor(6).join(" / ")} pts</div>
-            {slot("championship-r6-g1")}
-          </div>
-
-          <div className="flex flex-col items-center">
-            <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
-            <div className="mb-1 text-[9px] text-muted-foreground">
-              {regions[2]} vs {regions[3]}
+            <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-primary bg-card px-8 py-4 shadow ring-2 ring-team-secondary ring-offset-2">
+              <div className="text-lg font-extrabold tracking-wide text-primary">CHAMPION</div>
+              <div className="text-[10px] font-bold text-muted-foreground">{pointsFor(6).join(" / ")} pts</div>
+              {slot("championship-r6-g1")}
             </div>
-            {slot("final-four-r5-g2", true)}
-          </div>
-        </div>
 
-        {/* Bottom half: regions[1] (L→R)  ·  regions[3] (R←L) */}
-        <div className="-mt-2 flex items-start justify-between">
-          <RegionBracket region={regions[1]} slot={slot} mirrored={false} />
-          <RegionBracket region={regions[3]} slot={slot} mirrored={true} />
+            <div className="flex flex-col items-center">
+              <div className="mb-1 text-[10px] font-bold text-foreground/80">Final Four</div>
+              <div className="mb-1 text-[9px] text-muted-foreground">
+                {regions[2]} vs {regions[3]}
+              </div>
+              {slot("final-four-r5-g2", true)}
+            </div>
+          </div>
+
+          {/* Bottom half: regions[1] (L→R)  ·  regions[3] (R←L) */}
+          <div className="-mt-2 flex items-start justify-between">
+            <RegionBracket region={regions[1]} slot={slot} mirrored={false} slotW={slotW} withPoints={readOnly} />
+            <RegionBracket region={regions[3]} slot={slot} mirrored={true} slotW={slotW} withPoints={readOnly} />
+          </div>
         </div>
       </div>
     </div>

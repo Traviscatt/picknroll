@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
 import { regionsForPool } from "@/lib/tournament-service";
+import { getActualTiebreaker, rankPool } from "@/lib/scoring-service";
 
 // GET /api/brackets?poolId= - The current user's brackets (every season, or one pool)
 export async function GET(request: Request) {
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
         ...(poolId && { poolId }),
       },
       include: {
-        pool: { select: { id: true, name: true, deadline: true, status: true, tournament: { select: { year: true } } } },
+        pool: { select: { id: true, name: true, deadline: true, status: true, tournamentId: true, tournament: { select: { year: true } } } },
         familyMember: true,
       },
       orderBy: {
@@ -29,7 +30,18 @@ export async function GET(request: Request) {
       },
     });
 
-    return NextResponse.json(brackets);
+    // Finish in each locked pool (My Brackets past seasons)
+    const now = new Date();
+    const lockedPools = [...new Map(brackets.flatMap((b) => (b.pool && b.pool.deadline < now && b.status !== "DRAFT" ? [[b.pool.id, b.pool]] : []))).values()];
+    const rankings = new Map(
+      await Promise.all(lockedPools.map(async (p) => [p.id, await rankPool(p.id, await getActualTiebreaker(p.tournamentId))] as const))
+    );
+    return NextResponse.json(
+      brackets.map((b) => {
+        const ranking = b.poolId ? rankings.get(b.poolId) : undefined;
+        return { ...b, rank: ranking?.ranks.get(b.id) ?? null, totalInPool: ranking?.total ?? null };
+      })
+    );
   } catch (error) {
     console.error("Error fetching brackets:", error);
     return NextResponse.json(

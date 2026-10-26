@@ -40,11 +40,17 @@ function TeamRow({ team, picked, onClick, mirrored }: { team: PickerTeam; picked
   );
 }
 
+const RESULT_ROW: Record<ChoiceResult, string> = {
+  won: "bg-hit-soft",
+  lost: "bg-miss-soft",
+  out: "",
+  pending: "",
+};
 const RESULT_TEXT: Record<ChoiceResult, string> = {
-  won: "text-emerald-700",
+  won: "font-semibold text-hit",
   lost: "text-muted-foreground line-through",
-  out: "text-muted-foreground/60",
-  pending: "text-foreground",
+  out: "text-muted-foreground/60 line-through",
+  pending: "font-semibold text-foreground",
 };
 
 interface BracketResultSlotProps {
@@ -58,45 +64,52 @@ interface BracketResultSlotProps {
   /** Share of the pool with the same pick at the same rank, keyed "rank index:teamId" */
   pct?: Record<string, number>;
   mirrored?: boolean;
+  /** Part of the traced team's path */
+  traced?: boolean;
+  onTrace?: (teamId: string) => void;
 }
 
-/** One game in a read-only bracket: the picks, marked right, wrong, or knocked out */
-export function BracketResultSlot({ game, eligible, choices, team, winner, eliminated, pct, mirrored = false }: BracketResultSlotProps) {
+/** One game in a read-only bracket: each pick filled by result (right, wrong, knocked out, alive) */
+export function BracketResultSlot({ game, eligible, choices, team, winner, eliminated, pct, mirrored = false, traced = false, onTrace }: BracketResultSlotProps) {
   const max = choicesFor(game.round);
   const points = pointsFor(game.round);
   const rows = game.round === 1 ? eligible : choices.map(team);
   return (
-    <div className={cn("flex w-[130px] flex-col overflow-hidden rounded border-2 bg-card", winner ? "border-foreground/60" : "border-border", game.round === 1 && "justify-center")}>
-      {rows.length === 0 && <span className="flex h-6 items-center justify-center text-[10px] text-muted-foreground">No pick</span>}
+    <div
+      className={cn(
+        "flex w-[var(--slot-w,130px)] flex-col overflow-hidden rounded-md border bg-card",
+        traced ? "border-primary ring-2 ring-primary" : winner ? "border-foreground/30" : "border-border",
+        game.round === 1 && "justify-center"
+      )}
+    >
+      {rows.length === 0 && <span className="flex h-6 items-center justify-center text-[11px] text-muted-foreground">No pick</span>}
       {rows.map((t, i) => {
         const picked = game.round === 1 ? choices[0] === t.id : true;
         const index = game.round === 1 ? 0 : i;
         const result = picked ? choiceResult(t.id, winner, eliminated) : "pending";
         const share = picked ? pct?.[`${index}:${t.id}`] : undefined;
         return (
-          <div
+          <button
+            type="button"
             key={t.id}
-            title={share != null ? `${share}% of the pool made this pick` : undefined}
+            onClick={() => onTrace?.(t.id)}
+            title={share != null ? `${t.name}: ${share}% of the pool made this pick` : t.name}
             className={cn(
-              "flex w-full items-center gap-1 px-1.5 leading-tight",
-              game.round === 1 ? "h-7" : "py-0.5",
+              "flex w-full items-center gap-1.5 px-2 leading-tight hover:brightness-95",
+              game.round === 1 ? "h-7" : "py-1",
               game.round === 1 && i > 0 && "border-t",
-              game.round === 1 && picked && "bg-muted",
-              mirrored && "flex-row-reverse text-right"
+              picked && RESULT_ROW[result],
+              mirrored ? "flex-row-reverse text-right" : "text-left"
             )}
           >
-            {max > 1 ? (
-              <span className={cn("flex h-3 w-3 shrink-0 items-center justify-center rounded-full text-[8px] font-bold text-white", getPickColor(i).badge)}>{i + 1}</span>
-            ) : (
-              t.logo && <Image src={t.logo} alt="" width={14} height={14} className={cn("h-3.5 w-3.5 shrink-0 object-contain", (!picked || result === "out") && "opacity-40")} unoptimized />
-            )}
-            {game.round === 1 && <span className="shrink-0 text-[10px] font-bold text-muted-foreground">{t.seed}</span>}
-            <span className={cn("truncate text-[10px]", picked ? "font-semibold" : "font-medium text-muted-foreground", picked && RESULT_TEXT[result])}>{t.name}</span>
-            <span className={cn("flex shrink-0 items-center gap-0.5 text-[8px] font-bold text-muted-foreground", mirrored ? "mr-auto" : "ml-auto")}>
-              {picked && result === "won" && <Check className="h-2.5 w-2.5 text-emerald-600" strokeWidth={3} />}
-              {max > 1 && points[i]}
+            {max > 1 && <span className={cn("h-2 w-2 shrink-0 rounded-full", getPickColor(i).badge, (result === "out" || result === "lost") && "opacity-40")} />}
+            <span className="shrink-0 text-[10px] text-muted-foreground">{t.seed || ""}</span>
+            <span className={cn("min-w-0 truncate text-xs", picked ? RESULT_TEXT[result] : "text-muted-foreground")}>{t.name}</span>
+            <span className={cn("flex shrink-0 items-center gap-1 text-[10px] tabular-nums", mirrored ? "mr-auto" : "ml-auto", result === "won" ? "font-semibold text-hit" : "text-muted-foreground")}>
+              {picked && result === "won" && <Check className="h-3 w-3" strokeWidth={3} />}
+              {max > 1 && (result === "won" ? `+${points[i]}` : result === "pending" ? points[i] : 0)}
             </span>
-          </div>
+          </button>
         );
       })}
     </div>

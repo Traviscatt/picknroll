@@ -11,7 +11,11 @@ import { PageHeader } from "@/components/shared/page-header";
 import { BracketStatusBadge } from "@/components/shared/bracket-status-badge";
 import { BracketMenu } from "@/components/shared/bracket-menu";
 import { cn } from "@/lib/utils";
-import { bracketActions, nextStep, seasonLabel, type SeasonPhase, type SeasonResponse } from "@/lib/season";
+import { bracketActions, nextStep, seasonLabel, type SeasonEntry, type SeasonPhase, type SeasonResponse } from "@/lib/season";
+import { EntryCard } from "@/components/bracket/entry-card";
+import { PointsLegend } from "@/components/bracket/points-by-round";
+import { ordinal } from "@/components/game-center/parts";
+import { useTournamentField } from "@/hooks/use-tournament-field";
 
 interface Bracket {
   id: string;
@@ -22,7 +26,17 @@ interface Bracket {
   bonusScore: number;
   paid: boolean;
   pool: { id: string; name: string; deadline: string; status: string; tournament: { year: number } } | null;
+  rank: number | null;
+  totalInPool: number | null;
 }
+
+type ScoredEntry = SeasonEntry & { summary: NonNullable<SeasonEntry["summary"]> };
+
+const finish = (b: Bracket) => (b.rank && b.totalInPool ? `${ordinal(b.rank)} of ${b.totalInPool}` : "–");
+const bestFinish = (list: Bracket[]) => {
+  const ranks = list.flatMap((b) => (b.rank ? [b.rank] : []));
+  return ranks.length ? ordinal(Math.min(...ranks)) : null;
+};
 
 const SEASON_NOTE: Record<SeasonPhase, string> = {
   "no-pool": "",
@@ -55,6 +69,7 @@ export default function BracketsPage() {
   }, [session, load]);
 
   const currentPoolId = season?.pool?.id ?? null;
+  const { lookup } = useTournamentField(currentPoolId, !!season?.entries.some((e) => e.summary));
   const past = useMemo(() => {
     const groups = new Map<string, Bracket[]>();
     for (const b of brackets ?? []) {
@@ -80,6 +95,9 @@ export default function BracketsPage() {
   const canStart = phase === "entry" && !locked;
   const showScores = phase === "tournament" || phase === "complete";
   const seasonNote = SEASON_NOTE[phase];
+  // Once picks lock, submitted entries get standing cards; drafts (and everything before the deadline) stay as rows
+  const standings = entries.filter((e): e is ScoredEntry => !!e.summary);
+  const unscored = entries.filter((e) => !e.summary);
 
   return (
     <div className="space-y-6">
@@ -97,12 +115,36 @@ export default function BracketsPage() {
         }
       />
 
+      {standings.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-semibold">This season</h2>
+            <span className="text-xs text-muted-foreground">{seasonNote}</span>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {standings.map((entry) => (
+              <EntryCard
+                key={entry.id}
+                entry={entry}
+                lookup={lookup}
+                poolEntries={pool?.entries ?? 0}
+                leaderScore={pool?.leaderScore ?? null}
+                canDelete={bracketActions({ status: entry.status, pool }).canDelete}
+                onDeleted={load}
+              />
+            ))}
+          </div>
+          <PointsLegend />
+        </section>
+      )}
+
+      {(standings.length === 0 || unscored.length > 0) && (
       <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-          <h2 className="font-semibold">This season</h2>
-          <span className="text-xs text-muted-foreground">{seasonNote}</span>
+          <h2 className="font-semibold">{standings.length ? "Not submitted" : "This season"}</h2>
+          <span className="text-xs text-muted-foreground">{standings.length ? "Drafts don't count once picks lock" : seasonNote}</span>
         </div>
-        {entries.length === 0 ? (
+        {unscored.length === 0 ? (
           <div className="px-4 py-10 text-center">
             <Trophy className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
             <p className="mb-4 text-sm text-muted-foreground">{pool ? "No brackets yet this season." : "You're not in a pool yet."}</p>
@@ -118,7 +160,7 @@ export default function BracketsPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {entries.map((entry) => {
+            {unscored.map((entry) => {
               const actions = bracketActions({ status: entry.status, pool });
               const step = nextStep(entry, actions.locked);
               const pct = entry.totalGames ? (entry.picked / entry.totalGames) * 100 : 0;
@@ -156,16 +198,54 @@ export default function BracketsPage() {
           </div>
         )}
       </section>
+      )}
 
       {past.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-semibold">Past seasons</h2>
+          {/* Desktop: one table */}
+          <div className="hidden overflow-hidden rounded-xl border bg-card shadow-sm md:block">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/60 text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  {["Season", "Bracket", "Entry for", "Finish", "Score", ""].map((h) => (
+                    <th key={h} className="px-4 py-2 font-semibold">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {past.flatMap(([year, list]) =>
+                  list.map((b) => (
+                    <tr key={b.id}>
+                      <td className="px-4 py-3 text-muted-foreground">{year}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/brackets/${b.id}`} className="font-semibold hover:underline">
+                          {b.name}
+                        </Link>
+                        {b.status === "DRAFT" && <BracketStatusBadge status="DRAFT" className="ml-2" />}
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{b.entryName}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{finish(b)}</td>
+                      <td className="px-4 py-3 font-bold tabular-nums text-primary">{b.status !== "DRAFT" ? b.totalScore + b.bonusScore : "–"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <BracketMenu bracket={b} canEdit={bracketActions(b).canEdit} canDelete={bracketActions(b).canDelete} onDeleted={load} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Phones: collapsed by year */}
           {past.map(([year, list]) => (
-            <details key={year} className="group overflow-hidden rounded-xl border bg-card shadow-sm">
+            <details key={year} className="group overflow-hidden rounded-xl border bg-card shadow-sm md:hidden">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
                 <span className="font-semibold">{year}</span>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
                   {list.length} bracket{list.length === 1 ? "" : "s"}
+                  {bestFinish(list) ? ` · best finish ${bestFinish(list)}` : ""}
                   <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                 </span>
               </summary>
@@ -183,7 +263,7 @@ export default function BracketsPage() {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           for {b.entryName}
-                          {b.pool && b.pool.name && !b.pool.name.includes(year) ? ` · ${b.pool.name}` : ""}
+                          {finish(b) !== "–" ? ` · ${finish(b)}` : ""}
                         </p>
                       </div>
                       {b.status !== "DRAFT" && <span className="font-bold text-primary tabular-nums">{b.totalScore + b.bonusScore}</span>}

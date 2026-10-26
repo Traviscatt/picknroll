@@ -3,8 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { bracketInputSchema, poolLockedReason, validatePicks } from "@/lib/bracket-validation";
-import { getCurrentTournament, loadTournamentResults, rankBrackets, SCORED_STATUSES } from "@/lib/scoring-service";
-import { regionsForPool } from "@/lib/tournament-service";
+import { eliminatedTeams, getCurrentTournament, loadTournamentResults, rankPool } from "@/lib/scoring-service";
+import { loadRegions, regionsForPool } from "@/lib/tournament-service";
+import { parsePicksData } from "@/lib/scoring-engine";
+import { summarizeBracket, type BracketSummary } from "@/lib/bracket-summary";
 
 // GET /api/brackets/[id] - Get a single bracket
 export async function GET(
@@ -32,7 +34,6 @@ export async function GET(
       include: {
         pool: true,
         familyMember: true,
-        picks: true,
         user: { select: { id: true, name: true } },
       },
     });
@@ -44,7 +45,6 @@ export async function GET(
         include: {
           pool: true,
           familyMember: true,
-          picks: true,
           user: { select: { id: true, name: true } },
         },
       });
@@ -84,41 +84,26 @@ export async function GET(
     const tournamentId = bracket.pool?.tournamentId ?? (await getCurrentTournament())?.id;
     const completedGames: { bracketGameId: string; winnerBracketId: string | null }[] = [];
     let actualTiebreaker: number | null = null;
+    let eliminated = new Set<string>();
+    let summary: BracketSummary | null = null;
     if (tournamentId) {
-      const results = await loadTournamentResults(tournamentId);
+      const [results, regions] = await Promise.all([loadTournamentResults(tournamentId), loadRegions(tournamentId)]);
       actualTiebreaker = results.actualTiebreaker;
-      for (const [bracketGameId, game] of results.gameMap) {
-        if (game.status !== "FINAL") continue;
-        completedGames.push({
-          bracketGameId,
-          winnerBracketId: game.winnerId ? results.idToKey.get(game.winnerId) || null : null,
-        });
-      }
+      eliminated = eliminatedTeams(results);
+      for (const [bracketGameId, winnerBracketId] of results.winners) completedGames.push({ bracketGameId, winnerBracketId });
+      summary = summarizeBracket(parsePicksData(bracket.picksData), results.winners, eliminated, regions);
     }
 
-    // Calculate rank within pool if bracket is in a pool and submitted
+    // Rank within the pool (same order as the standings)
     let rank: number | null = null;
     let totalInPool: number | null = null;
     if (bracket.poolId && bracket.status !== "DRAFT") {
-      const poolBrackets = await db.bracket.findMany({
-        where: {
-          poolId: bracket.poolId,
-          status: { in: SCORED_STATUSES },
-        },
-        select: {
-          id: true,
-          totalScore: true,
-          bonusScore: true,
-          tiebreaker: true,
-        },
-      });
-
-      // Combined score, ties broken by tiebreaker once the championship is final (same as the leaderboard)
-      totalInPool = poolBrackets.length;
-      rank = rankBrackets(poolBrackets, actualTiebreaker).find((b) => b.id === bracket!.id)?.rank ?? null;
+      const pool = await rankPool(bracket.poolId, actualTiebreaker);
+      totalInPool = pool.total;
+      rank = pool.ranks.get(bracket.id) ?? null;
     }
 
-    return NextResponse.json({ ...bracket, rank, totalInPool, completedGames, isOwner: bracketIsOwner, ownerName });
+    return NextResponse.json({ ...bracket, rank, totalInPool, completedGames, eliminated: [...eliminated], summary, isOwner: bracketIsOwner, ownerName });
   } catch (error) {
     console.error("Error fetching bracket:", error);
     return NextResponse.json(

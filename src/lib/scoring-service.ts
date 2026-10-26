@@ -5,6 +5,7 @@ import {
   buildBracketGameMap,
   buildTeamKeyMaps,
   finalWinners,
+  losers,
   parsePicksData,
   rankEntries,
   scoreBracket,
@@ -41,6 +42,26 @@ export async function loadTournamentResults(tournamentId: string) {
     winners,
     actualTiebreaker: actualTiebreaker(tournament?.actualTiebreaker, gameMap),
   };
+}
+
+/** Teams (slot keys) that lost a final game */
+export function eliminatedTeams(results: Awaited<ReturnType<typeof loadTournamentResults>>): Set<string> {
+  const key = (id: string | null | undefined) => (id ? results.idToKey.get(id) ?? null : null);
+  return losers(
+    [...results.gameMap.values()]
+      .filter((g) => g.status === "FINAL")
+      .map((g) => ({ team1: key(g.team1Id), team2: key(g.team2Id), winner: key(g.winnerId) }))
+  );
+}
+
+/** Rank of every scored bracket in a pool (stored scores, same order as the standings) */
+export async function rankPool(poolId: string, actualTiebreaker: number | null) {
+  const brackets = await db.bracket.findMany({
+    where: { poolId, status: { in: SCORED_STATUSES } },
+    select: { id: true, totalScore: true, bonusScore: true, tiebreaker: true },
+  });
+  const ranked = rankBrackets(brackets, actualTiebreaker);
+  return { total: brackets.length, ranks: new Map(ranked.map((b) => [b.id, b.rank])), leaderIds: ranked.filter((b) => b.rank === 1).map((b) => b.id), ranked };
 }
 
 /** Rescores every submitted bracket in the tournament's pools; only changed scores are written */

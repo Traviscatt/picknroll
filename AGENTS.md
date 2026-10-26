@@ -81,7 +81,22 @@
   - `bracketActions` mirrors the server's lock rules (edit only while the pool is open and before the deadline; delete drafts any time). `nextStep` picks the one action to show.
 - Data for an older bracket must come from its own pool: `/api/brackets?poolId=`, `/api/pool/pick-stats?poolId=`, `/api/eliminated-teams?poolId=` (members of that pool, or site admins).
 - Game Center's per-bracket math is `personalSummary` (`src/lib/live.ts`), shared with Home. `/game-center?view=rooting` opens the rooting guide.
-- Bracket detail reuses `DesktopBracketView` with `results` (read-only, marks right/wrong/knocked out) on desktop and `BracketRounds` on phones.
+- Bracket standing (`src/lib/bracket-summary.ts`, pure + tested):
+  - `summarizeBracket` gives points by round (earned / still possible / gone), max, still in play, and champion and Final Four status.
+  - `compareBrackets` lists the undecided games where two brackets can score differently, biggest swing first, with who to root for or against.
+  - `boldPicks` finds 1st choices that 20% or less of the pool shares.
+  - Server side, use `eliminatedTeams` and `rankPool` from `scoring-service`.
+- Bracket APIs:
+  - `/api/brackets/[id]` returns `summary` and `eliminated`.
+  - `/api/brackets/[id]/compare` compares with the leader (with the runner-up when this bracket leads), after the deadline only.
+  - `/api/season` entries include `rank` and `summary` once picks lock; the pool includes `leaderScore`.
+  - `/api/brackets` includes `rank` and `totalInPool` for locked pools.
+- Bracket detail:
+  - Summary card (`BracketSummaryCard`), then a My picks / vs. Leader / vs. Pool toggle (`?view=leader|pool`).
+  - Desktop: `DesktopBracketView` with `results`: result-filled cells, tap a team to trace its path, fit/zoom.
+  - Phones: `BracketSections` puts the big picks first, then the current round; other rounds collapse.
+- My Brackets: `EntryCard` once picks lock (before that, the checklist rows). Past seasons are a table on desktop and collapsed by year on phones.
+- Result colors are fixed tokens, never themed: `hit` / `hit-soft` for a right pick, `miss` / `miss-soft` for a wrong one. They're separate from LIVE red.
 - Shared components: `PageHeader` (every page title), `BracketStatusBadge` (Draft / Submitted / Payment pending / Paid), `BracketMenu` (⋯ actions), `ScoringRules` / `scoringGroups` (rules generated from `SCORING_RULES`).
 - Use design tokens (`text-foreground`, `text-muted-foreground`, `bg-card`, `bg-muted`, `border-border`), not slate/white classes. Fixed brand colors for marketing pages are `brand-gold` / `brand-forest`.
 - The standings page is called "Standings" in the UI; its URL stays `/leaderboard`.

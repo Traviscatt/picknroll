@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trophy, Medal, TrendingUp, Users, Share2, Search, Eye } from "lucide-react";
+import { Trophy, Medal, TrendingUp, Users, Share2, Search, Eye, Crosshair } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import { useAnyLive, useLiveData } from "@/hooks/use-live-data";
 import { Movement, StandingsToggle } from "@/components/game-center/parts";
 import { isLive } from "@/lib/live";
 import { PageHeader } from "@/components/shared/page-header";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LeaderboardEntry {
   rank: number;
@@ -47,6 +48,9 @@ export default function LeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [mode, setMode] = useStandingsMode();
+  const mobile = useIsMobile();
+  const [expanded, setExpanded] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
   const anyLive = useAnyLive(!!session);
   const liveMode = mode === "live";
   const live = useLiveData(data?.poolId ?? null, null, liveMode && !!data?.poolId);
@@ -147,6 +151,26 @@ export default function LeaderboardPage() {
           entry.bracketName.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : leaderboard;
+
+  const myRows = filteredLeaderboard.flatMap((e, i) => (e.isCurrentUser ? [i] : []));
+  const focused = mobile && !expanded && !searchQuery.trim() && myRows.length > 0 && filteredLeaderboard.length > 12;
+  const keep = new Set<number>(focused ? [0, 1, 2, ...myRows.flatMap((i) => [i - 3, i - 2, i - 1, i, i + 1, i + 2, i + 3])] : []);
+  const rows: ({ kind: "entry"; entry: (typeof filteredLeaderboard)[number] } | { kind: "gap"; count: number; key: string })[] = [];
+  filteredLeaderboard.forEach((entry, i) => {
+    if (!focused || keep.has(i)) rows.push({ kind: "entry", entry });
+    else if (keep.has(i - 1) || i === 0) {
+      let count = 0;
+      while (i + count < filteredLeaderboard.length && !keep.has(i + count)) count++;
+      rows.push({ kind: "gap", count, key: `gap-${i}` });
+    }
+  });
+  const jumpToMe = () => {
+    const mine = filteredLeaderboard[myRows[0]];
+    if (!mine) return;
+    document.getElementById(`row-${mine.bracketId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFlash(mine.bracketId);
+    setTimeout(() => setFlash(null), 1600);
+  };
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -308,6 +332,23 @@ export default function LeaderboardPage() {
                   className="pl-9"
                 />
               </div>
+              {myRows.length > 0 && !searchQuery.trim() && (
+                <div className="mb-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>{focused ? "The top 3 and the entries around you" : `${filteredLeaderboard.length} entries`}</span>
+                  <span className="flex gap-2">
+                    {mobile && (
+                      <button type="button" onClick={() => setExpanded(!expanded)} className="rounded-md border px-2 py-1 font-semibold text-foreground">
+                        {expanded ? "Around me" : `Show all ${filteredLeaderboard.length}`}
+                      </button>
+                    )}
+                    {!focused && (
+                      <button type="button" onClick={jumpToMe} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 font-semibold text-primary">
+                        <Crosshair className="h-3.5 w-3.5" /> Jump to me
+                      </button>
+                    )}
+                  </span>
+                </div>
+              )}
               {filteredLeaderboard.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No results found for &quot;{searchQuery}&quot;
@@ -327,14 +368,28 @@ export default function LeaderboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredLeaderboard.map((entry) => (
+                  {rows.map((row) => {
+                  if (row.kind === "gap") {
+                    return (
+                      <TableRow key={row.key} className="hover:bg-transparent">
+                        <TableCell colSpan={showLive ? 5 : 4} className="py-1.5 text-center">
+                          <button type="button" onClick={() => setExpanded(true)} className="text-xs text-muted-foreground hover:text-foreground">
+                            ⋯ {row.count} more
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  const { entry } = row;
+                  return (
                   <TableRow
                     key={`${entry.name}-${entry.bracketName}`}
-                    className={`cursor-pointer transition-colors hover:bg-muted/50 ${
+                    id={`row-${entry.bracketId}`}
+                    className={`cursor-pointer scroll-mt-24 transition-colors hover:bg-muted/50 ${
                       entry.isCurrentUser
                         ? "bg-secondary hover:bg-secondary/80"
                         : ""
-                    }`}
+                    } ${flash === entry.bracketId ? "ring-2 ring-inset ring-primary" : ""}`}
                     onClick={() => router.push(`/brackets/${entry.bracketId}`)}
                   >
                     <TableCell className="font-medium px-2">
@@ -380,7 +435,8 @@ export default function LeaderboardPage() {
                       <Eye className="h-4 w-4 text-muted-foreground/40" />
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
               )}

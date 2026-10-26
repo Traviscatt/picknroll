@@ -20,13 +20,14 @@ interface BracketSectionsProps {
   results: BracketResults;
   rounds: RoundSummary[];
   tiebreaker: number | null;
+  onOpenGame: (game: GameSlot) => void;
 }
 
 /**
  * Phone bracket, biggest picks first: Championship + Final Four, then the round being played, then
  * the other rounds as collapsible rows (upcoming first, then finished, most recent first).
  */
-export function BracketSections({ regions, games, picks, team, results, rounds, tiebreaker }: BracketSectionsProps) {
+export function BracketSections({ regions, games, picks, team, results, rounds, tiebreaker, onOpenGame }: BracketSectionsProps) {
   const undecided = (round: number) => games.some((g) => g.round === round && !results.winners.has(g.gameId));
   const current = [1, 2, 3, 4].find(undecided) ?? null;
   const later = [1, 2, 3, 4].filter((r) => current != null && r > current);
@@ -44,7 +45,7 @@ export function BracketSections({ regions, games, picks, team, results, rounds, 
       <section className="space-y-3">
         <SectionHeader title="Final Four & Championship" detail={finalsDetail} />
         {finals.map((g) => (
-          <GameCard key={g.gameId} game={g} picks={picks} team={team} results={results} label={finalLabel(g, regions)} />
+          <GameCard key={g.gameId} game={g} picks={picks} team={team} results={results} label={finalLabel(g, regions)} onOpen={onOpenGame} />
         ))}
         {tiebreaker != null && (
           <p className="rounded-lg border bg-card px-3 py-2 text-sm">
@@ -56,7 +57,7 @@ export function BracketSections({ regions, games, picks, team, results, rounds, 
       {current != null && (
         <section className="space-y-3">
           <SectionHeader title={roundName(current)} detail={`Being played · ${rounds[current - 1].possible} of ${rounds[current - 1].max - rounds[current - 1].earned} still possible`} />
-          <RoundGames round={current} games={games} regions={regions} picks={picks} team={team} results={results} />
+          <RoundGames round={current} games={games} regions={regions} picks={picks} team={team} results={results} onOpen={onOpenGame} />
         </section>
       )}
 
@@ -65,13 +66,13 @@ export function BracketSections({ regions, games, picks, team, results, rounds, 
           {later.length > 0 && <h3 className="text-sm font-semibold text-muted-foreground">Coming up</h3>}
           {later.map((r) => (
             <RoundRow key={r} round={r} summary={rounds[r - 1]} upcoming>
-              <RoundGames round={r} games={games} regions={regions} picks={picks} team={team} results={results} />
+              <RoundGames round={r} games={games} regions={regions} picks={picks} team={team} results={results} onOpen={onOpenGame} />
             </RoundRow>
           ))}
           {finished.length > 0 && <h3 className="pt-2 text-sm font-semibold text-muted-foreground">Finished rounds</h3>}
           {finished.map((r) => (
             <RoundRow key={r} round={r} summary={rounds[r - 1]}>
-              <RoundGames round={r} games={games} regions={regions} picks={picks} team={team} results={results} />
+              <RoundGames round={r} games={games} regions={regions} picks={picks} team={team} results={results} onOpen={onOpenGame} />
             </RoundRow>
           ))}
         </section>
@@ -113,7 +114,7 @@ function RoundRow({ round, summary, upcoming = false, children }: { round: numbe
   );
 }
 
-function RoundGames({ round, games, regions, picks, team, results }: { round: number; games: GameSlot[]; regions: string[]; picks: Picks; team: (id: string) => PickerTeam; results: BracketResults }) {
+function RoundGames({ round, games, regions, picks, team, results, onOpen }: { round: number; games: GameSlot[]; regions: string[]; picks: Picks; team: (id: string) => PickerTeam; results: BracketResults; onOpen: (game: GameSlot) => void }) {
   return (
     <div className="space-y-4">
       {regions.map((region) => {
@@ -124,7 +125,7 @@ function RoundGames({ round, games, regions, picks, team, results }: { round: nu
             {round < 4 && <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{region}</p>}
             <div className={cn("grid gap-2", round <= 2 && "sm:grid-cols-2")}>
               {list.map((g) => (
-                <GameCard key={g.gameId} game={g} picks={picks} team={team} results={results} label={round === 4 ? region : `Game ${g.number}`} compact={round <= 2} />
+                <GameCard key={g.gameId} game={g} picks={picks} team={team} results={results} label={round === 4 ? region : `Game ${g.number}`} compact={round <= 2} onOpen={onOpen} />
               ))}
             </div>
           </div>
@@ -134,14 +135,18 @@ function RoundGames({ round, games, regions, picks, team, results }: { round: nu
   );
 }
 
-function GameCard({ game, picks, team, results, label, compact = false }: { game: GameSlot; picks: Picks; team: (id: string) => PickerTeam; results: BracketResults; label: string; compact?: boolean }) {
+function GameCard({ game, picks, team, results, label, compact = false, onOpen }: { game: GameSlot; picks: Picks; team: (id: string) => PickerTeam; results: BracketResults; label: string; compact?: boolean; onOpen: (game: GameSlot) => void }) {
   const choices = picks.get(game.gameId)?.choices ?? [];
   const winner = results.winners.get(game.gameId) ?? null;
   const multi = choicesFor(game.round) > 1;
   const points = pointsFor(game.round);
   const rows = game.round === 1 ? eligibleTeams(game, picks) : choices;
   return (
-    <div className={cn("space-y-1.5 rounded-xl border bg-card", compact ? "p-2" : "p-3", winner && "border-foreground/25")}>
+    <button
+      type="button"
+      onClick={() => onOpen(game)}
+      className={cn("block w-full space-y-1.5 rounded-xl border bg-card text-left transition-colors hover:border-foreground/30", compact ? "p-2" : "p-3", winner && "border-foreground/25")}
+    >
       <div className="flex items-center justify-between gap-2 px-1">
         <span className="text-xs font-semibold">{label}</span>
         <span className="text-[11px] text-muted-foreground">{winner ? "Final" : `${points.join(" / ")} pts`}</span>
@@ -162,6 +167,6 @@ function GameCard({ game, picks, team, results, label, compact = false }: { game
           />
         );
       })}
-    </div>
+    </button>
   );
 }

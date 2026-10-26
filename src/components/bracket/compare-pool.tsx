@@ -8,9 +8,10 @@ import { boldPicks, type BoldPick } from "@/lib/bracket-summary";
 import type { PickerTeam } from "@/components/picker/game-picker";
 import type { BracketResults } from "./DesktopBracketView";
 import { gameLabel } from "./labels";
+import type { SheetGame } from "./game-sheet";
 
 /** Your 1st choices few others made: still alive (where you gain the most) and the ones that already paid off */
-export function ComparePool({ picks, results, regions, team }: { picks: BracketPick[]; results: BracketResults; regions: string[]; team: (id: string) => PickerTeam }) {
+export function ComparePool({ picks, results, regions, team, onOpenGame }: { picks: BracketPick[]; results: BracketResults; regions: string[]; team: (id: string) => PickerTeam; onOpenGame?: (game: SheetGame) => void }) {
   if (!results.pct || Object.keys(results.pct).length === 0) {
     return <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">Pool picks appear once brackets lock.</p>;
   }
@@ -21,13 +22,13 @@ export function ComparePool({ picks, results, regions, team }: { picks: BracketP
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
         Picks few others made are where you gain the most on the pool. These are your 1st choices that 20% or less of the pool shares.
       </p>
-      <List title="Bold picks still alive" empty="None left. Your remaining picks are with the crowd." picks={alive} regions={regions} team={team} />
-      <List title="Bold picks that paid off" empty="None yet." picks={paidOff} regions={regions} team={team} paid />
+      <List title="Bold picks still alive" empty="None left. Your remaining picks are with the crowd." picks={alive} regions={regions} team={team} onOpen={onOpenGame} />
+      <List title="Bold picks that paid off" empty="None yet." picks={paidOff} regions={regions} team={team} paid onOpen={onOpenGame} />
     </div>
   );
 }
 
-function List({ title, empty, picks, regions, team, paid = false }: { title: string; empty: string; picks: BoldPick[]; regions: string[]; team: (id: string) => PickerTeam; paid?: boolean }) {
+function List({ title, empty, picks, regions, team, paid = false, onOpen }: { title: string; empty: string; picks: BoldPick[]; regions: string[]; team: (id: string) => PickerTeam; paid?: boolean; onOpen?: (game: SheetGame) => void }) {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between gap-3">
@@ -41,7 +42,12 @@ function List({ title, empty, picks, regions, team, paid = false }: { title: str
           {picks.map((p) => {
             const t = team(p.team);
             return (
-              <div key={p.gameId} className={cn("flex items-center gap-3 rounded-xl border px-3 py-2.5", paid ? "bg-hit-soft" : "bg-card")}>
+              <button
+                type="button"
+                key={p.gameId}
+                onClick={() => onOpen?.({ gameId: p.gameId, round: p.round })}
+                className={cn("flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors hover:border-foreground/30", paid ? "bg-hit-soft" : "bg-card")}
+              >
                 {t.logo ? <Image src={t.logo} alt="" width={24} height={24} className="h-6 w-6 shrink-0 object-contain" unoptimized /> : <span className="h-6 w-6 shrink-0 rounded-full bg-muted" />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">
@@ -54,7 +60,7 @@ function List({ title, empty, picks, regions, team, paid = false }: { title: str
                   <span className={cn("block text-sm font-semibold tabular-nums", paid && "text-hit")}>{paid ? `+${p.points}` : `${p.points} pts`}</span>
                   <span className="block text-[11px] text-muted-foreground">only {p.pct}% of the pool</span>
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>

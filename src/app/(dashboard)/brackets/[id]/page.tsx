@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import { ArrowLeft, DollarSign, Edit, Lock, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,10 @@ import { BracketSummaryCard } from "@/components/bracket/bracket-summary-card";
 import { CompareLeader } from "@/components/bracket/compare-leader";
 import { ComparePool } from "@/components/bracket/compare-pool";
 import { PointsLegend } from "@/components/bracket/points-by-round";
+import { GameSheet, type SheetGame } from "@/components/bracket/game-sheet";
+import { EntrySwitcher, useSwipe, type SwitcherEntry } from "@/components/bracket/entry-switcher";
+import { StickyBar } from "@/components/shared/sticky-bar";
+import { ordinal } from "@/components/game-center/parts";
 import type { PickerTeam } from "@/components/picker/game-picker";
 import { useTournamentField } from "@/hooks/use-tournament-field";
 import { cn } from "@/lib/utils";
@@ -73,6 +78,9 @@ function BracketDetail() {
   const [pct, setPct] = useState<Record<string, Record<string, number>>>({});
   const [view, setView] = useState<View>(() => (searchParams.get("view") === "leader" ? "leader" : searchParams.get("view") === "pool" ? "pool" : "picks"));
   const { field, lookup, loading: fieldLoading } = useTournamentField(bracket?.poolId ?? null, !!bracket);
+  const [sheetGame, setSheetGame] = useState<SheetGame | null>(null);
+  const [siblings, setSiblings] = useState<SwitcherEntry[]>([]);
+  const [summaryEl, setSummaryEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -84,6 +92,15 @@ function BracketDetail() {
       if (res.ok) {
         const data: Bracket = await res.json();
         setBracket(data);
+        if (data.poolId && data.isOwner) {
+          fetch(`/api/brackets?poolId=${encodeURIComponent(data.poolId)}`)
+            .then((r) => (r.ok ? r.json() : []))
+            .then((list: { id: string; name: string; createdAt: string }[]) => {
+              const mine = [...list].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).map(({ id, name }) => ({ id, name }));
+              setSiblings(mine.some((e) => e.id === data.id) ? mine : []);
+            })
+            .catch(() => undefined);
+        }
         if (data.poolId) {
           const stats = await fetch(`/api/pool/pick-stats?poolId=${encodeURIComponent(data.poolId)}`)
             .then((r) => (r.ok ? r.json() : null))
@@ -104,6 +121,17 @@ function BracketDetail() {
   const byId = useMemo(() => new Map(games.map((g) => [g.gameId, g])), [games]);
   const pickList = useMemo(() => parsePicksData(bracket?.picksData ?? null), [bracket?.picksData]);
   const picks = useMemo(() => toPicks(pickList), [pickList]);
+  const choicesByGame = useMemo(() => new Map(pickList.map((p) => [p.gameId, p.choices])), [pickList]);
+  const goToEntry = (id: string) => {
+    if (id === bracketId) return;
+    const qs = view === "picks" ? "" : `?view=${view}`;
+    router.push(`/brackets/${id}${qs}`);
+  };
+  const siblingIndex = siblings.findIndex((e) => e.id === bracketId);
+  const swipe = useSwipe(
+    () => siblings[siblingIndex + 1] && goToEntry(siblings[siblingIndex + 1].id),
+    () => siblingIndex > 0 && goToEntry(siblings[siblingIndex - 1].id)
+  );
   const teams = useMemo(() => new Map((field?.teams ?? []).map((t) => [t.id, t])), [field]);
   const team = (id: string): PickerTeam => {
     const t = teams.get(id);
@@ -175,7 +203,7 @@ function BracketDetail() {
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" {...(siblings.length > 1 ? swipe : {})}>
       <PageHeader
         leading={
           <Button variant="ghost" size="icon" asChild className="-ml-2 mt-0.5 shrink-0">
@@ -225,7 +253,10 @@ function BracketDetail() {
         }
       />
 
+      <EntrySwitcher entries={siblings} currentId={bracket.id} onGo={goToEntry} />
+
       {bracket.summary && picks.size > 0 && (
+        <div ref={setSummaryEl}>
         <BracketSummaryCard
           summary={bracket.summary}
           rank={bracket.rank}
@@ -234,6 +265,26 @@ function BracketDetail() {
           championPct={locked ? championPct : undefined}
           picked={locked && submitted ? null : prog}
         />
+        </div>
+      )}
+      {bracket.summary && (
+        <StickyBar target={summaryEl}>
+          <div className="flex items-center gap-2 text-sm">
+            {bracket.summary.champion && lookup.logo(bracket.summary.champion.team) && (
+              <Image src={lookup.logo(bracket.summary.champion.team)!} alt="" width={20} height={20} className="h-5 w-5 object-contain" unoptimized />
+            )}
+            <span className="min-w-0 flex-1 truncate font-semibold">{isOwner ? bracket.name : `${bracket.ownerName}'s bracket`}</span>
+            <span className="shrink-0 tabular-nums text-muted-foreground">
+              {locked && submitted ? (
+                <>
+                  <span className="font-bold text-primary">{bracket.summary.score}</span> pts{bracket.rank ? ` · ${ordinal(bracket.rank)}` : ""} · max {bracket.summary.max}
+                </>
+              ) : (
+                `${prog.done}/${prog.total} picked`
+              )}
+            </span>
+          </div>
+        </StickyBar>
       )}
 
       {toggle && <div className="lg:hidden">{toggle}</div>}
@@ -251,9 +302,9 @@ function BracketDetail() {
       ) : games.length === 0 ? (
         <p className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">The tournament field for this bracket isn&apos;t available.</p>
       ) : activeView === "leader" ? (
-        <CompareLeader bracketId={bracket.id} regions={regions} team={team} eliminated={results.eliminated} />
+        <CompareLeader bracketId={bracket.id} regions={regions} team={team} eliminated={results.eliminated} onOpenGame={setSheetGame} />
       ) : activeView === "pool" ? (
-        <ComparePool picks={pickList} results={results} regions={regions} team={team} />
+        <ComparePool picks={pickList} results={results} regions={regions} team={team} onOpenGame={setSheetGame} />
       ) : (
         <>
           <div className="hidden lg:block">
@@ -262,11 +313,23 @@ function BracketDetail() {
           <div className="space-y-3 lg:hidden">
             <PointsLegend />
             {bracket.summary && (
-              <BracketSections regions={regions} games={games} picks={picks} team={team} results={results} rounds={bracket.summary.rounds} tiebreaker={bracket.tiebreaker} />
+              <BracketSections regions={regions} games={games} picks={picks} team={team} results={results} rounds={bracket.summary.rounds} tiebreaker={bracket.tiebreaker} onOpenGame={(g) => setSheetGame({ gameId: g.gameId, round: g.round })} />
             )}
           </div>
         </>
       )}
+
+      <GameSheet
+        game={sheetGame}
+        onClose={() => setSheetGame(null)}
+        poolId={bracket.poolId}
+        bracketId={bracket.id}
+        choicesByGame={choicesByGame}
+        regions={regions}
+        team={team}
+        lookup={lookup}
+        results={results}
+      />
 
       <p className="flex flex-wrap justify-center gap-x-3 gap-y-1 pt-2 text-xs text-muted-foreground">
         <span>Created {new Date(bracket.createdAt).toLocaleDateString()}</span>

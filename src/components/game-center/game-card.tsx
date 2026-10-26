@@ -18,9 +18,11 @@ interface GameCardProps {
   currentRank: number | null;
   favoriteEspnId: string | null;
   highlight?: boolean;
+  /** Start with the pool breakdown and "If X wins" expanded (game sheet) */
+  poolSplitOpen?: boolean;
 }
 
-export function GameCard({ game, choices, lookup, rooting, currentRank, favoriteEspnId, highlight }: GameCardProps) {
+export function GameCard({ game, choices, lookup, rooting, currentRank, favoriteEspnId, highlight, poolSplitOpen = false }: GameCardProps) {
   const leader = leaderSlot(game);
   const verdict = choices ? pickVerdict(choices, game) : null;
   const rule = SCORING_RULES.find((r) => r.round === game.round);
@@ -87,7 +89,7 @@ export function GameCard({ game, choices, lookup, rooting, currentRank, favorite
         </div>
       )}
 
-      <PoolSplit game={game} rooting={rooting} currentRank={currentRank} />
+      <PoolSplit game={game} rooting={rooting} currentRank={currentRank} defaultOpen={poolSplitOpen} />
     </div>
   );
 }

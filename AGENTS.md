@@ -95,6 +95,11 @@
   - Summary card (`BracketSummaryCard`), then a My picks / vs. Leader / vs. Pool toggle (`?view=leader|pool`).
   - Desktop: `DesktopBracketView` with `results`: result-filled cells, tap a team to trace its path, fit/zoom.
   - Phones: `BracketSections` puts the big picks first, then the current round; other rounds collapse.
+- Phone helpers:
+  - `StickyBar` (`src/components/shared/sticky-bar.tsx`) slides a slim summary under the top bar once its target scrolls away. Used on bracket detail and Game Center.
+  - `GameSheet` (`src/components/bracket/game-sheet.tsx`): tap a game on bracket detail or in the compare views. It finds the ESPN game in today's `/api/live` payload, then in that round's days, and reuses Game Center's `GameCard` with the pool split expanded.
+  - `EntrySwitcher` / `useSwipe` move between your entries in the same pool.
+  - Standings on phones open centered on you (top 3 plus 3 above and below each of your entries), with "Show all" and "Jump to me".
 - My Brackets: `EntryCard` once picks lock (before that, the checklist rows). Past seasons are a table on desktop and collapsed by year on phones.
 - Result colors are fixed tokens, never themed: `hit` / `hit-soft` for a right pick, `miss` / `miss-soft` for a wrong one. They're separate from LIVE red.
 - Shared components: `PageHeader` (every page title), `BracketStatusBadge` (Draft / Submitted / Payment pending / Paid), `BracketMenu` (⋯ actions), `ScoringRules` / `scoringGroups` (rules generated from `SCORING_RULES`).

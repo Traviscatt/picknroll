@@ -9,6 +9,7 @@ import type { Comparison, TeamStatus } from "@/lib/bracket-summary";
 import type { PickerTeam } from "@/components/picker/game-picker";
 import { RankBadge, ordinal } from "@/components/game-center/parts";
 import { gameLabel, roundPoints } from "./labels";
+import type { SheetGame } from "./game-sheet";
 
 interface Side {
   rank: number | null;
@@ -24,7 +25,7 @@ type CompareResponse = Comparison & {
 };
 
 /** This bracket vs. the pool leader (or the runner-up when it leads): only the games that can still swing */
-export function CompareLeader({ bracketId, regions, team, eliminated }: { bracketId: string; regions: string[]; team: (id: string) => PickerTeam; eliminated: Set<string> }) {
+export function CompareLeader({ bracketId, regions, team, eliminated, onOpenGame }: { bracketId: string; regions: string[]; team: (id: string) => PickerTeam; eliminated: Set<string>; onOpenGame?: (game: SheetGame) => void }) {
   const [data, setData] = useState<CompareResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,7 +101,12 @@ export function CompareLeader({ bracketId, regions, team, eliminated }: { bracke
           };
           const [mine, theirs] = [side(d.mine), side(d.theirs)];
           return (
-            <section key={d.gameId} className="space-y-2.5 rounded-xl border bg-card p-3 shadow-sm">
+            <button
+              type="button"
+              key={d.gameId}
+              onClick={() => onOpenGame?.({ gameId: d.gameId, round: d.round })}
+              className="block w-full space-y-2.5 rounded-xl border bg-card p-3 text-left shadow-sm transition-colors hover:border-foreground/30"
+            >
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-semibold">{gameLabel(d.gameId, regions)}</span>
                 <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", d.gain > 0 ? "bg-hit-soft text-hit" : "bg-muted text-muted-foreground")}>
@@ -138,7 +144,7 @@ export function CompareLeader({ bracketId, regions, team, eliminated }: { bracke
                   · {d.rootFor ? "" : "if they win, "}you +{d.myPoints}, {first} +{d.theirPoints}
                 </span>
               </p>
-            </section>
+            </button>
           );
         })}
       </div>

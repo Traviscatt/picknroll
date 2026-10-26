@@ -11,8 +11,8 @@ const pct = (n: number, total: number) => (total ? Math.round((n / total) * 100)
 const RANK_BAR = ["bg-emerald-500", "bg-amber-500", "bg-blue-500", "bg-purple-500", "bg-rose-500"];
 
 /** Collapsed: share of the pool with each team 1st. Expanded: full rank breakdown and what each result means for you. */
-export function PoolSplit({ game, rooting, currentRank }: { game: LiveGame; rooting: Rooting | null; currentRank: number | null }) {
-  const [open, setOpen] = useState(false);
+export function PoolSplit({ game, rooting, currentRank, defaultOpen = false }: { game: LiveGame; rooting: Rooting | null; currentRank: number | null; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const split = game.poolSplit;
   if (!split || split.total === 0) return null;
   const [a, b] = game.teams;

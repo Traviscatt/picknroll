@@ -18,6 +18,8 @@ import { GameCard } from "@/components/game-center/game-card";
 import { RootingGuide } from "@/components/game-center/rooting-guide";
 import { StandingsPanel } from "@/components/game-center/standings-panel";
 import { YourNight } from "@/components/game-center/your-night";
+import { ordinal } from "@/components/game-center/parts";
+import { StickyBar } from "@/components/shared/sticky-bar";
 
 interface MyBracket {
   id: string;
@@ -63,6 +65,7 @@ function GameCenter() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<"games" | "rooting">(() => (searchParams.get("view") === "rooting" ? "rooting" : "games"));
   const [mode, setMode] = useStandingsMode();
+  const [nightEl, setNightEl] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") router.push("/login");
@@ -200,7 +203,22 @@ function GameCenter() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="min-w-0 space-y-4">
-          <div className="lg:hidden">{yourNight}</div>
+          <div className="lg:hidden" ref={setNightEl}>
+            {yourNight}
+          </div>
+          {entry && data.deadlinePassed && (
+            <StickyBar target={nightEl}>
+              <div className="flex items-center gap-2 text-sm">
+                {data.anyLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-600" />}
+                <span className="font-bold">{ordinal(data.anyLive ? entry.liveRank : entry.officialRank)}</span>
+                <span className="min-w-0 flex-1 truncate text-muted-foreground">{selectedBracket?.name ?? entry.bracketName}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  <span className="font-bold text-primary">{data.anyLive ? entry.live : entry.official}</span> pts
+                  {alive.total ? ` · ${alive.alive}/${alive.total} alive` : ""}
+                </span>
+              </div>
+            </StickyBar>
+          )}
 
           {data.deadlinePassed && entry && (
             <div className="flex w-full max-w-xs gap-1 rounded-lg bg-muted p-1">

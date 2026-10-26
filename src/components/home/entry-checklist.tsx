@@ -18,7 +18,7 @@ export function DeadlineCountdown({ deadline }: { deadline: string }) {
   }, []);
   const left = timeLeft(deadline, now);
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-primary p-4 text-primary-foreground">
+    <div className="flex items-center justify-between gap-4 rounded-2xl bg-frame p-4 text-frame-foreground">
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-team-secondary">Picks lock in</p>
         <p className="text-3xl font-bold tracking-tight">{left ?? "a moment"}</p>

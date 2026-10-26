@@ -12,13 +12,13 @@ export function PointsByRound({ rounds, labels = false, tone = "light", classNam
     <div className={cn("flex gap-1", className)} role="img" aria-label={rounds.map((r) => `${SHORT[r.round]} ${r.earned} of ${r.max}`).join(", ")}>
       {rounds.map((r) => (
         <div key={r.round} className={labels ? "min-w-[40px]" : "min-w-0"} style={{ flexGrow: r.max, flexBasis: 0 }}>
-          <div className={cn("flex h-2 overflow-hidden rounded-full", tone === "dark" ? "bg-primary-foreground/20" : "bg-muted")}>
+          <div className={cn("flex h-2 overflow-hidden rounded-full", tone === "dark" ? "bg-frame-foreground/20" : "bg-muted")}>
             <div className="bg-emerald-500" style={{ width: `${(r.earned / r.max) * 100}%` }} />
             <div className={tone === "dark" ? "bg-miss/70" : "bg-miss/30"} style={{ width: `${(r.gone / r.max) * 100}%` }} />
           </div>
           {labels && (
-            <p className={cn("mt-1 text-[10px] leading-tight", tone === "dark" ? "text-primary-foreground/80" : "text-muted-foreground")}>
-              <span className={cn("block font-semibold", tone === "dark" ? "text-primary-foreground" : "text-foreground")}>{SHORT[r.round]}</span>
+            <p className={cn("mt-1 text-[10px] leading-tight", tone === "dark" ? "text-frame-foreground/80" : "text-muted-foreground")}>
+              <span className={cn("block font-semibold", tone === "dark" ? "text-frame-foreground" : "text-foreground")}>{SHORT[r.round]}</span>
               <span className="block tabular-nums">
                 {r.earned}/{r.max}
               </span>

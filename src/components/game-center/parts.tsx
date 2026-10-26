@@ -53,11 +53,11 @@ export function RankBadge({ rank, size = "sm" }: { rank: number; size?: "sm" | "
 /** Result chip in neutral ink: solid = earned, outlined = provisional, gray = nothing */
 export function VerdictChip({ verdict }: { verdict: Verdict }) {
   const styles = {
-    earned: "bg-slate-900 text-white",
-    holds: "border border-slate-900 text-slate-900 bg-white",
-    now: "border border-slate-900 text-slate-900 bg-white",
-    pending: "border border-slate-200 text-slate-600 bg-white",
-    zero: "bg-slate-100 text-slate-500",
+    earned: "bg-foreground text-background",
+    holds: "border border-foreground text-foreground bg-card",
+    now: "border border-foreground text-foreground bg-card",
+    pending: "border border-border text-muted-foreground bg-card",
+    zero: "bg-muted text-muted-foreground",
   }[verdict.tone];
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold", styles)}>

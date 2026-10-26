@@ -21,7 +21,7 @@ export function SeasonRecap({
   const champions = season?.podium.filter((p) => p.place === 1) ?? [];
   const rest = season?.podium.filter((p) => p.place > 1) ?? [];
   return (
-    <section className="space-y-4 rounded-2xl bg-primary p-5 text-primary-foreground">
+    <section className="space-y-4 rounded-2xl bg-frame p-5 text-frame-foreground">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-wide text-team-secondary">{year ? `${year} season` : "Season"} · Final</p>
         {champions.length ? (
@@ -57,12 +57,12 @@ export function SeasonRecap({
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button asChild variant="secondary" size="sm">
+        <Button asChild size="sm" className="bg-card text-primary hover:bg-card/90 dark:text-foreground">
           <Link href="/hall-of-fame">
             <Crown className="mr-1.5 h-4 w-4" /> Hall of Fame
           </Link>
         </Button>
-        <Button asChild size="sm" className="border border-white/35 bg-transparent hover:bg-white/10">
+        <Button asChild size="sm" className="border border-white/35 bg-transparent text-frame-foreground hover:bg-white/10">
           <Link href="/leaderboard">Final standings</Link>
         </Button>
       </div>

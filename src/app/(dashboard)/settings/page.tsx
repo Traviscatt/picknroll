@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X, Key, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Save, Users, Bell, Shield, Search, Trophy, X, Key, Eye, EyeOff, Moon } from "lucide-react";
+import { ThemeChoice } from "@/components/shared/theme-choice";
 import { toast } from "sonner";
 import { generatePalette } from "@/lib/team-colors";
 import { useTeamOptions } from "@/hooks/use-team-options";
@@ -210,6 +211,19 @@ export default function SettingsPage() {
       </Card>
 
       <EmailPreferences />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Moon className="h-5 w-5" />
+            Appearance
+          </CardTitle>
+          <CardDescription>Light, dark, or match your device. Saved on this device.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ThemeChoice className="max-w-sm" />
+        </CardContent>
+      </Card>
 
       {/* Favorite Team */}
       <Card>

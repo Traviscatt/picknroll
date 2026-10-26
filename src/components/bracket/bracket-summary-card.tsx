@@ -61,9 +61,9 @@ export function BracketSummaryCard({ summary, rank, total, lookup, championPct, 
   return (
     <>
       {/* Phones and tablets */}
-      <section className="space-y-4 rounded-2xl bg-primary p-4 text-primary-foreground lg:hidden">
+      <section className="space-y-4 rounded-2xl bg-frame p-4 text-frame-foreground lg:hidden">
         {championBlock(false)}
-        <div className="h-px bg-primary-foreground/15" />
+        <div className="h-px bg-frame-foreground/15" />
         <div className="flex justify-between gap-2">
           {stats.map(([value, label]) => (
             <div key={label} className="min-w-0">
@@ -77,7 +77,7 @@ export function BracketSummaryCard({ summary, rank, total, lookup, championPct, 
 
       {/* Desktop */}
       <section className="hidden gap-4 lg:grid lg:grid-cols-[minmax(0,360px)_auto_minmax(0,1fr)]">
-        <div className="flex items-center rounded-xl bg-primary p-5 text-primary-foreground">{championBlock(true)}</div>
+        <div className="flex items-center rounded-xl bg-frame p-5 text-frame-foreground">{championBlock(true)}</div>
         <div className="flex divide-x rounded-xl border bg-card shadow-sm">
           {stats.map(([value, label]) => (
             <div key={label} className="flex flex-col justify-center px-5 py-4">

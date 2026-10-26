@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import { BookOpen, CreditCard, Crown, FileText, Home, LogOut, MoreHorizontal, Radio, Settings, Shield, Trophy, Users } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { ThemeChoice } from "@/components/shared/theme-choice";
 import { useAnyLive } from "@/hooks/use-live-data";
 
 const TABS = [
@@ -81,6 +82,9 @@ export function MobileTabBar() {
                 {label}
               </Link>
             ))}
+            <div className="py-3">
+              <ThemeChoice />
+            </div>
             <button type="button" onClick={() => signOut({ callbackUrl: "/" })} className="flex w-full items-center gap-3 py-3.5 text-[15px] font-medium text-red-600">
               <LogOut className="h-5 w-5" />
               Log out

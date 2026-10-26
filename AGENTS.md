@@ -60,6 +60,12 @@
 - Favorite-team theme (`generatePalette`) sets only frame variables, contrast-checked (tests cover every curated team).
   - Never theme text, gray text, borders, pick-rank colors, or status colors.
   - Team choices come from `/api/teams` (the current field, curated colors first).
+- Dark mode:
+  - `next-themes` with the class strategy (`ThemeProvider` in `layout.tsx`, default "system", stored in localStorage `pnr.theme`). The picker is in Settings → Appearance and the More sheet (`ThemeChoice`).
+  - Dark colors live in `.dark` in `globals.css`. That block also remaps Tailwind's light tints (`-50/-100/-200`) and dark text shades (`-700/-800/-900`) for the fixed status/pick color families, so those classes work in both modes without `dark:` variants.
+  - `generatePalette(primary, secondary, "dark")` lightens team colors until they read on the dark background (tests cover every curated team).
+  - Large team-colored cards (summary, Your Night, season recap) use `bg-frame text-frame-foreground`: the primary in light mode, a deep shade in dark mode.
+  - Prefer tokens (`bg-card`, `bg-foreground`, …) over `bg-white` or `slate-900`.
 - Phones get a bottom tab bar (`src/components/shared/mobile-tab-bar.tsx`), hidden on picker routes.
 
 ## Season features

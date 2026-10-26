@@ -65,7 +65,7 @@ export default function HallOfFamePage() {
               const rest = season.podium.filter((p) => p.place > 1);
               return (
                 <Card key={`${season.year}-${season.poolName ?? ""}`} className="overflow-hidden">
-                  <div className="flex items-center justify-between bg-primary px-5 py-2.5 text-primary-foreground">
+                  <div className="flex items-center justify-between bg-frame px-5 py-2.5 text-frame-foreground">
                     <span className="text-lg font-bold">{season.year}</span>
                     <span className="text-xs opacity-80">
                       {[season.poolName, season.entries ? `${season.entries} entries` : null].filter(Boolean).join(" · ")}

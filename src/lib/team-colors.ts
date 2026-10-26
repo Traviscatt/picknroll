@@ -66,8 +66,24 @@ function darkenToContrast(hex: string, against: string, ratio: number): string {
   return color;
 }
 
+/** Lightens a color step by step until it reaches `ratio` against `against` */
+function lightenToContrast(hex: string, against: string, ratio: number): string {
+  let color = hex;
+  for (let i = 0; i < 40 && contrastRatio(color, against) < ratio; i++) color = mix(color, 0.08);
+  return color;
+}
+
+/** `a` moved toward `b` by `t` (0–1) */
+function blend(a: string, b: string, t: number): string {
+  const [x, y] = [hexToRgb(a), hexToRgb(b)];
+  return rgbToHex(x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t);
+}
+
 const INK = "#1a1a2e";
 const WHITE = "#ffffff";
+/** Dark mode page background (matches --background in .dark) */
+export const DARK_BACKGROUND = "#0e1412";
+const LIGHT_INK = "#e7ece9";
 
 /** White or ink, whichever reads better on `bg` */
 function textOn(bg: string): string {
@@ -95,16 +111,20 @@ export interface ThemePalette {
   "sidebar-ring": string;
   "team-secondary": string;
   "team-secondary-foreground": string;
+  /** Large team-colored surfaces (summary cards): the primary in light mode, a deep shade in dark mode */
+  frame: string;
+  "frame-foreground": string;
 }
 
 /** Every CSS variable a palette may set (cleared before applying a new theme) */
 export const THEME_VARS: (keyof ThemePalette)[] = [
   "background", "primary", "primary-foreground", "secondary", "secondary-foreground", "accent", "accent-foreground",
   "ring", "chart-1", "chart-2", "sidebar-primary", "sidebar-primary-foreground", "sidebar-ring", "team-secondary",
-  "team-secondary-foreground",
+  "team-secondary-foreground", "frame", "frame-foreground",
 ];
 
-export function generatePalette(primaryColor: string, secondaryColor: string): ThemePalette {
+export function generatePalette(primaryColor: string, secondaryColor: string, mode: "light" | "dark" = "light"): ThemePalette {
+  if (mode === "dark") return darkPalette(primaryColor, secondaryColor);
   // Primary doubles as link/label text on white and as a button background behind white text: keep it at 4.5:1
   const primary = darkenToContrast(primaryColor, WHITE, 4.5);
   // Secondary is used for small accents on light backgrounds (navbar underline, the logo "N"): a white or
@@ -129,6 +149,38 @@ export function generatePalette(primaryColor: string, secondaryColor: string): T
     "sidebar-ring": primary,
     "team-secondary": secondary,
     "team-secondary-foreground": textOn(secondary),
+    frame: primary,
+    "frame-foreground": textOn(primary),
+  };
+}
+
+/** Dark mode: the team colors lightened until they read on the dark background; tints are dark blends */
+function darkPalette(primaryColor: string, secondaryColor: string): ThemePalette {
+  const primary = lightenToContrast(primaryColor, DARK_BACKGROUND, 5);
+  const secondary = lightenToContrast(secondaryColor, DARK_BACKGROUND, 3);
+  const textOnDark = (bg: string) => (contrastRatio(WHITE, bg) >= contrastRatio(DARK_BACKGROUND, bg) ? WHITE : DARK_BACKGROUND);
+  const tint = blend(DARK_BACKGROUND, primary, 0.16);
+  const accent = blend(DARK_BACKGROUND, secondary, 0.18);
+  let frame = blend(DARK_BACKGROUND, primaryColor, 0.6);
+  for (let t = 0.55; t > 0 && contrastRatio(LIGHT_INK, frame) < 4.5; t -= 0.05) frame = blend(DARK_BACKGROUND, primaryColor, t);
+  return {
+    background: blend(DARK_BACKGROUND, primary, 0.03),
+    primary,
+    "primary-foreground": textOnDark(primary),
+    secondary: tint,
+    "secondary-foreground": contrastRatio(primary, tint) >= 4.5 ? primary : LIGHT_INK,
+    accent,
+    "accent-foreground": contrastRatio(primary, accent) >= 4.5 ? primary : LIGHT_INK,
+    ring: primary,
+    "chart-1": primary,
+    "chart-2": secondary,
+    "sidebar-primary": primary,
+    "sidebar-primary-foreground": textOnDark(primary),
+    "sidebar-ring": primary,
+    "team-secondary": secondary,
+    "team-secondary-foreground": textOnDark(secondary),
+    frame,
+    "frame-foreground": LIGHT_INK,
   };
 }
 

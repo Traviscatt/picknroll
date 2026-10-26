@@ -33,7 +33,7 @@ export function GameCard({ game, choices, lookup, rooting, currentRank, favorite
   return (
     <div className={cn("overflow-hidden rounded-xl border bg-card shadow-sm", highlight && "border-primary ring-1 ring-primary")}>
       {yourTeam && (
-        <div className="bg-primary px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary-foreground">Your team: {yourTeam.name}</div>
+        <div className="bg-frame px-4 py-1 text-[11px] font-semibold uppercase tracking-wide text-frame-foreground">Your team: {yourTeam.name}</div>
       )}
       <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-1">
         <StatusPill game={game} />
@@ -77,7 +77,7 @@ export function GameCard({ game, choices, lookup, rooting, currentRank, favorite
               return (
                 <span
                   key={teamId}
-                  className={cn("inline-flex items-center gap-1.5 rounded-full border bg-white py-0.5 pr-2.5 pl-0.5 text-xs", color.border, out && "opacity-50")}
+                  className={cn("inline-flex items-center gap-1.5 rounded-full border bg-card py-0.5 pr-2.5 pl-0.5 text-xs", color.border, out && "opacity-50")}
                 >
                   {rule.choices > 1 ? <RankBadge rank={i + 1} size="md" /> : <span className={cn("h-5 w-1.5 rounded-full", color.badge)} />}
                   <span className={cn("font-semibold", out && "line-through")}>{lookup.name(teamId)}</span>

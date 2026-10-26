@@ -67,7 +67,7 @@ export default async function Home() {
       </section>
 
       {/* Scoring Section */}
-      <section className="py-20 bg-primary">
+      <section className="py-20 bg-primary dark:bg-brand-forest">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4 text-white">
@@ -194,7 +194,7 @@ export default async function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary">
+      <section className="py-20 bg-primary dark:bg-brand-forest">
         <div className="container mx-auto px-4 text-center">
           <Award className="h-16 w-16 text-white/80 mx-auto mb-6" />
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">

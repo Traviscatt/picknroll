@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #fcfdfd;
   --foreground: #1a1a2e;
@@ -37,6 +39,8 @@
   --team-secondary-foreground: #1a1a2e;
   --brand-gold: #b9bc91;
   --brand-forest: #1a3328;
+  --frame: var(--primary);
+  --frame-foreground: var(--primary-foreground);
   --hit: #047857;
   --hit-soft: #ecfdf5;
   --miss: #b91c1c;
@@ -93,6 +97,8 @@
   --color-team-secondary-foreground: var(--team-secondary-foreground);
   --color-brand-gold: var(--brand-gold);
   --color-brand-forest: var(--brand-forest);
+  --color-frame: var(--frame);
+  --color-frame-foreground: var(--frame-foreground);
   --color-hit: var(--hit);
   --color-hit-soft: var(--hit-soft);
   --color-miss: var(--miss);
@@ -114,6 +120,121 @@
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0e1412;
+  --foreground: #e7ece9;
+  --card: #151d1a;
+  --card-foreground: #e7ece9;
+  --popover: #18211d;
+  --popover-foreground: #e7ece9;
+  --primary: #7cc49a;
+  --primary-foreground: #0e1412;
+  --secondary: #1c2823;
+  --secondary-foreground: #cfe6d8;
+  --muted: #1b2420;
+  --muted-foreground: #9aa6a0;
+  --accent: #22302a;
+  --accent-foreground: #d8eadf;
+  --destructive: #f87171;
+  --border: #2a3530;
+  --input: #2a3530;
+  --ring: #7cc49a;
+  --chart-1: #7cc49a;
+  --chart-2: #5aa57c;
+  --chart-3: #b9bc91;
+  --chart-4: #a3b46e;
+  --chart-5: #cfe6d8;
+  --sidebar: #121a17;
+  --sidebar-foreground: #e7ece9;
+  --sidebar-primary: #7cc49a;
+  --sidebar-primary-foreground: #0e1412;
+  --sidebar-accent: #22302a;
+  --sidebar-accent-foreground: #d8eadf;
+  --sidebar-border: #2a3530;
+  --sidebar-ring: #7cc49a;
+  --team-secondary: #b9bc91;
+  --team-secondary-foreground: #0e1412;
+  --frame: #1d3a2b;
+  --frame-foreground: #e7ece9;
+  --hit: #4ade80;
+  --hit-soft: #12291d;
+  --miss: #f87171;
+  --miss-soft: #2c1616;
+
+  --shadow-sm: 0 1px 3px 0px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 3px 0px rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 1px 3px 0px rgb(0 0 0 / 0.4), 0 2px 4px -1px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 1px 3px 0px rgb(0 0 0 / 0.4), 0 4px 6px -1px rgb(0 0 0 / 0.4);
+
+  --color-red-50: color-mix(in oklab, #ef4444 14%, var(--background));
+  --color-red-100: color-mix(in oklab, #ef4444 22%, var(--background));
+  --color-red-200: color-mix(in oklab, #ef4444 35%, var(--background));
+  --color-red-700: #f87171;
+  --color-red-800: #fca5a5;
+  --color-red-900: #fca5a5;
+  --color-green-50: color-mix(in oklab, #22c55e 14%, var(--background));
+  --color-green-100: color-mix(in oklab, #22c55e 22%, var(--background));
+  --color-green-200: color-mix(in oklab, #22c55e 35%, var(--background));
+  --color-green-700: #4ade80;
+  --color-green-800: #86efac;
+  --color-green-900: #86efac;
+  --color-emerald-50: color-mix(in oklab, #10b981 14%, var(--background));
+  --color-emerald-100: color-mix(in oklab, #10b981 22%, var(--background));
+  --color-emerald-200: color-mix(in oklab, #10b981 35%, var(--background));
+  --color-emerald-700: #34d399;
+  --color-emerald-800: #6ee7b7;
+  --color-emerald-900: #6ee7b7;
+  --color-amber-50: color-mix(in oklab, #f59e0b 14%, var(--background));
+  --color-amber-100: color-mix(in oklab, #f59e0b 22%, var(--background));
+  --color-amber-200: color-mix(in oklab, #f59e0b 35%, var(--background));
+  --color-amber-700: #fbbf24;
+  --color-amber-800: #fcd34d;
+  --color-amber-900: #fcd34d;
+  --color-yellow-50: color-mix(in oklab, #eab308 14%, var(--background));
+  --color-yellow-100: color-mix(in oklab, #eab308 22%, var(--background));
+  --color-yellow-200: color-mix(in oklab, #eab308 35%, var(--background));
+  --color-yellow-700: #facc15;
+  --color-yellow-800: #fde047;
+  --color-yellow-900: #fde047;
+  --color-blue-50: color-mix(in oklab, #3b82f6 14%, var(--background));
+  --color-blue-100: color-mix(in oklab, #3b82f6 22%, var(--background));
+  --color-blue-200: color-mix(in oklab, #3b82f6 35%, var(--background));
+  --color-blue-700: #60a5fa;
+  --color-blue-800: #93c5fd;
+  --color-blue-900: #93c5fd;
+  --color-purple-50: color-mix(in oklab, #a855f7 14%, var(--background));
+  --color-purple-100: color-mix(in oklab, #a855f7 22%, var(--background));
+  --color-purple-200: color-mix(in oklab, #a855f7 35%, var(--background));
+  --color-purple-700: #c084fc;
+  --color-purple-800: #d8b4fe;
+  --color-purple-900: #d8b4fe;
+  --color-rose-50: color-mix(in oklab, #f43f5e 14%, var(--background));
+  --color-rose-100: color-mix(in oklab, #f43f5e 22%, var(--background));
+  --color-rose-200: color-mix(in oklab, #f43f5e 35%, var(--background));
+  --color-rose-700: #fb7185;
+  --color-rose-800: #fda4af;
+  --color-rose-900: #fda4af;
+  --color-orange-50: color-mix(in oklab, #f97316 14%, var(--background));
+  --color-orange-100: color-mix(in oklab, #f97316 22%, var(--background));
+  --color-orange-200: color-mix(in oklab, #f97316 35%, var(--background));
+  --color-orange-700: #fb923c;
+  --color-orange-800: #fdba74;
+  --color-orange-900: #fdba74;
+  --color-slate-50: #172019;
+  --color-slate-100: #1f2a25;
+  --color-slate-200: #2b3631;
+  --color-slate-300: #4b5563;
+  --color-slate-600: #9ca3af;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+}
+
+.dark img[src*="espncdn.com"] {
+  filter: drop-shadow(0 0 0.5px rgb(255 255 255 / 0.85)) drop-shadow(0 0 1px rgb(255 255 255 / 0.3));
 }
 
 @layer base {

@@ -62,16 +62,6 @@ export default async function Home() {
                 <Link href="/login">Log in</Link>
               </Button>
             </div>
-            <div className="mt-10 flex justify-center">
-              <iframe
-                src="https://shop.priceslide.io/embed/test-christmas-sale?theme=light&participants=true&nextdrop=true&hero=true&scale=60&radius=32&compact=false&url=https%3A%2F%2Fshop.priceslide.io%2Fp%2Fglc-group%2Ftest-christmas-sale"
-                width="100%"
-                height="413"
-                loading="lazy"
-                style={{ border: 0, borderRadius: 32, maxWidth: 400 }}
-                title="PriceSlide Widget"
-              />
-            </div>
           </div>
         </div>
       </section>

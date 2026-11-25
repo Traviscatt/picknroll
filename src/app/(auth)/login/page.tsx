@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
@@ -20,9 +20,11 @@ function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Set once this form signs in; that path does a full page load instead
+  const submitted = useRef(false);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === "authenticated" && !submitted.current) {
       router.replace(callbackUrl);
     }
   }, [status, router, callbackUrl]);
@@ -30,6 +32,7 @@ function LoginContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    submitted.current = true;
 
     try {
       const result = await signIn("credentials", {
@@ -42,8 +45,8 @@ function LoginContent() {
         toast.error("Invalid email or password");
       } else {
         toast.success("Welcome back!");
-        router.refresh();
-        router.replace(callbackUrl);
+        // Full page load so the first request after sign-in carries the new session cookie
+        window.location.assign(callbackUrl);
       }
     } catch {
       toast.error("Something went wrong");

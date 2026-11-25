@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
@@ -20,9 +20,11 @@ function RegisterContent() {
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  // Set once this form signs in; that path does a full page load instead
+  const submitted = useRef(false);
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (status === "authenticated" && !submitted.current) {
       router.replace(callbackUrl);
     }
   }, [status, router, callbackUrl]);
@@ -73,6 +75,7 @@ function RegisterContent() {
       }
 
       toast.success("Account created! Signing you in...");
+      submitted.current = true;
       const signInResult = await signIn("credentials", {
         email,
         password,
@@ -82,8 +85,7 @@ function RegisterContent() {
         toast.error("Account created but auto-login failed. Please sign in.");
         router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
       } else {
-        router.refresh();
-        router.replace(callbackUrl);
+        window.location.assign(callbackUrl);
       }
     } catch {
       toast.error("Something went wrong");

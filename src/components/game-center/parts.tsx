@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDown, ArrowUp, Check, Minus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowDown, ArrowUp, Check, Minus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getPickColor } from "@/lib/pick-colors";
 import type { LiveGame, Verdict } from "@/lib/live";
@@ -115,6 +116,23 @@ export function StandingsToggle({
         </>
       )}
     </div>
+  );
+}
+
+/** "Updated 12s ago" for the live payload (Game Center, Home) */
+export function UpdatedAgo({ at }: { at: number | null }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(timer);
+  }, []);
+  if (!at) return null;
+  const seconds = Math.max(0, Math.round((now - at) / 1000));
+  return (
+    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+      <RefreshCw className="h-3 w-3" />
+      Updated {seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)}m`} ago
+    </span>
   );
 }
 

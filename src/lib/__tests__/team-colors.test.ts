@@ -10,6 +10,7 @@ describe("generatePalette", () => {
     expect(contrastRatio(p["secondary-foreground"], p.secondary)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p["accent-foreground"], p.accent)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p["frame-foreground"], p.frame)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(p["frame-accent"], p.frame)).toBeGreaterThanOrEqual(4.5); // labels on team-colored cards
   });
 
   it.each(TEAMS.map((t) => [t.name, t] as const))("%s: dark mode frame colors stay readable", (_, team) => {
@@ -21,6 +22,11 @@ describe("generatePalette", () => {
     expect(contrastRatio(p["secondary-foreground"], p.secondary)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p["accent-foreground"], p.accent)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(p["frame-foreground"], p.frame)).toBeGreaterThanOrEqual(4.5); // summary cards
+    expect(contrastRatio(p["frame-accent"], p.frame)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("keeps the team's secondary for frame labels when it reads (Duke white on blue)", () => {
+    expect(generatePalette("#003087", "#FFFFFF")["frame-accent"].toLowerCase()).toBe("#ffffff");
   });
 
   it("only sets frame variables (text, borders, and muted colors stay neutral)", () => {

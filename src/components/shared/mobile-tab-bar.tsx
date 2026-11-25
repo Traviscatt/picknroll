@@ -8,6 +8,7 @@ import { BookOpen, CreditCard, Crown, FileText, Home, LogOut, MoreHorizontal, Ra
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { ThemeChoice } from "@/components/shared/theme-choice";
+import { OPEN_RULES_EVENT } from "@/components/shared/scoring-rules";
 import { useAnyLive } from "@/hooks/use-live-data";
 
 const TABS = [
@@ -77,7 +78,15 @@ export function MobileTabBar() {
           </SheetHeader>
           <div className="mt-2 divide-y px-4">
             {moreLinks.map(({ href, label, icon: Icon }) => (
-              <Link key={href} href={href} onClick={() => setMoreOpen(false)} className="flex items-center gap-3 py-3.5 text-[15px] font-medium">
+              <Link
+                key={href}
+                href={href}
+                onClick={() => {
+                  setMoreOpen(false);
+                  if (href === "/dashboard#rules") window.dispatchEvent(new Event(OPEN_RULES_EVENT));
+                }}
+                className="flex items-center gap-3 py-3.5 text-[15px] font-medium"
+              >
                 <Icon className="h-5 w-5 text-muted-foreground" />
                 {label}
               </Link>

@@ -5,8 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { Navbar } from "@/components/shared/navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { FINAL_FOUR_BONUS, MAX_POSSIBLE_SCORE } from "@/lib/scoring";
-import { scoringGroups } from "@/components/shared/scoring-rules";
+import { FINAL_FOUR_BONUS, MAX_POSSIBLE_SCORE, scoringGroups } from "@/lib/scoring";
 import { Trophy, Users, Zap, DollarSign, ChevronRight, Target, Award, Radio, Crown } from "lucide-react";
 
 export default async function Home() {

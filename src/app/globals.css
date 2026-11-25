@@ -41,6 +41,7 @@
   --brand-forest: #1a3328;
   --frame: var(--primary);
   --frame-foreground: var(--primary-foreground);
+  --frame-accent: var(--team-secondary);
   --hit: #047857;
   --hit-soft: #ecfdf5;
   --miss: #b91c1c;
@@ -99,6 +100,7 @@
   --color-brand-forest: var(--brand-forest);
   --color-frame: var(--frame);
   --color-frame-foreground: var(--frame-foreground);
+  --color-frame-accent: var(--frame-accent);
   --color-hit: var(--hit);
   --color-hit-soft: var(--hit-soft);
   --color-miss: var(--miss);
@@ -159,6 +161,7 @@
   --team-secondary-foreground: #0e1412;
   --frame: #1d3a2b;
   --frame-foreground: #e7ece9;
+  --frame-accent: #b9bc91;
   --hit: #4ade80;
   --hit-soft: #12291d;
   --miss: #f87171;

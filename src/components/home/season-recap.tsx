@@ -1,72 +1,34 @@
 "use client";
 
-import Link from "next/link";
-import { Crown, Medal, Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Medal, Trophy } from "lucide-react";
 import { ordinal } from "@/components/game-center/parts";
+import { Panel } from "@/components/shared/panel";
 import type { HallOfFameSeason } from "@/lib/hall-of-fame";
 
-const MEDAL = { 2: "text-slate-400", 3: "text-amber-600" } as Record<number, string>;
+const MEDAL = { 1: "text-yellow-500", 2: "text-slate-400", 3: "text-amber-600" } as Record<number, string>;
 
-/** Final podium for the season, plus where you finished */
-export function SeasonRecap({
-  year,
-  season,
-  you,
-}: {
-  year: number | null;
-  season: HallOfFameSeason | null;
-  you: { rank: number; score: number; total: number } | null;
-}) {
-  const champions = season?.podium.filter((p) => p.place === 1) ?? [];
-  const rest = season?.podium.filter((p) => p.place > 1) ?? [];
+/** A season's podium (Hall of Fame data) */
+export function PodiumPanel({ season, title }: { season: HallOfFameSeason; title?: string }) {
   return (
-    <section className="space-y-4 rounded-2xl bg-frame p-5 text-frame-foreground">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-team-secondary">{year ? `${year} season` : "Season"} · Final</p>
-        {champions.length ? (
-          champions.map((c) => (
-            <div key={c.name} className="mt-1 flex items-center gap-3">
-              <Trophy className="h-9 w-9 shrink-0 text-yellow-300" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs opacity-80">Champion</p>
-                <p className="truncate text-2xl font-bold">{c.name}</p>
-              </div>
-              {c.score != null && <p className="text-2xl font-bold tabular-nums">{c.score}</p>}
-            </div>
-          ))
-        ) : (
-          <p className="mt-1 text-2xl font-bold">The championship is final</p>
-        )}
+    <Panel
+      title={title ?? `${season.year} podium`}
+      count={season.entries ? `${season.entries} entries` : undefined}
+      footer={{ label: "Hall of Fame", href: "/hall-of-fame", note: season.poolName ?? undefined }}
+    >
+      <div className="divide-y border-t">
+        {season.podium.map((p) => (
+          <div key={`${p.place}-${p.name}`} className="flex items-center gap-3 px-4 py-2.5">
+            {p.place === 1 ? <Trophy className={`h-4 w-4 shrink-0 ${MEDAL[1]}`} /> : <Medal className={`h-4 w-4 shrink-0 ${MEDAL[p.place] ?? "text-muted-foreground"}`} />}
+            <span className="w-8 shrink-0 text-xs text-muted-foreground">{ordinal(p.place)}</span>
+            <span className="min-w-0 flex-1">
+              <span className={`block truncate text-sm ${p.place === 1 ? "font-bold" : "font-semibold"}`}>{p.name}</span>
+              {(p.bracketName || p.note) && <span className="block truncate text-[11px] text-muted-foreground">{p.bracketName ?? p.note}</span>}
+            </span>
+            {p.score != null && <span className="shrink-0 font-bold tabular-nums">{p.score}</span>}
+          </div>
+        ))}
+        {!season.podium.length && <p className="px-4 py-4 text-sm text-muted-foreground">No results recorded for this season.</p>}
       </div>
-      {rest.length > 0 && (
-        <div className="grid gap-2 sm:grid-cols-2">
-          {rest.map((p) => (
-            <div key={`${p.place}-${p.name}`} className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2">
-              <Medal className={`h-4 w-4 shrink-0 ${MEDAL[p.place] ?? ""}`} />
-              <span className="text-xs opacity-80">{ordinal(p.place)}</span>
-              <span className="flex-1 truncate text-sm font-semibold">{p.name}</span>
-              {p.score != null && <span className="text-sm tabular-nums">{p.score}</span>}
-            </div>
-          ))}
-        </div>
-      )}
-      {you && (
-        <p className="rounded-lg bg-white/10 px-3 py-2 text-sm">
-          You finished <span className="font-bold">{ordinal(you.rank)}</span> of {you.total} with <span className="font-bold">{you.score} pts</span>.
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2">
-        <Button asChild size="sm" className="bg-card text-primary hover:bg-card/90 dark:text-foreground">
-          <Link href="/hall-of-fame">
-            <Crown className="mr-1.5 h-4 w-4" /> Hall of Fame
-          </Link>
-        </Button>
-        <Button asChild size="sm" className="border border-white/35 bg-transparent text-frame-foreground hover:bg-white/10">
-          <Link href="/leaderboard">Final standings</Link>
-        </Button>
-      </div>
-      <p className="text-xs opacity-75">Next season opens after Selection Sunday, once the field is announced.</p>
-    </section>
+    </Panel>
   );
 }

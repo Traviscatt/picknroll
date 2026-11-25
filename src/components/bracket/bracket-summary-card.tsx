@@ -51,7 +51,7 @@ export function BracketSummaryCard({ summary, rank, total, lookup, championPct, 
         ) : null}
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-team-secondary">Your champion</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-frame-accent">Your champion</p>
         <p className={cn("truncate font-bold", big ? "text-2xl" : "text-xl", champ?.state === "out" && "line-through opacity-70")}>{champ ? lookup.name(champ.team) : "–"}</p>
         <p className="text-xs opacity-80">{champLine}</p>
       </div>

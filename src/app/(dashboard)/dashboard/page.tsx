@@ -6,24 +6,34 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { toast } from "sonner";
-import { ChevronRight, Copy, Crown, Megaphone, Pin, Plus, Radio, Trophy, Users } from "lucide-react";
+import { ChevronRight, Copy, Pin, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/shared/page-header";
+import { Panel } from "@/components/shared/panel";
 import { ScoringRules } from "@/components/shared/scoring-rules";
-import { DeadlineCountdown, EntryChecklist } from "@/components/home/entry-checklist";
+import { StickyBar } from "@/components/shared/sticky-bar";
+import { EntrySwitcher } from "@/components/bracket/entry-switcher";
+import { EntryChecklist } from "@/components/home/entry-checklist";
+import { EntryStandings } from "@/components/home/entry-standings";
 import { TodayGames } from "@/components/home/today-games";
-import { SeasonRecap } from "@/components/home/season-recap";
+import { PodiumPanel } from "@/components/home/season-recap";
+import { CompleteHero, EntryHero, FollowAlongHero, JoinHero, PreseasonHero, readyCount, useNow } from "@/components/home/phase-heroes";
 import { YourNight } from "@/components/game-center/your-night";
 import { StandingsPanel } from "@/components/game-center/standings-panel";
+import { RootingGuide } from "@/components/game-center/rooting-guide";
+import { ordinal, UpdatedAgo } from "@/components/game-center/parts";
 import { useTournamentField } from "@/hooks/use-tournament-field";
 import { useLiveData } from "@/hooks/use-live-data";
 import { useStandingsMode } from "@/hooks/use-standings-mode";
+import { cn } from "@/lib/utils";
 import { paymentDetails } from "@/lib/payment";
-import { personalSummary } from "@/lib/live";
+import { isLive, personalSummary } from "@/lib/live";
 import { parsePicksData } from "@/lib/scoring-engine";
-import { formatDeadline, seasonLabel, type SeasonResponse } from "@/lib/season";
+import { formatDeadline, seasonLabel, timeLeft, type SeasonPool, type SeasonResponse } from "@/lib/season";
 import type { HallOfFameSeason } from "@/lib/hall-of-fame";
+import type { FieldLookup } from "@/lib/tournament-field";
 
 interface Announcement {
   id: string;
@@ -46,20 +56,16 @@ interface MyBracket {
   picksData: string | null;
 }
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <section className={`overflow-hidden rounded-xl border bg-card shadow-sm ${className}`}>{children}</section>;
+interface LeaderboardRow {
+  rank: number;
+  bracketId: string;
+  name: string;
+  bracketName: string;
+  score: number;
+  isCurrentUser: boolean;
 }
 
-function CardTitle({ icon: Icon, children, aside }: { icon: React.ElementType; children: React.ReactNode; aside?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
-      <h2 className="flex items-center gap-2 font-semibold">
-        <Icon className="h-4 w-4 text-primary" /> {children}
-      </h2>
-      {aside}
-    </div>
-  );
-}
+const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -68,8 +74,10 @@ export default function HomePage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [pickStats, setPickStats] = useState<PickStats | null>(null);
   const [myBrackets, setMyBrackets] = useState<MyBracket[]>([]);
-  const [podium, setPodium] = useState<HallOfFameSeason | null>(null);
-  const [finish, setFinish] = useState<{ rank: number; score: number; total: number } | null>(null);
+  const [hallOfFame, setHallOfFame] = useState<HallOfFameSeason[]>([]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null);
   const [mode, setMode] = useStandingsMode();
 
   useEffect(() => {
@@ -78,53 +86,42 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!session) return;
-    const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     Promise.all([json("/api/season"), json("/api/announcements")]).then(([s, a]) => {
       setSeason(s ?? { phase: "no-pool", pool: null, tournament: null, entries: [] });
       setAnnouncements(a ?? []);
     });
   }, [session]);
 
-  // The rules render after loading, so jump to #rules (More → Rules & scoring) once they exist
-  useEffect(() => {
-    if (season && window.location.hash === "#rules") document.getElementById("rules")?.scrollIntoView();
-  }, [season]);
-
   // Extra data only where the phase needs it
   const phase = season?.phase;
   const poolId = season?.pool?.id ?? null;
   useEffect(() => {
     if (!poolId || !phase) return;
-    const json = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     if (phase === "tournament" || phase === "complete") json(`/api/pool/pick-stats?poolId=${poolId}`).then(setPickStats);
     if (phase === "tournament") json(`/api/brackets?poolId=${poolId}`).then((b) => setMyBrackets((b ?? []).filter((x: MyBracket) => x.status !== "DRAFT")));
-    if (phase === "complete" || phase === "preseason") {
-      json("/api/hall-of-fame").then((h: { seasons: HallOfFameSeason[] } | null) => {
-        const seasons = h?.seasons ?? [];
-        setPodium((phase === "complete" ? seasons.find((s) => s.year === season?.tournament?.year) : seasons[0]) ?? null);
-      });
-    }
-    if (phase === "complete") {
-      json("/api/leaderboard").then((l) => l?.userRank && setFinish({ rank: l.userRank, score: l.userScore, total: l.totalEntries }));
-    }
-  }, [phase, poolId, season?.tournament?.year]);
+    if (phase === "complete" || phase === "preseason") json("/api/hall-of-fame").then((h: { seasons: HallOfFameSeason[] } | null) => setHallOfFame(h?.seasons ?? []));
+    if (phase === "complete") json("/api/leaderboard").then((l) => setLeaderboard(l?.entries ?? []));
+  }, [phase, poolId]);
 
   const live = useLiveData(poolId, null, phase === "tournament");
-  const { lookup } = useTournamentField(poolId, !!poolId && !!pickStats?.championshipPicks.length);
+  const { lookup } = useTournamentField(poolId, !!poolId && (phase === "tournament" || phase === "complete"));
   const myIds = useMemo(() => myBrackets.map((b) => b.id), [myBrackets]);
-  const firstInStandings = myBrackets.find((b) => live.data?.standings.some((s) => s.bracketId === b.id)) ?? null;
-  const picksByGame = useMemo(
-    () => new Map(parsePicksData(firstInStandings?.picksData ?? null).map((p) => [p.gameId, p.choices])),
-    [firstInStandings?.picksData]
-  );
-  const summary = useMemo(() => (live.data ? personalSummary(live.data, firstInStandings?.id ?? null, picksByGame) : null), [live.data, firstInStandings?.id, picksByGame]);
+  const inStandings = useMemo(() => myBrackets.filter((b) => live.data?.standings.some((s) => s.bracketId === b.id)), [myBrackets, live.data]);
+  const selected = inStandings.find((b) => b.id === selectedId) ?? inStandings[0] ?? null;
+  const picksByGame = useMemo(() => new Map(parsePicksData(selected?.picksData ?? null).map((p) => [p.gameId, p.choices])), [selected?.picksData]);
+  const summary = useMemo(() => (live.data ? personalSummary(live.data, selected?.id ?? null, picksByGame) : null), [live.data, selected?.id, picksByGame]);
 
   if (status === "loading" || !season) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-9 w-56" />
-        <Skeleton className="h-28 w-full rounded-2xl" />
-        <Skeleton className="h-48 w-full rounded-xl" />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+          </div>
+          <Skeleton className="h-48 w-full rounded-2xl" />
+        </div>
       </div>
     );
   }
@@ -132,70 +129,172 @@ export default function HomePage() {
 
   const { pool, entries, tournament } = season;
   const firstName = session.user?.name?.split(" ")[0];
-  const seasonLine = pool ? seasonLabel(tournament?.year, pool.name) : "Join a pool to get started";
+  const label = pool ? seasonLabel(tournament?.year, pool.name) : null;
+  const day = live.data?.days.find((d) => d.date === live.data?.date);
+  const liveCount = live.data?.games.filter(isLive).length ?? 0;
+  const lastSeason = hallOfFame.find((s) => s.year === tournament?.year) ?? (phase === "preseason" ? hallOfFame[0] : undefined);
+  const champion = lastSeason?.podium.find((p) => p.place === 1) ?? null;
+  const scored = entries.filter((e) => e.summary && e.rank);
+  const best = [...scored].sort((a, b) => a.rank! - b.rank!)[0] ?? null;
+  const entry = summary?.entry ?? null;
+  const showPicks = pickStats && pickStats.championshipPicks.length > 0 && <ChampionshipPicks stats={pickStats} lookup={lookup} />;
+  const showAnnouncements = announcements.length > 0 && <Announcements items={announcements} />;
+  const rules = <ScoringRules deadline={pool?.deadline ?? null} />;
+  const poolPanel = pool && <PoolPanel pool={pool} />;
 
-  const hero = (() => {
+  const meta = (() => {
     switch (season.phase) {
       case "no-pool":
-        return <Onboarding />;
+        return "Join a pool to get started";
       case "preseason":
-        return (
-          <Card className="p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{tournament?.year ?? "Next"} season</p>
-            <h2 className="mt-1 text-xl font-bold">The field is set on Selection Sunday</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Brackets open as soon as the teams are in. We&apos;ll let you know.</p>
-            {podium?.podium.find((p) => p.place === 1) && (
-              <p className="mt-3 flex items-center gap-2 text-sm">
-                <Crown className="h-4 w-4 text-yellow-500" /> Reigning champion ({podium.year}):{" "}
-                <span className="font-semibold">{podium.podium.find((p) => p.place === 1)!.name}</span>
-              </p>
-            )}
-          </Card>
-        );
+        return `${label} · Brackets open after Selection Sunday`;
       case "entry":
-        return (
-          <div className="space-y-4">
-            <DeadlineCountdown deadline={pool!.deadline} />
-            <EntryChecklist pool={pool!} entries={entries} />
-          </div>
-        );
+        return `${label} · Picks lock ${formatDeadline(pool!.deadline)}`;
       case "tournament":
         return (
-          <div className="space-y-4">
-            {summary?.entry ? (
+          <span className="inline-flex flex-wrap items-center gap-x-1.5">
+            {live.data?.anyLive && <span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />}
+            {[label, day?.round, day?.label, liveCount ? `${liveCount} live` : null].filter(Boolean).join(" · ")}
+          </span>
+        );
+      case "complete":
+        return `${label} · Final`;
+    }
+  })();
+
+  // Hero, its phone sticky summary, the main column, and the rail for each phase
+  const layout = (() => {
+    switch (season.phase) {
+      case "no-pool":
+        return { hero: <JoinHero />, sticky: null, main: <HowItWorks />, rail: rules };
+      case "preseason":
+        return {
+          hero: <PreseasonHero year={tournament?.year ?? null} pool={pool!} champion={champion} championYear={lastSeason?.year ?? null} />,
+          sticky: null,
+          main: (
+            <>
+              {lastSeason ? <PodiumPanel season={lastSeason} title={`${lastSeason.year} podium`} /> : <WhatsNext />}
+              {showAnnouncements}
+            </>
+          ),
+          rail: (
+            <>
+              {poolPanel}
+              {rules}
+            </>
+          ),
+        };
+      case "entry":
+        return {
+          hero: <EntryHero pool={pool!} entries={entries} />,
+          sticky: <EntrySticky pool={pool!} ready={readyCount(entries)} total={entries.length} />,
+          main: (
+            <>
+              <EntryChecklist pool={pool!} entries={entries} />
+              {showAnnouncements}
+            </>
+          ),
+          rail: (
+            <>
+              {poolPanel}
+              {rules}
+            </>
+          ),
+        };
+      case "tournament":
+        return {
+          hero:
+            entry && summary ? (
               <YourNight
-                entry={summary.entry}
-                title={firstInStandings?.name ?? summary.entry.bracketName}
+                entry={entry}
+                title={selected?.name ?? entry.bracketName}
                 anyLive={!!live.data?.anyLive}
                 alive={summary.alive}
                 biggestSwing={summary.biggestSwing}
                 onRooting={() => router.push("/game-center?view=rooting")}
                 onLiveStandings={() => live.data?.anyLive && setMode("live")}
               />
-            ) : (
-              !live.loading && (
-                <Card className="p-5">
-                  <h2 className="text-lg font-bold">The tournament is on</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">You don&apos;t have a submitted bracket this season, but you can follow every game.</p>
-                </Card>
-              )
-            )}
-            {live.data ? (
-              <TodayGames data={live.data} picksByGame={picksByGame} />
             ) : live.loading ? (
-              <Skeleton className="h-64 w-full rounded-xl" />
+              <Skeleton className="h-52 w-full rounded-2xl" />
             ) : (
-              <Card className="p-5 text-sm text-muted-foreground">
-                Live scores are unavailable right now.{" "}
-                <Link href="/game-center" className="font-semibold text-primary">
-                  Open Game Center
-                </Link>
-              </Card>
-            )}
-          </div>
-        );
+              <FollowAlongHero round={day?.round ?? null} />
+            ),
+          sticky: entry && (
+            <div className="flex items-center gap-2 text-sm">
+              {live.data?.anyLive && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-red-600" />}
+              <span className="font-bold">{ordinal(live.data?.anyLive ? entry.liveRank : entry.officialRank)}</span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">{selected?.name ?? entry.bracketName}</span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="font-bold text-primary">{live.data?.anyLive ? entry.live : entry.official}</span> pts
+                {summary?.alive.total ? ` · ${summary.alive.alive}/${summary.alive.total} alive` : ""}
+              </span>
+            </div>
+          ),
+          switcher: inStandings.length > 1 && selected && <EntrySwitcher entries={inStandings} currentId={selected.id} onGo={setSelectedId} />,
+          main: (
+            <>
+              {live.data ? (
+                <TodayGames data={live.data} picksByGame={picksByGame} />
+              ) : live.loading ? (
+                <Skeleton className="h-64 w-full rounded-xl" />
+              ) : (
+                <Panel title="Games" footer={{ label: "Open Game Center", href: "/game-center" }}>
+                  <p className="border-t px-4 py-6 text-center text-sm text-muted-foreground">Live scores are unavailable right now.</p>
+                </Panel>
+              )}
+              {showPicks}
+              {showAnnouncements}
+            </>
+          ),
+          rail: (
+            <>
+              {live.data && live.data.standings.length > 0 && (
+                <StandingsPanel standings={live.data.standings} mode={mode} onModeChange={setMode} anyLive={live.data.anyLive} myBracketIds={myIds} />
+              )}
+              {entry && summary && summary.items.length > 0 && (
+                <Panel
+                  title="Root for"
+                  aside={<span className="text-[11px] text-muted-foreground">biggest swing first</span>}
+                  footer={{ label: "Open rooting guide", href: "/game-center?view=rooting" }}
+                >
+                  <RootingGuide items={summary.items} currentRank={entry.liveRank} range={null} compact />
+                </Panel>
+              )}
+              <EntryStandings entries={entries} lookup={lookup} poolEntries={pool!.entries} />
+              {poolPanel}
+              {rules}
+            </>
+          ),
+        };
       case "complete":
-        return <SeasonRecap year={tournament?.year ?? null} season={podium} you={finish} />;
+        return {
+          hero: <CompleteHero year={tournament?.year ?? null} best={best} poolEntries={pool!.entries} champion={champion} lookup={lookup} />,
+          sticky: best && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-bold">{ordinal(best.rank!)}</span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                of {pool!.entries} · {best.name}
+              </span>
+              <span className="shrink-0 tabular-nums text-muted-foreground">
+                <span className="font-bold text-primary">{best.summary!.score}</span> pts
+              </span>
+            </div>
+          ),
+          main: (
+            <>
+              {leaderboard.length > 0 && <FinalStandings rows={leaderboard} />}
+              {showPicks}
+              {showAnnouncements}
+            </>
+          ),
+          rail: (
+            <>
+              {lastSeason && <PodiumPanel season={lastSeason} title="Podium" />}
+              {poolPanel}
+              {rules}
+            </>
+          ),
+        };
     }
   })();
 
@@ -203,82 +302,122 @@ export default function HomePage() {
     <div className="space-y-6">
       <PageHeader
         title={`Hi, ${firstName ?? "there"}`}
-        description={seasonLine}
+        description={meta}
         actions={
-          season.phase === "entry" && pool?.status === "OPEN" ? (
-            <Button asChild>
-              <Link href="/brackets/new">
-                <Plus className="mr-1.5 h-4 w-4" /> New bracket
-              </Link>
-            </Button>
-          ) : season.phase === "tournament" ? (
-            <Button asChild variant="outline">
-              <Link href="/game-center">
-                <Radio className="mr-1.5 h-4 w-4" /> Game Center
-              </Link>
-            </Button>
+          season.phase === "tournament" ? (
+            // Phones use the tab bar's Live tab and the entry switcher instead
+            <div className="hidden items-center gap-2 sm:flex">
+              <UpdatedAgo at={live.updatedAt} />
+              {inStandings.length > 1 && selected && (
+                <Select value={selected.id} onValueChange={setSelectedId}>
+                  <SelectTrigger className="hidden w-48 lg:flex">
+                    <SelectValue placeholder="Bracket" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inStandings.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Button asChild variant="outline">
+                <Link href="/game-center">
+                  <Radio className="mr-1.5 h-4 w-4" /> Game Center
+                </Link>
+              </Button>
+            </div>
           ) : null
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-w-0 space-y-6">
-          {hero}
-          {announcements.length > 0 && <Announcements items={announcements} />}
-          {pickStats && pickStats.championshipPicks.length > 0 && <ChampionshipPicks stats={pickStats} lookup={lookup} />}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-4">
+          <div className="space-y-2 lg:hidden" ref={setHeroEl}>
+            {layout.hero}
+            {"switcher" in layout && layout.switcher}
+          </div>
+          {layout.sticky && <StickyBar target={heroEl}>{layout.sticky}</StickyBar>}
+          {layout.main}
         </div>
-        <aside className="space-y-6">
-          {season.phase === "tournament" && live.data && live.data.standings.length > 0 && (
-            <StandingsPanel standings={live.data.standings} mode={mode} onModeChange={setMode} anyLive={live.data.anyLive} myBracketIds={myIds} />
-          )}
-          {pool && <PoolCard pool={pool} />}
+        <aside className="min-w-0 space-y-4">
+          <div className="hidden lg:block">{layout.hero}</div>
+          {layout.rail}
         </aside>
       </div>
-
-      {season.phase !== "no-pool" && <ScoringRules deadline={pool?.deadline ?? null} />}
     </div>
   );
 }
 
-function Onboarding() {
+function EntrySticky({ pool, ready, total }: { pool: SeasonPool; ready: number; total: number }) {
+  const now = useNow();
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Picks lock in</span>
+      <span className="min-w-0 flex-1 truncate font-bold">{timeLeft(pool.deadline, now) ?? "a moment"}</span>
+      {total > 0 && (
+        <span className="shrink-0 tabular-nums text-muted-foreground">
+          <span className="font-bold text-primary">{ready}</span>/{total} ready
+        </span>
+      )}
+    </div>
+  );
+}
+
+function HowItWorks() {
   const steps = [
     { href: "/join", title: "Join a pool", detail: "Enter the invite code from your pool admin" },
-    { href: "/brackets/new", title: "Fill out a bracket", detail: "Pick all 63 games" },
+    { href: "/brackets/new", title: "Fill out a bracket", detail: "Pick every game, ranking more teams in later rounds" },
     { href: "/payment", title: "Pay the entry fee", detail: "Venmo or PayPal, set by your pool" },
   ];
   return (
-    <Card className="p-5">
-      <h2 className="flex items-center gap-2 text-lg font-bold">
-        <Trophy className="h-5 w-5 text-primary" /> Welcome to PickNRoll
-      </h2>
-      <p className="mt-1 text-sm text-muted-foreground">Three steps to get in the game.</p>
-      <div className="mt-4 grid gap-3 md:grid-cols-3">
+    <Panel title="How it works" count="3 steps">
+      <div className="divide-y border-t">
         {steps.map((s, i) => (
-          <Link key={s.href} href={s.href} className="flex items-center gap-3 rounded-lg border bg-background p-3 transition-colors hover:border-primary">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{i + 1}</span>
-            <span className="min-w-0">
+          <Link key={s.href} href={s.href} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{i + 1}</span>
+            <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">{s.title}</span>
               <span className="block text-xs text-muted-foreground">{s.detail}</span>
             </span>
-            <ChevronRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Link>
         ))}
       </div>
-    </Card>
+    </Panel>
+  );
+}
+
+function WhatsNext() {
+  return (
+    <Panel title="What happens next">
+      <div className="divide-y border-t text-sm">
+        {[
+          ["Selection Sunday", "The field is announced and imported into the app."],
+          ["Brackets open", "Fill out as many entries as you like before the first tip-off."],
+          ["Game Center", "Follow every game live with your picks and the pool's."],
+        ].map(([title, detail]) => (
+          <div key={title} className="px-4 py-3">
+            <p className="font-semibold">{title}</p>
+            <p className="text-xs text-muted-foreground">{detail}</p>
+          </div>
+        ))}
+      </div>
+    </Panel>
   );
 }
 
 function Announcements({ items }: { items: Announcement[] }) {
   return (
-    <Card>
-      <CardTitle icon={Megaphone}>Announcements</CardTitle>
-      <div className="space-y-2 px-4 pb-4">
+    <Panel title="Announcements" count={items.length > 3 ? `${items.length}` : undefined}>
+      <div className="divide-y border-t">
         {items.slice(0, 3).map((a) => (
-          <div key={a.id} className={`rounded-lg border p-3 ${a.pinned ? "border-primary/20 bg-primary/5" : "bg-muted/40"}`}>
-            <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+          <div key={a.id} className={cn("px-4 py-3", a.pinned && "bg-secondary/60")}>
+            <h4 className="flex items-center gap-1.5 text-sm font-semibold">
               {a.title}
               {a.pinned && <Pin className="h-3 w-3 text-primary" />}
-            </h3>
+            </h4>
             <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-sm text-muted-foreground">{a.message}</p>
             <p className="mt-1.5 text-xs text-muted-foreground">
               {a.author.name} · {new Date(a.createdAt).toLocaleDateString()}
@@ -286,17 +425,37 @@ function Announcements({ items }: { items: Announcement[] }) {
           </div>
         ))}
       </div>
-    </Card>
+    </Panel>
   );
 }
 
-function ChampionshipPicks({ stats, lookup }: { stats: PickStats; lookup: ReturnType<typeof useTournamentField>["lookup"] }) {
+function FinalStandings({ rows, limit = 5 }: { rows: LeaderboardRow[]; limit?: number }) {
+  const top = rows.slice(0, limit);
+  const mine = rows.filter((r, i) => i >= limit && r.isCurrentUser);
+  const row = (r: LeaderboardRow) => (
+    <div key={r.bracketId} className={cn("flex items-center gap-2.5 px-4 py-2", r.isCurrentUser && "bg-secondary")}>
+      <span className="w-5 text-right text-sm font-semibold text-muted-foreground">{r.rank}</span>
+      <span className="min-w-0 flex-1">
+        <span className={cn("block truncate text-sm", r.isCurrentUser ? "font-bold" : "font-medium")}>{r.name}</span>
+        {r.bracketName !== r.name && <span className="block truncate text-[11px] text-muted-foreground">{r.bracketName}</span>}
+      </span>
+      {r.isCurrentUser && <span className="rounded border border-primary px-1.5 text-[10px] font-semibold text-primary">You</span>}
+      <span className="w-9 text-right font-bold tabular-nums text-primary">{r.score}</span>
+    </div>
+  );
+  return (
+    <Panel title="Final standings" count={`${rows.length} entries`} footer={{ label: "Full standings", href: "/leaderboard" }}>
+      {top.map(row)}
+      {mine.length > 0 && <div className="px-4 text-center text-xs text-muted-foreground">⋯</div>}
+      {mine.map(row)}
+    </Panel>
+  );
+}
+
+function ChampionshipPicks({ stats, lookup }: { stats: PickStats; lookup: FieldLookup }) {
   const max = stats.championshipPicks[0].percentage;
   return (
-    <Card>
-      <CardTitle icon={Crown} aside={<span className="text-xs text-muted-foreground">{stats.totalBrackets} brackets</span>}>
-        Who the pool picked to win it all
-      </CardTitle>
+    <Panel title="Who the pool picked to win it all" count={`${stats.totalBrackets} brackets`}>
       <div className="space-y-2.5 px-4 pb-4">
         {stats.championshipPicks.slice(0, 8).map((pick) => {
           const info = lookup.get(pick.teamId);
@@ -320,18 +479,17 @@ function ChampionshipPicks({ stats, lookup }: { stats: PickStats; lookup: Return
           );
         })}
       </div>
-    </Card>
+    </Panel>
   );
 }
 
-function PoolCard({ pool }: { pool: NonNullable<SeasonResponse["pool"]> }) {
+function PoolPanel({ pool }: { pool: SeasonPool }) {
   const copy = () => {
     navigator.clipboard.writeText(pool.inviteCode);
     toast.success("Invite code copied");
   };
   return (
-    <Card>
-      <CardTitle icon={Users}>{pool.name}</CardTitle>
+    <Panel title={pool.name}>
       <div className="grid grid-cols-3 gap-2 px-4 pb-3 text-center">
         {[
           [pool.members, "members"],
@@ -356,6 +514,6 @@ function PoolCard({ pool }: { pool: NonNullable<SeasonResponse["pool"]> }) {
           <span className="text-right font-medium">{formatDeadline(pool.deadline)}</span>
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 }

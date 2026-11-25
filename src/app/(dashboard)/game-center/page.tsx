@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshCw } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -18,7 +17,8 @@ import { GameCard } from "@/components/game-center/game-card";
 import { RootingGuide } from "@/components/game-center/rooting-guide";
 import { StandingsPanel } from "@/components/game-center/standings-panel";
 import { YourNight } from "@/components/game-center/your-night";
-import { ordinal } from "@/components/game-center/parts";
+import { ordinal, UpdatedAgo } from "@/components/game-center/parts";
+import { Panel } from "@/components/shared/panel";
 import { StickyBar } from "@/components/shared/sticky-bar";
 
 interface MyBracket {
@@ -28,22 +28,6 @@ interface MyBracket {
   status: string;
   poolId: string | null;
   picksData: string | null;
-}
-
-function UpdatedAgo({ at }: { at: number | null }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 5_000);
-    return () => clearInterval(timer);
-  }, []);
-  if (!at) return null;
-  const seconds = Math.max(0, Math.round((now - at) / 1000));
-  return (
-    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-      <RefreshCw className="h-3 w-3" />
-      Updated {seconds < 60 ? `${seconds}s` : `${Math.round(seconds / 60)}m`} ago
-    </span>
-  );
 }
 
 export default function GameCenterPage() {
@@ -279,16 +263,13 @@ function GameCenter() {
             <StandingsPanel standings={standings} mode={mode} onModeChange={setMode} anyLive={data.anyLive} myBracketIds={myIds} />
           )}
           {entry && items.length > 0 && (
-            <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-              <div className="flex items-center justify-between px-4 py-3">
-                <h3 className="font-semibold">Root for</h3>
-                <span className="text-[11px] text-muted-foreground">biggest swing first</span>
-              </div>
+            <Panel
+              title="Root for"
+              aside={<span className="text-[11px] text-muted-foreground">biggest swing first</span>}
+              footer={{ label: "Open rooting guide", onClick: () => setView("rooting") }}
+            >
               <RootingGuide items={items} currentRank={currentRank} range={null} compact />
-              <button type="button" onClick={() => setView("rooting")} className="w-full border-t px-4 py-2.5 text-right text-xs font-semibold text-primary">
-                Open rooting guide →
-              </button>
-            </div>
+            </Panel>
           )}
         </aside>
       </div>

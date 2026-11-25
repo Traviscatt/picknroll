@@ -106,6 +106,21 @@ export const FINAL_FOUR_GAMES_COUNT = 4;
 // Best possible score: every 1st choice correct (369) plus the Final Four bonus
 export const MAX_POSSIBLE_SCORE = getTotalMaxPoints() + FINAL_FOUR_BONUS;
 
+/** Rounds grouped the way the pool explains them (landing page and rules) */
+export function scoringGroups() {
+  const group = (rounds: number[], label: string, title: string) => {
+    const rules = SCORING_RULES.filter((r) => rounds.includes(r.round));
+    const counts = [...new Set(rules.map((r) => r.choices))];
+    const detail = counts.length === 1 && counts[0] === 1 ? "Pick one winner per game" : `Rank ${counts.join("–")} teams per game`;
+    return { label, title, detail, rules };
+  };
+  return [
+    group([1, 2], "Rounds 1 & 2", "Traditional picks"),
+    group([3, 4], "Sweet 16 & Elite 8", "Multi-choice picks"),
+    group([5, 6], "Final Four & Championship", "Maximum hedging"),
+  ];
+}
+
 // Scoring summary for display
 export const SCORING_SUMMARY = {
   round1: "2 pts per correct pick",

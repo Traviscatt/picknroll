@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Panel } from "@/components/shared/panel";
 import type { StandingEntry } from "@/lib/live";
 import type { StandingsMode } from "@/hooks/use-standings-mode";
 import { Movement, StandingsToggle } from "./parts";
@@ -47,20 +47,14 @@ export function StandingsPanel({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <h3 className="font-semibold">Standings</h3>
-        <StandingsToggle mode={mode} onChange={onModeChange} liveAvailable={anyLive} className="w-44" />
-      </div>
+    <Panel
+      title="Standings"
+      aside={<StandingsToggle mode={mode} onChange={onModeChange} liveAvailable={anyLive} className="w-44" />}
+      footer={{ label: "Full standings", href: "/leaderboard", note: live ? "Live = if every game ended now" : "Final results only" }}
+    >
       {top.map(row)}
       {mine.length > 0 && <div className="px-4 text-center text-xs text-muted-foreground">⋯</div>}
       {mine.map(row)}
-      <div className="flex items-center justify-between border-t px-4 py-2.5 text-xs">
-        <span className="text-muted-foreground">{live ? "Live = if every game ended now" : "Final results only"}</span>
-        <Link href="/leaderboard" className="font-semibold text-primary">
-          Full standings →
-        </Link>
-      </div>
-    </div>
+    </Panel>
   );
 }

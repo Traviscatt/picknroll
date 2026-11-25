@@ -14,6 +14,8 @@
 - The local `.env` / `.env.local` still point at the old Neon database (pre-AWS).
 - When testing against a throwaway Postgres, override BOTH `DATABASE_URL` and `DATABASE_URL_UNPOOLED`. Prisma's `db push` uses `directUrl` (= `DATABASE_URL_UNPOOLED`), so overriding only `DATABASE_URL` pushes to Neon.
 - Also override `NEXTAUTH_URL` and `NEXTAUTH_SECRET` for `next dev`.
+- For a full test field, run `publishField` with `parseEspnField(events)` from `src/lib/__tests__/fixtures/espn-2026-field.json`, then set game results and run `recalculateScores`.
+- In Playwright, load `/login` with `waitUntil: "networkidle"` before typing. Otherwise the form submits natively before the dev build hydrates.
 
 ## Infrastructure (AWS, SST v4)
 - Everything is in `sst.config.ts`. The AWS account is a standalone personal account; use `AWS_PROFILE=picknroll`.
@@ -64,7 +66,8 @@
   - `next-themes` with the class strategy (`ThemeProvider` in `layout.tsx`, default "system", stored in localStorage `pnr.theme`). The picker is in Settings → Appearance and the More sheet (`ThemeChoice`).
   - Dark colors live in `.dark` in `globals.css`. That block also remaps Tailwind's light tints (`-50/-100/-200`) and dark text shades (`-700/-800/-900`) for the fixed status/pick color families, so those classes work in both modes without `dark:` variants.
   - `generatePalette(primary, secondary, "dark")` lightens team colors until they read on the dark background (tests cover every curated team).
-  - Large team-colored cards (summary, Your Night, season recap) use `bg-frame text-frame-foreground`: the primary in light mode, a deep shade in dark mode.
+  - Large team-colored cards (summary, `Hero`) use `bg-frame text-frame-foreground`: the primary in light mode, a deep shade in dark mode.
+  - Small labels on those cards use `text-frame-accent` (the team secondary when it reaches 4.5:1 on the frame, else a tint of the frame text). Don't put `text-team-secondary` on `bg-frame`.
   - Prefer tokens (`bg-card`, `bg-foreground`, …) over `bg-white` or `slate-900`.
 - Phones get a bottom tab bar (`src/components/shared/mobile-tab-bar.tsx`), hidden on picker routes.
 
@@ -85,6 +88,10 @@
 - Season phase (`src/lib/season.ts`, pure + tested): `no-pool` → `preseason` (no field yet) → `entry` (before the deadline) → `tournament` → `complete` (championship final).
   - `GET /api/season` returns the phase, the current pool, and the member's entries in it (picked count, payment pending). Home and My Brackets use it.
   - `bracketActions` mirrors the server's lock rules (edit only while the pool is open and before the deadline; delete drafts any time). `nextStep` picks the one action to show.
+- Home (`/dashboard`) follows Game Center's layout: a main column plus a 380px rail.
+  - Each phase gets a `Hero` (`src/components/home/phase-heroes.tsx`; `YourNight` during the tournament). It sits at the top of the rail on desktop and inline at the top on phones, with a `StickyBar` summary.
+  - Main/rail contents per phase are composed in `dashboard/page.tsx`. Today's games are grouped Live now / Up next / Final (`TodayGames`). Rules are a collapsed "How scoring works" panel; `#rules` or the `OPEN_RULES_EVENT` window event opens it.
+- Auth: `(dashboard)/layout.tsx` checks the session on the server and redirects to `/login`. After signing in, login/register do a full page load (`window.location.assign`), not `router.replace`, so the first request carries the new cookie.
 - Data for an older bracket must come from its own pool: `/api/brackets?poolId=`, `/api/pool/pick-stats?poolId=`, `/api/eliminated-teams?poolId=` (members of that pool, or site admins).
 - Game Center's per-bracket math is `personalSummary` (`src/lib/live.ts`), shared with Home. `/game-center?view=rooting` opens the rooting guide.
 - Bracket standing (`src/lib/bracket-summary.ts`, pure + tested):
@@ -102,16 +109,30 @@
   - Desktop: `DesktopBracketView` with `results`: result-filled cells, tap a team to trace its path, fit/zoom.
   - Phones: `BracketSections` puts the big picks first, then the current round; other rounds collapse.
 - Phone helpers:
-  - `StickyBar` (`src/components/shared/sticky-bar.tsx`) slides a slim summary under the top bar once its target scrolls away. Used on bracket detail and Game Center.
+  - `StickyBar` (`src/components/shared/sticky-bar.tsx`) slides a slim summary under the top bar once its target scrolls away. Used on Home, bracket detail, and Game Center.
   - `GameSheet` (`src/components/bracket/game-sheet.tsx`): tap a game on bracket detail or in the compare views. It finds the ESPN game in today's `/api/live` payload, then in that round's days, and reuses Game Center's `GameCard` with the pool split expanded.
   - `EntrySwitcher` / `useSwipe` move between your entries in the same pool.
   - Standings on phones open centered on you (top 3 plus 3 above and below each of your entries), with "Show all" and "Jump to me".
 - My Brackets: `EntryCard` once picks lock (before that, the checklist rows). Past seasons are a table on desktop and collapsed by year on phones.
 - Result colors are fixed tokens, never themed: `hit` / `hit-soft` for a right pick, `miss` / `miss-soft` for a wrong one. They're separate from LIVE red.
-- Shared components: `PageHeader` (every page title), `BracketStatusBadge` (Draft / Submitted / Payment pending / Paid), `BracketMenu` (⋯ actions), `ScoringRules` / `scoringGroups` (rules generated from `SCORING_RULES`).
+- Shared components:
+  - `PageHeader` (every page title), `BracketStatusBadge` (Draft / Submitted / Payment pending / Paid), `BracketMenu` (⋯ actions).
+  - `Panel` (`src/components/shared/panel.tsx`): the card for Home and Game Center, with a title row (optional live dot, count, aside), rows, and an optional "… →" footer.
+  - `Hero` / `HeroAction` (`src/components/shared/hero.tsx`): the team-colored card (label, big value, right-hand number, 3 stats, 2 buttons).
+  - `ScoringRules` (client, collapsible) and `scoringGroups` (in `src/lib/scoring.ts` so the server landing page can call it). Both are generated from `SCORING_RULES`.
 - Use design tokens (`text-foreground`, `text-muted-foreground`, `bg-card`, `bg-muted`, `border-border`), not slate/white classes. Fixed brand colors for marketing pages are `brand-gold` / `brand-forest`.
 - The standings page is called "Standings" in the UI; its URL stays `/leaderboard`.
 
 ## Conventions
 - Pin new dependencies to versions published at least 7 days ago (`--save-exact`).
 - Picks are stored as JSON in `Bracket.picksData` (team IDs like `east-1`, game IDs like `East-r1-g1`).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -1,55 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Clock, Plus } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BracketStatusBadge } from "@/components/shared/bracket-status-badge";
+import { Panel } from "@/components/shared/panel";
 import { cn } from "@/lib/utils";
 import { paymentDetails } from "@/lib/payment";
-import { bracketActions, formatDeadline, nextStep, timeLeft, type SeasonEntry, type SeasonPool } from "@/lib/season";
+import { bracketActions, nextStep, type SeasonEntry, type SeasonPool } from "@/lib/season";
 
-/** Countdown to the deadline (frame-themed card) */
-export function DeadlineCountdown({ deadline }: { deadline: string }) {
-  const [now, setNow] = useState(() => new Date());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
-  const left = timeLeft(deadline, now);
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl bg-frame p-4 text-frame-foreground">
-      <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-team-secondary">Picks lock in</p>
-        <p className="text-3xl font-bold tracking-tight">{left ?? "a moment"}</p>
-        <p className="mt-0.5 text-xs opacity-80">{formatDeadline(deadline)} · first Round 1 tip-off</p>
-      </div>
-      <Clock className="h-10 w-10 shrink-0 opacity-30" />
-    </div>
-  );
-}
-
-/** Each entry this season with how far along it is and what to do next */
+/** Each entry this season with how far along it is and what to do next (before the deadline) */
 export function EntryChecklist({ pool, entries }: { pool: SeasonPool; entries: SeasonEntry[] }) {
   const fee = paymentDetails(pool).feeLabel;
   const canAdd = pool.status === "OPEN";
   return (
-    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div>
-          <h2 className="font-semibold">Your entries</h2>
-          <p className="text-xs text-muted-foreground">Submitted and paid ({fee} each) before the deadline</p>
-        </div>
-        {canAdd && entries.length > 0 && (
+    <Panel
+      title="Your entries"
+      count={entries.length || undefined}
+      aside={
+        canAdd &&
+        entries.length > 0 && (
           <Button asChild variant="outline" size="sm">
             <Link href="/brackets/new">
               <Plus className="mr-1 h-4 w-4" /> Add
             </Link>
           </Button>
-        )}
-      </div>
+        )
+      }
+      footer={{ label: "My Brackets", href: "/brackets", note: `Submit and pay (${fee} each) before the deadline` }}
+    >
       {entries.length === 0 ? (
-        <div className="px-4 py-8 text-center">
+        <div className="border-t px-4 py-8 text-center">
           <p className="mb-4 text-sm text-muted-foreground">You don&apos;t have a bracket yet this season.</p>
           {canAdd && (
             <Button asChild>
@@ -60,7 +41,7 @@ export function EntryChecklist({ pool, entries }: { pool: SeasonPool; entries: S
           )}
         </div>
       ) : (
-        <div className="divide-y">
+        <div className="divide-y border-t">
           {entries.map((entry) => {
             const step = nextStep(entry, bracketActions({ status: entry.status, pool }).locked);
             const pct = entry.totalGames ? (entry.picked / entry.totalGames) * 100 : 0;
@@ -90,6 +71,6 @@ export function EntryChecklist({ pool, entries }: { pool: SeasonPool; entries: S
           })}
         </div>
       )}
-    </section>
+    </Panel>
   );
 }

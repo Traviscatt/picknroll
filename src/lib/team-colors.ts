@@ -90,6 +90,13 @@ function textOn(bg: string): string {
   return contrastRatio(WHITE, bg) >= contrastRatio(INK, bg) ? WHITE : INK;
 }
 
+/** Small labels on the frame: the team's secondary when it reads there, else a tint of the frame text */
+function frameAccent(frame: string, foreground: string, ...secondaries: string[]): string {
+  const candidates = [...secondaries, ...secondaries.map((s) => blend(foreground, s, 0.3))];
+  return candidates.find((c) => contrastRatio(c, frame) >= FRAME_ACCENT_CONTRAST) ?? foreground;
+}
+export const FRAME_ACCENT_CONTRAST = 4.5;
+
 // ── Palette generator ───────────────────────────────────────────────
 // The favorite-team theme colors only the app's frame (navbar accents, buttons, links, focus rings, light
 // tints). Text, gray text, borders, error red, pick-rank colors, and game status colors stay fixed so the
@@ -114,13 +121,15 @@ export interface ThemePalette {
   /** Large team-colored surfaces (summary cards): the primary in light mode, a deep shade in dark mode */
   frame: string;
   "frame-foreground": string;
+  /** Small labels on the frame (contrast-checked against it) */
+  "frame-accent": string;
 }
 
 /** Every CSS variable a palette may set (cleared before applying a new theme) */
 export const THEME_VARS: (keyof ThemePalette)[] = [
   "background", "primary", "primary-foreground", "secondary", "secondary-foreground", "accent", "accent-foreground",
   "ring", "chart-1", "chart-2", "sidebar-primary", "sidebar-primary-foreground", "sidebar-ring", "team-secondary",
-  "team-secondary-foreground", "frame", "frame-foreground",
+  "team-secondary-foreground", "frame", "frame-foreground", "frame-accent",
 ];
 
 export function generatePalette(primaryColor: string, secondaryColor: string, mode: "light" | "dark" = "light"): ThemePalette {
@@ -151,6 +160,7 @@ export function generatePalette(primaryColor: string, secondaryColor: string, mo
     "team-secondary-foreground": textOn(secondary),
     frame: primary,
     "frame-foreground": textOn(primary),
+    "frame-accent": frameAccent(primary, textOn(primary), secondary, secondaryColor),
   };
 }
 
@@ -181,6 +191,7 @@ function darkPalette(primaryColor: string, secondaryColor: string): ThemePalette
     "team-secondary-foreground": textOnDark(secondary),
     frame,
     "frame-foreground": LIGHT_INK,
+    "frame-accent": frameAccent(frame, LIGHT_INK, secondary, secondaryColor),
   };
 }
 
